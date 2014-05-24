@@ -13,14 +13,25 @@
 	// asm ("bl bwputr");
 
 void FirstUserTask (){
-	bwprintf( COM2, "first task: BILL\n\r");
-    asm ("swi");
-    bwprintf( COM2, "first task: HE\n\r");
-
-	// for (;;) {
-	// 	bwprintf( COM2, "first task: byebye\n\r");
-	// 	bwprintf( COM2, "first task: HIIII\n\r");
-	// }
+    bwprintf( COM2, "first task: ROY\n");
+    while (1) {
+        bwprintf( COM2, "first task: BILL1\n");
+        asm ("swi");
+        bwprintf( COM2, "first task: HE\n");
+        asm ("swi");
+        bwprintf( COM2, "first task: BILL2\n");
+        asm ("swi");
+        bwprintf( COM2, "first task: HE\n");
+        asm ("swi");
+        bwprintf( COM2, "first task: BILL3\n");
+        asm ("swi");
+        bwprintf( COM2, "first task: HE\n");
+        asm ("swi");
+        bwprintf( COM2, "first task: BILL4\n");
+        asm ("swi");
+        bwprintf( COM2, "first task: HE\n");
+        asm ("swi");
+    }
 }
 
 int schedule ( int* tds ) {
@@ -66,7 +77,7 @@ int main( int argc, char* argv[] ) {
     unsigned int free_list_lo, free_list_hi;
     int tid = initialize( tds, &free_list_lo, &free_list_hi );
     int i, ret;
-    for ( i = 0; i<4; i++ ) {
+    for ( i = 0; i<50; i++ ) {
         active = (tds);
        // bwprintf( COM2, "testContext: begin\n\r" );
         ker_exit ( active, 1 );
