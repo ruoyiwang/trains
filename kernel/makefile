@@ -29,4 +29,4 @@ kernel.elf: kernel.o
 	$(LD) $(LDFLAGS) -o $@ kernel.o -lbwio -lgcc
 
 clean:
-	-rm -f *.s *.a *.o kernel.map
+	-rm -f kernel.s *.a *.o kernel.map
