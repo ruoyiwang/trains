@@ -74,6 +74,8 @@ int initialize ( td tds[64], unsigned int* free_list_lo, unsigned int* free_list
 int main( int argc, char* argv[] ) {
     td *active;
     td tds[64];
+    td_queue td_pq[16];
+    
     unsigned int free_list_lo, free_list_hi;
     int tid = initialize( tds, &free_list_lo, &free_list_hi );
     int i, ret;
