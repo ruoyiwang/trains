@@ -57,6 +57,22 @@ int testContext();
 
 int main( int argc, char* argv[] );
 
-int ker_exit ( td *active );
+int ker_exit ( td *active, int* args );
 
 void ker_entry ();
+
+void swi_stub();
+
+int Create( int priority, void (* pc) ());
+
+int MyTid();
+
+int Pass();
+
+int Exit();
+
+void spawnedTask ();
+
+int pq_pop_front(td_queue td_pq[16], int pri);
+
+void pq_push_back(td_queue td_pq[16], td tds[64], int tid);
