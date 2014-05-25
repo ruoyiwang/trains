@@ -17,7 +17,9 @@
 
 #define CODE_OFFSET     0x218000
 
-#define REQUEST_CREATE 0
+#define REQUEST_CREATE 	0
+
+#define NULL            0
 
 typedef struct td_t {
     unsigned int tid;
@@ -31,7 +33,7 @@ typedef struct td_t {
 
 typedef struct td_queue_t {
 	struct td_t * front;
-	struct td_t * end;
+	struct td_t * back;
 } td_queue;
 
 void first();

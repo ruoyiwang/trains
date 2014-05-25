@@ -34,8 +34,32 @@ void FirstUserTask (){
     }
 }
 
-int schedule ( int* tds ) {
-	return tds[0];
+td* schedule ( td_queue td_pq[16] ) {
+	int i = 0;
+    // 0 is the highest pri
+    for (i = 0; i < 16; i++) {
+        td_queue cur_queue = td_pq[i];
+
+        // if the front of the queue is not null
+        if (cur_queue.front != NULL) {
+            // we return the front of the queue
+            td* returning_td = cur_queue.front;
+            // pop it at the front
+            cur_queue.front = cur_queue.front->next;
+            return returning_td;
+        }
+    }
+    // if I didn't fine anything return null;
+    return NULL;
+}
+
+void initialize_td_pq(td_queue td_pq[16]) {
+    // set pq to nulls
+    int i = 0;
+    for (i = 0; i < 16; i++) {
+        td_pq[i].front = NULL;
+        td_pq[i].back = NULL;
+    }
 }
 
 int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
@@ -70,6 +94,7 @@ int initialize ( td tds[64], unsigned int* free_list_lo, unsigned int* free_list
     tds[0].spsr = 0xdf;
     return 0;
 }
+
 
 int main( int argc, char* argv[] ) {
     td *active;
