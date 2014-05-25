@@ -48,6 +48,6 @@ int testContext();
 
 int main( int argc, char* argv[] );
 
-void ker_exit ( td *active, int req );
+int ker_exit ( td *active );
 
 void ker_entry ();

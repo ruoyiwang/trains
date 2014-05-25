@@ -13,24 +13,15 @@
 	// asm ("bl bwputr");
 
 void FirstUserTask (){
-    bwprintf( COM2, "first task: ROY\n");
     while (1) {
-        bwprintf( COM2, "first task: BILL1\n");
-        asm ("swi");
-        bwprintf( COM2, "first task: HE\n");
-        asm ("swi");
-        bwprintf( COM2, "first task: BILL2\n");
-        asm ("swi");
-        bwprintf( COM2, "first task: HE\n");
-        asm ("swi");
-        bwprintf( COM2, "first task: BILL3\n");
-        asm ("swi");
-        bwprintf( COM2, "first task: HE\n");
-        asm ("swi");
-        bwprintf( COM2, "first task: BILL4\n");
-        asm ("swi");
-        bwprintf( COM2, "first task: HE\n");
-        asm ("swi");
+        int tid = MyTid();
+        bwprintf( COM2, "My TID is: %d\n", tid);
+    }
+}
+
+void spawnedTask () {
+    while (1) {
+        bwprintf( COM2, "spawned task: ROY\n");
     }
 }
 
@@ -62,6 +53,14 @@ void initialize_td_pq(td_queue td_pq[16]) {
     }
 }
 
+int MyTid() {
+    asm ("swi 3");
+}
+
+int Create( int priority, int * pc) {
+
+}
+
 int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
 	int i;
 	for ( i = 0; i < 0x20; i++ ) {
@@ -88,13 +87,20 @@ int initialize ( td tds[64], unsigned int* free_list_lo, unsigned int* free_list
 
     // initialize the FirstUserTask
     //int tid = get_free_td(free_list_lo, free_list_hi);
-    tds[0].tid = 0;
+    tds[0].tid = 3;
     tds[0].pc = CODE_OFFSET + (&FirstUserTask);
     tds[0].sp = 0x1000000;
     tds[0].spsr = 0xdf;
     return 0;
 }
 
+void handle (td *active, int req ) {
+    switch ( req ) {
+        case 3:
+            active->ret = active->tid;
+            break;
+    }
+}
 
 int main( int argc, char* argv[] ) {
     td *active;
@@ -103,14 +109,12 @@ int main( int argc, char* argv[] ) {
     
     unsigned int free_list_lo, free_list_hi;
     int tid = initialize( tds, &free_list_lo, &free_list_hi );
-    int i, ret;
-    for ( i = 0; i<50; i++ ) {
+    int i, ret, req = 0;
+    for ( i = 0; i<10; i++ ) {
         active = (tds);
-       // bwprintf( COM2, "testContext: begin\n\r" );
-        ker_exit ( active, 1 );
-       // bwprintf( COM2, "testContext: begin\n\r" );
-    
-    //  ret = handle( REQUEST_CREATE );
+        req = ker_exit ( active );  
+        req = req & 0xf;
+        handle( active, req );
     }
     return 0;
 }
