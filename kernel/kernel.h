@@ -27,6 +27,7 @@ typedef struct td_t {
     unsigned int sp;
     unsigned int spsr;
     unsigned int ret;
+    unsigned int priority;
     unsigned int state;
     struct td_t * next;
 } td;
@@ -40,7 +41,7 @@ void first();
 
 void SVC_HANDLER();
 
-int initialize ( );
+void initialize ( );
 
 void testContextNOP();
 
