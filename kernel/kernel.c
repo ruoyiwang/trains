@@ -99,11 +99,11 @@ int initialize_td(
 }
 
 int MyTid() {
-    asm ("swi 3");
+    asm ("swi 5");
 }
 
 int Create( int priority, int * pc) {
-
+    asm ("swi 2");
 }
 
 int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
@@ -147,7 +147,7 @@ void initialize (td tds[64]) {
 
 void handle (td *active, int req ) {
     switch ( req ) {
-        case 3:
+        case 5:
             active->ret = active->tid;
             break;
     }

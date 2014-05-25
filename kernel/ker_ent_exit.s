@@ -4,37 +4,43 @@
 .global	ker_entry
 .type	ker_entry, %function
 ker_entry:
-	mov r3, lr
-	msr cpsr_c, #0xdf
-	stmdb   sp!, {r4-r10}
-	mov r1, sp
-	msr cpsr_c, #0xd3
+	mov r3, lr 						/* save the lr to r3 */
+	msr cpsr_c, #0xdf 				/* change to system mode */
+	stmdb   sp!, {r4-r10} 			/* store the task registers */
+	mov r1, sp 						/* save the sp to r1 */
+	msr cpsr_c, #0xd3 				/* change back to superviser mode */
 
-    ldmia   sp!, {r0, r4-r12, lr}
-	str r3, [r0, #0x4]
-	mrs r2, spsr
-	str r2, [r0, #0xc]
-	str r1, [r0, #0x8]
-	ldr r0, [r3, #-4]
-	mov pc, lr
+    ldmia   sp!, {r0, r4-r12, lr} 	/* pop the kernal stack */
+	str r3, [r0, #0x4] 				/* write to the lr of the TD */
+	mrs r2, spsr 					/* save the spsr to r2 */
+	str r2, [r0, #0xc]				/* store spsr to TD */
+	str r1, [r0, #0x8]				/* store the sp to the TD */ 
+	ldr r0, [r3, #-4]				/* get the swi arguemnt and return it */
+	mov pc, lr 						/* this go back to kernel */
 .size	ker_entry, .-ker_entry
 
 .global	ker_exit
 .type	ker_exit, %function
 ker_exit:
-	mov     ip, sp
-    stmdb   sp!, {r0, r4-r12, lr}
-
-    msr cpsr_c, #0xdf
-    mov   r1, r0
-    ldr sp, [r1, #8]
-    ldmia   sp!, {r4-r10}
-    ldr r0, [r1, #0x10]
-    msr cpsr_c, #0xd3
+	mov     ip, sp 					 
+    stmdb   sp!, {r0, r4-r12, lr}	/* move registers to the kernal stack */
+ 
+    msr cpsr_c, #0xdf				/* change to system mode */
+    mov   r1, r0 					/* move r0 which is the active task to r1 */
+    ldr sp, [r1, #8]				/* load the td sp */
+    ldmia   sp!, {r4-r10}			/* reload r4 - r10 of the task */
+    ldr r0, [r1, #0x10] 			/* load the return value into r0 */
+    msr cpsr_c, #0xd3 				/* change back to superviser mode */
     
-    ldr r2, [r1, #0xc]
-    msr cpsr_c, r2
-    ldr pc, [r1, #4]
+    ldr r2, [r1, #0xc]				/* load the task spsr bak into cpsr */
+    msr cpsr, r2 					/* TODO: need to investigate this line */
+    ldr pc, [r1, #4] 				/* load the pc of the td */
 .size	ker_exit, .-ker_exit
+
+.global	swi_stub
+.type	swi_stub, %function
+swi_stub:
+
+.size	swi_stub, .-swi_stub
 
 .ident	"GCC: (GNU) 4.0.2"
