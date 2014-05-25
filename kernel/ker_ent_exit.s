@@ -15,6 +15,7 @@ ker_entry:
 	mrs r2, spsr
 	str r2, [r0, #0xc]
 	str r1, [r0, #0x8]
+	ldr r0, [r3, #-4]
 	mov pc, lr
 .size	ker_entry, .-ker_entry
 
