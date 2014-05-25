@@ -29,6 +29,11 @@ typedef struct td_t {
     struct td_t * next;
 } td;
 
+typedef struct td_queue_t {
+	struct td_t * front;
+	struct td_t * end;
+} td_queue;
+
 void first();
 
 void SVC_HANDLER();
