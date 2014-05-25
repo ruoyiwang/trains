@@ -31,7 +31,7 @@ int schedule ( td_queue td_pq[16] ) {
     for (i = 0; i < 16; i++) {
         // if the front of the queue is not null
         if (td_pq[i].front != NULL) {
-            return pq_pop_front(td_pq, i);
+            td_pq[i].front->state = STATE_ACTIVE;
             return pq_pop_front(td_pq, i);
         }
     }
@@ -68,6 +68,7 @@ int pq_pop_front(td_queue td_pq[16], int pri) {
 
 void pq_push_back(td_queue td_pq[16], td tds[64], int tid) {
     int pri = tds[tid].priority;
+    tds[tid].state = STATE_READY;
     if (td_pq[pri].front == NULL) {
         td_pq[pri].front = tds + tid;
         td_pq[pri].back = tds + tid;
@@ -87,14 +88,8 @@ int initialize_td(
     td_queue td_pq[16]
 ) {
     int tid = get_free_td(free_list_lo, free_list_hi);
-    tds[tid].tid = tid;
     tds[tid].pc = pc;
-    tds[tid].sp = 0x1000000 + tid * 4 * 128;
-    tds[tid].spsr = 0xdf;
-    tds[tid].ret = 0;
     tds[tid].priority = pri;
-    tds[tid].state = 0;
-    tds[tid].next = 0;
 
     // stick this at the end of the pq
     pq_push_back(td_pq, tds, tid);
@@ -127,7 +122,8 @@ int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
 	}
 }
 
-void initialize () {
+void initialize (td tds[64]) {
+    int i = 0;
     // place the svc_handler to jump table
     void (*syscall)();
     syscall = (void *) (CODE_OFFSET+(&ker_entry));
@@ -135,12 +131,17 @@ void initialize () {
     handler = (void*)0x28;
     *handler = (int) syscall;
 
-    // initialize the FirstUserTask
-    //int tid = get_free_td(free_list_lo, free_list_hi);
-    // tds[0].tid = 3;
-    // tds[0].pc = CODE_OFFSET + (&FirstUserTask);
-    // tds[0].sp = 0x1000000;
-    // tds[0].spsr = 0xdf;
+    // initialize all the tds;
+    for (i = 0 ; i < 64; i++) {
+        tds[i].tid          = i;
+        tds[i].sp           = USER_STACK_BEGIN + i * 4 * USER_STACK_SIZE;
+        tds[i].spsr         = 0xdf;
+        tds[i].ret          = 0;
+        tds[i].priority     = 15;
+        tds[i].parent_tid   = -1;
+        tds[i].next         = NULL;
+    }
+
     return;
 }
 
@@ -158,11 +159,11 @@ int main( int argc, char* argv[] ) {
     td_queue td_pq[16];
     
     unsigned int free_list_lo = 0, free_list_hi = 0;
-    initialize();
+    initialize(tds);
     initialize_td_pq(td_pq);
     int tid = initialize_td(0, &free_list_lo, &free_list_hi, CODE_OFFSET + (&FirstUserTask), tds, td_pq);
 
-    int i, ret, req = 0;
+    int i, req = 0;
     for ( i = 0; i<10; i++ ) {
         // bwprintf ( COM2, "%d\n", schedule(td_pq) );
         tid = schedule(td_pq);

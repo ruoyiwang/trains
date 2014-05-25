@@ -15,11 +15,18 @@
 // #define TDS_FREELIST_HI        0x1FDCAB4   // 0X1FDCABC - 4 * 2, tids 32 - 63
 // #define KERNEL_SP_START 0x1FDC9B4   // 0x1FDCAB4−10×4
 
-#define CODE_OFFSET     0x218000
+#define CODE_OFFSET         0x218000
 
-#define REQUEST_CREATE 	0
+#define REQUEST_CREATE 	    0
 
-#define NULL            0
+#define NULL                0
+
+#define STATE_READY         0
+#define STATE_ACTIVE        1
+#define STATE_ZOMBIE        2
+
+#define USER_STACK_SIZE     0x100
+#define USER_STACK_BEGIN    0x1000000
 
 typedef struct td_t {
     unsigned int tid;
@@ -28,6 +35,7 @@ typedef struct td_t {
     unsigned int spsr;
     unsigned int ret;
     unsigned int priority;
+    unsigned int parent_tid;
     unsigned int state;
     struct td_t * next;
 } td;
@@ -41,7 +49,7 @@ void first();
 
 void SVC_HANDLER();
 
-void initialize ( );
+void initialize ( td tds[64] );
 
 void testContextNOP();
 
