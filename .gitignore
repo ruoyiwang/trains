@@ -4,6 +4,10 @@
 *.obj
 *.elf
 
+# kernal BS files
+kernel.s
+kernel.map
+
 # Libraries
 *.lib
 
