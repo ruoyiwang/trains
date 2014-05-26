@@ -4,6 +4,15 @@ Zhenqian He     20383235
 
 1. A description of how to operate your program in a readme file, including the full pathname of your executable file which we will download for testing.
 
+Download the zip file 
+	goto https://drive.google.com/file/d/0B6crUQZllvyhMWhNZi1ndTJqMHc/
+	click File->Download
+	this will download the r59wang_z23he_k1.zip file
+
+Unzip the zipfile will result in a k1_submission folder
+
+navigate to k1_submission/kernel, the makefile resides there
+
 compile the program in kernel folder
 	make clean && make
 copy the compiled elf file onto tftp
@@ -15,8 +24,7 @@ load the program onto the board
 type go
 	go
 
-the kernel will need to user interaction and will create tasks, print, and exit itself accordingly
-
+the kernel will need to user interaction and will create tasks, print, and exit themselves accordingly
 
 2. kernel description, its structure, data structure and explainations and stuff
 
