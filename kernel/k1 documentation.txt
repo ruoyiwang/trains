@@ -5,28 +5,52 @@ Zhenqian He     20383235
 1. A description of how to operate your program in a readme file, including the full pathname of your executable file which we will download for testing.
 
 Download the zip file 
-	goto https://drive.google.com/file/d/0B6crUQZllvyhMWhNZi1ndTJqMHc/
-	click File->Download
-	this will download the r59wang_z23he_k1.zip file
+    goto https://drive.google.com/file/d/0B6crUQZllvyhMWhNZi1ndTJqMHc/
+    click File->Download
+    this will download the r59wang_z23he_k1.zip file
 
 Unzip the zipfile will result in a k1_submission folder
 
 navigate to k1_submission/kernel, the makefile resides there
 
 compile the program in kernel folder
-	make clean && make
+    make clean && make
 copy the compiled elf file onto tftp
-	cp kernel.elf /u/cs452/tftp/ARM/ur_user_name/
+    cp kernel.elf /u/cs452/tftp/ARM/ur_user_name/
 change the permission of the copied file
-	chmod 744 /u/cs452/tftp/ARM/ur_user_name/kernel.elf
+    chmod 744 /u/cs452/tftp/ARM/ur_user_name/kernel.elf
 load the program onto the board
-	load -b 0x00218000 -h 10.15.167.4 "ARM/ur_user_name/kernel.elf
+    load -b 0x00218000 -h 10.15.167.4 "ARM/ur_user_name/kernel.elf
 type go
-	go
+    go
 
-the kernel will need to user interaction and will create tasks, print, and exit themselves accordingly
+the kernel will need no user interaction and will create tasks, print, and exit themselves accordingly
 
 2. kernel description, its structure, data structure and explainations and stuff
+
+Scheduler
+    The scheduler adapts a priority queue for the tasks, and schedules the highest priority task when called. The details are as follows
+    Free List
+        We are using 2 usigned integers "free_list_lo", and "free_list_hi" to keep track which TDs are avaialable.
+        Each unsigned int is 32 bits, 2 unsigned integers will track the 64 TDs.
+        each bit of "free_list_lo", and "free_list_hi" will represent the availability of the TD, where 0 is free, and 1 is used.
+        note "free_list_lo" will represent the TDs 31-0 and "free_list_hi" will represent the TDs 63-32.
+        We chose to use two unsigned integers to keep track of which TD is free, this implementation will minimize the amount of memory usage. While the run time of the algorithm of finding the first free TD is n, we only have a total of 64 TDs, which means the worst case is actually 64.
+    Priority Queue
+        The priority queue is constructed with as an array of queues. The array has a size of 16 to represent each of the 16 priorities, where 0 is highest priority and 15 is the lowest.
+        Each element in the queue is represented by 2 pointers, the "front" pointer points to the td at the front of the queue, where the "back" pointer points to the last td the end of the queue. Below is the declaration of the element
+        typedef struct td_queue_t {
+            struct td_t * front;
+            struct td_t * back;
+        } td_queue;
+        This structure is used as it only takes a total of 16 * 2 variables in total. each queue also takes a constant time of to pop and push.
+    Scheduling
+        schedule (getting the task that should run)
+            The scheduling algorithm will loop through all of the 16 priorities, starting from 0. Look for the highest prority and pop it from the queue.
+            The loop process, once again has a linear run time, but since there is only 16 priorities, the loop will always execute less than or equal to 16 times.
+        push task back (putting a task on to the priority queue)
+            After the request has been cleared, if the process is still alive, it's td will be again pushed on to the priority queue
+            Since we know the priority at this point, the insert time will be constant.
 
 3. source code and MD5s
 
