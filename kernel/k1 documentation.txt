@@ -1,0 +1,11 @@
+Assignment 1 Documment
+Ruoyi Wang      20373611
+Zhenqian He     20383235
+
+1. A description of how to operate your program in a readme file, including the full pathname of your executable file which we will download for testing.
+
+2. kernel description, its structure, data structure and explainations and stuff
+
+3. source code and MD5
+
+4. output explaination
