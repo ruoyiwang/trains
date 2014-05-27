@@ -17,9 +17,9 @@ ASFLAGS	= -mcpu=arm920t -mapcs-32
 
 LDFLAGS = -init main -N -Map kernel.map -T orex.ld -Llib -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L../lib
 
-all:  lib/libbwio.a kernel.s kernel.elf
+all:  lib/libbwio.a kernel.s kernel.elf 
 
-kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h lib/bwio.h
+kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h kernel/queue.h lib/bwio.h
 	$(XCC) -S $(CFLAGS) kernel/kernel.c
 
 kernel.o: kernel.s kernel/ker_ent_exit.asm
@@ -31,14 +31,20 @@ nameserver.s: kernel/nameserver.c kernel/nameserver.h
 nameserver.o: nameserver.s
 	$(AS) $(ASFLAGS) -o nameserver.o nameserver.s
 
+queue.s: kernel/queue.c kernel/queue.h
+	$(XCC) -S $(CFLAGS) kernel/queue.c
+
+queue.o: queue.s
+	$(AS) $(ASFLAGS) -o queue.o queue.s
+
 bwio.s: lib/bwio.c lib/bwio.h
 	$(XCC) -S $(CFLAGS) lib/bwio.c
 
 lib/libbwio.a: bwio.s
 	$(AS) $(ASFLAGS) -o $@ bwio.s
 
-kernel.elf: kernel.o nameserver.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o -lbwio -lgcc
+kernel.elf: kernel.o nameserver.o queue.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o queue.o -lbwio -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map
