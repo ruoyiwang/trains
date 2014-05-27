@@ -22,9 +22,8 @@ all:  kernel.s kernel.elf
 kernel.s: kernel.c kernel.h nameserver.h
 	$(XCC) -S $(CFLAGS) kernel.c
 
-kernel.o: kernel.s ker_ent_exit.s
-	$(AS) $(ASFLAGS) -o kernel.o kernel.s ker_ent_exit.s
-
+kernel.o: kernel.s ker_ent_exit.asm
+	$(AS) $(ASFLAGS) -o kernel.o kernel.s ker_ent_exit.asm
 
 nameserver.s: nameserver.c nameserver.h
 	$(XCC) -S $(CFLAGS) nameserver.c
@@ -37,5 +36,4 @@ kernel.elf: kernel.o nameserver.o
 	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o -lbwio -lgcc
 
 clean:
-	-rm -f kernel.s *.a *.o kernel.map
-	
+	-rm -f *.s *.a *.o kernel.map
