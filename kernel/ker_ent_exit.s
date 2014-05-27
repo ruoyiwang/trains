@@ -4,12 +4,11 @@
 .global	ker_entry
 .type	ker_entry, %function
 ker_entry:
-	mov r5, r1
-	ldmia sp!, {r1}
-	str r0, [r1]
-	str r5, [r1, #0x4]
-	str r2, [r1, #0x8]
-	str r3, [r1, #0xc]
+	ldmia sp!, {r5}
+	str r0, [r5]
+	str r1, [r5, #0x4]
+	str r2, [r5, #0x8]
+	str r3, [r5, #0xc]
 
 	mov r3, lr 						/* save the lr to r3 */
 	msr cpsr_c, #0xdf 				/* change to system mode */
