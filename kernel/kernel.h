@@ -76,3 +76,5 @@ void spawnedTask ();
 int pq_pop_front(td_queue td_pq[16], int pri);
 
 void pq_push_back(td_queue td_pq[16], td tds[64], int tid);
+
+#include <nameserver.h>

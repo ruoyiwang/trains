@@ -19,14 +19,23 @@ LDFLAGS = -init main -N -Map kernel.map -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib
 
 all:  kernel.s kernel.elf
 
-kernel.s: kernel.c kernel.h
+kernel.s: kernel.c kernel.h nameserver.h
 	$(XCC) -S $(CFLAGS) kernel.c
 
 kernel.o: kernel.s ker_ent_exit.s
 	$(AS) $(ASFLAGS) -o kernel.o kernel.s ker_ent_exit.s
 
-kernel.elf: kernel.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o -lbwio -lgcc
+
+nameserver.s: nameserver.c nameserver.h
+	$(XCC) -S $(CFLAGS) nameserver.c
+
+nameserver.o: nameserver.s
+	$(AS) $(ASFLAGS) -o nameserver.o nameserver.s
+
+
+kernel.elf: kernel.o nameserver.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o -lbwio -lgcc
 
 clean:
 	-rm -f kernel.s *.a *.o kernel.map
+	
