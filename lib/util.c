@@ -14,13 +14,28 @@ int strlen ( const char * str ) {
 	return length;
 }
 
-// for testing purposes
+int strcmp ( const char * str1, const char * str2 ) {
+	int i = 0;
+	for ( i = 0; str1[i]; i++ ) {
+		if (str1[i] > str2[i]) {
+			return i;
+		}
+		else if (str1[i] < str2[i]) {
+			return 0 - i;
+		}
+	}
+	return 0;
+}
+
+
+// // for testing purposes
 // int main() {
 // 	char strA[10] = "str A";
-// 	char strB[10];
-// 	strcpy(strB, strA);
+// 	char strB[10] = "str B";
+
+// 	// strcpy(strB, strA);
 // 	printf("%s\n", strA);
 // 	printf("%s\n", strB);
-// 	int a = strlen(strB);
+// 	int a = strcmp(strA, strB);
 // 	printf("%d\n", a);
 // }
