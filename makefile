@@ -4,7 +4,7 @@
 XCC     = gcc
 AS	= as
 AR	= ar
-CFLAGS  = -c -fPIC -Wall -I. -I./include -I./lib -I./kernel -mcpu=arm920t -msoft-float
+CFLAGS  = -c -fPIC -Wall -I. -I./include -I./lib -I./kernel -I./tasks -mcpu=arm920t -msoft-float
 # -g: include hooks for gdb
 # -c: only compile
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -19,7 +19,7 @@ LDFLAGS = -init main -N -Map kernel.map -T orex.ld -Llib -L/u/wbcowan/gnuarm-4.0
 
 all:  lib/libbwio.a kernel.s kernel.elf 
 
-kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h kernel/queue.h lib/bwio.h
+kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h kernel/queue.h tasks/Tasks.h lib/bwio.h
 	$(XCC) -S $(CFLAGS) kernel/kernel.c
 
 kernel.o: kernel.s kernel/ker_ent_exit.asm
@@ -37,14 +37,20 @@ queue.s: kernel/queue.c kernel/queue.h
 queue.o: queue.s
 	$(AS) $(ASFLAGS) -o queue.o queue.s
 
+Tasks.s: tasks/Tasks.c tasks/Tasks.h
+	$(XCC) -S $(CFLAGS) tasks/Tasks.c
+
+Tasks.o: Tasks.s lib/bwio.h
+	$(AS) $(ASFLAGS) -o $@ Tasks.s
+
 bwio.s: lib/bwio.c lib/bwio.h
 	$(XCC) -S $(CFLAGS) lib/bwio.c
 
 lib/libbwio.a: bwio.s
 	$(AS) $(ASFLAGS) -o $@ bwio.s
 
-kernel.elf: kernel.o nameserver.o queue.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o queue.o -lbwio -lgcc
+kernel.elf: kernel.o nameserver.o queue.o Tasks.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o queue.o Tasks.o -lbwio -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map

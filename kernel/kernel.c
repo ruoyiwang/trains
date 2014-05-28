@@ -7,34 +7,7 @@
 #include <kernel.h>
 #include <nameserver.h>
 #include <queue.h>
-
-void spawnedTask () {
-    int tid = MyTid();
-    int ptid = MyParentTid();
-    bwprintf(COM2, "Spawned task tid: %d\n", tid);
-    bwprintf(COM2, "Spawned parent task tid: %d\n", ptid);
-    Pass();
-    bwprintf(COM2, "Spawned task tid: %d\n", tid);
-    bwprintf(COM2, "Spawned parent task tid: %d\n", ptid);
-    Exit();
-}
-
-void FirstUserTask (){
-    int tid = Create(3, CODE_OFFSET + (&spawnedTask));
-    bwprintf(COM2, "Created: %d\n", tid);
-
-    tid = Create(3, CODE_OFFSET + (&spawnedTask));
-    bwprintf(COM2, "Created: %d\n", tid);
-
-    tid = Create(1, CODE_OFFSET + (&spawnedTask));
-    bwprintf(COM2, "Created: %d\n", tid);
-
-    tid = Create(1, CODE_OFFSET + (&spawnedTask));
-    bwprintf(COM2, "Created: %d\n", tid);
-
-    bwprintf(COM2, "First: Exiting\n" );
-    Exit();
-}
+#include <Tasks.h>
 
 int schedule ( td_queue td_pq[16] ) {
 	int i = 0;
@@ -106,6 +79,7 @@ int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
 			return 32+i;
 		}
 	}
+    return -1;
 }
 
 void initialize (td tds[64]) {

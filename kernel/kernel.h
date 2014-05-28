@@ -48,10 +48,14 @@ int Create( int priority, void (* pc) ());
 
 int MyTid();
 
+int MyParentTid();
+
 int Pass();
 
 int Exit();
 
 void spawnedTask ();
+
+int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi);
 
 #endif
