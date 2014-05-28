@@ -17,7 +17,7 @@ ASFLAGS	= -mcpu=arm920t -mapcs-32
 
 LDFLAGS = -init main -N -Map kernel.map -T orex.ld -Llib -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L../lib
 
-all:  lib/libbwio.a kernel.s kernel.elf 
+all:  lib/libbwio.a lib/libutil.a kernel.s kernel.elf
 
 kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h kernel/queue.h tasks/Tasks.h lib/bwio.h
 	$(XCC) -S $(CFLAGS) kernel/kernel.c
@@ -49,8 +49,14 @@ bwio.s: lib/bwio.c lib/bwio.h
 lib/libbwio.a: bwio.s
 	$(AS) $(ASFLAGS) -o $@ bwio.s
 
+util.s: lib/util.c lib/util.h
+	$(XCC) -S $(CFLAGS) lib/util.c
+
+lib/libutil.a: util.s
+	$(AS) $(ASFLAGS) -o $@ util.s
+
 kernel.elf: kernel.o nameserver.o queue.o Tasks.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o queue.o Tasks.o -lbwio -lgcc
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o queue.o Tasks.o -lbwio -lutil -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map
