@@ -11,9 +11,7 @@ kernel.map
 
 # Libraries
 *.lib
-
-# generated libaries
-lib/libbwio.a
+*.a
 
 # Shared objects (inc. Windows DLLs)
 *.dll
