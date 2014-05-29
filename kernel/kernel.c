@@ -45,12 +45,31 @@ int Exit() {
     asm ("swi 8");
 }
 
-int Send ( int tid, char *msg, int msglen, char * reply, int replylen ) {
+int _send ( int tid, mailbox *mail ) {
     asm ("swi 11");
 }
 
-int Receive ( int *tid, char *msg, int msglen ) {
+int Send ( int tid, char *msg, int msglen, char * reply, int replylen ) {
+    mailbox mail;
+    mail.msg = msg;
+    mail.msg_len = msglen;
+    mail.rpl = reply;
+    mail.rpl_len = replylen;
+    mail.next = NULL;
+    return _send (tid, &mail);
+}
+
+int _receive ( mailbox *mail ) {
     asm ("swi 12");
+}
+
+int Receive ( int *tid, char *msg, int msglen ) {
+    mailbox mail;
+    mail.sender_tid = tid;
+    mail.msg = msg;
+    mail.msg_len = msglen;
+    mail.next = NULL;
+    return _receive ( &mail );
 }
 
 int Reply ( int tid, char *msg, int msglen ) {
@@ -75,12 +94,12 @@ int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
 }
 
 int initialize_td(
-    int pri, 
-    unsigned int* free_list_lo, 
-    unsigned int * free_list_hi, 
+    int pri,
+    unsigned int* free_list_lo,
+    unsigned int * free_list_hi,
     unsigned int pc,
     td tds[64],
-    td_queue td_pq[16], 
+    td_queue td_pq[16],
     int parent_tid
 ) {
     int tid = get_free_td(free_list_lo, free_list_hi);
@@ -114,18 +133,21 @@ void initialize (td tds[64]) {
         tds[i].parent_tid   = -1;
         tds[i].state        = STATE_READY;
         tds[i].next         = NULL;
-        tds[i].msg.has_msg  = 0;
-        tds[i].msg.sender_tid  = -1;
+        tds[i].sendQ        = NULL;
     }
 
     return;
 }
 
 void handle (td *active, int req, int args[5],
-            unsigned int* free_list_lo, 
-            unsigned int * free_list_hi, 
+            unsigned int* free_list_lo,
+            unsigned int * free_list_hi,
             td tds[64],
             td_queue td_pq[16] )   {
+    int i;
+    for (i = 0; i<5 ; i++) {
+        active->args[i] = args[i];
+    }
 
     switch ( req ) {
         case 5:
@@ -144,46 +166,53 @@ void handle (td *active, int req, int args[5],
             break;
         case 11:    //Send
             if ( tds[args[0]].state == STATE_SND_BLK ) {    //if receive first
-                *tds[args[0]].msg.sender_tid = active->tid;
-                strcpy(tds[args[0]].msg.msg->value, ((message *)args[1])->value);
-                tds[args[0]].msg.msg->type = ((message *)args[1])->type;
-                tds[args[0]].msg.msg_len = args[2];
-                tds[args[0]].msg.rpl = args[3];
-                tds[args[0]].msg.rpl_len = args[4];
-                tds[args[0]].msg.has_msg = 0;
+                *(tds[args[0]].sendQ->sender_tid) = active->tid;
+                // bwprintf(COM2, "CRYING1\n");
+                strcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value);
+                tds[args[0]].sendQ->msg->type = ((mailbox *)args[1])->msg->type;
+                tds[args[0]].sendQ->msg_len = ((mailbox *)args[1])->msg_len;
+                tds[args[0]].sendQ->rpl = ((mailbox *)args[1])->rpl;
+                tds[args[0]].sendQ->rpl_len = ((mailbox *)args[1])->rpl_len;
+                tds[args[0]].sendQ = NULL;
                 pq_push_back(td_pq, tds, args[0]);
                 active->state = STATE_RPL_BLK;
             }
-            else {          //if no receive yet
-                tds[args[0]].msg.sender_tid = &(active->tid);
-                tds[args[0]].msg.msg = args[1];
-                tds[args[0]].msg.msg_len = args[2];
-                tds[args[0]].msg.rpl = args[3];
-                tds[args[0]].msg.rpl_len = args[4];
-                tds[args[0]].msg.has_msg = 1;
+            else {
+                // bwprintf(COM2, "CRYING2\n");
+                ((mailbox *)args[1])->sender_tid = &(active->tid);
+                if (tds[args[0]].sendQ) {
+                    mailbox *lastNode = tds[args[0]].sendQ;
+                    while (lastNode->next ) {
+                        lastNode = lastNode->next;
+                    }
+                    lastNode->next = (mailbox *)args[1];
+                }
+                else {
+                    tds[args[0]].sendQ = (mailbox *)args[1];
+                }
                 active->state = STATE_RCV_BLK;
             }
             break;
         case 12:    //Receive
-            if ( active->msg.has_msg ) {//tds[*active->msg.sender_tid].state == STATE_RCV_BLK ) {    //if send first
-                *((int *)args[0]) = *active->msg.sender_tid;
-                strcpy(((message *)args[1])->value, active->msg.msg->value);
-                ((message *)args[1])->type = tds[args[0]].msg.msg->type;
-                active->msg.has_msg = 0;
-                tds[*active->msg.sender_tid].state = STATE_RPL_BLK;
+            if ( active->sendQ ) {    //if send first
+                // bwprintf(COM2, "CRYING3\n");
+                *((mailbox*)args[0])->sender_tid = *(active->sendQ->sender_tid);
+                strcpy(((mailbox*)args[0])->msg->value, active->sendQ->msg->value);
+                ((mailbox*)args[0])->msg->type = active->sendQ->msg->type;
+                tds[*(active->sendQ->sender_tid)].state = STATE_RPL_BLK;
+                active->sendQ = active->sendQ->next;
             }
             else {      //waiting on send
-                active->msg.sender_tid = (int *) args[0];
-                active->msg.msg = args[1];
-                active->msg.msg_len = args[2];
-                active->msg.has_msg = 0;
+                // bwprintf(COM2, "CRYING4\n");
+                active->sendQ = (mailbox *)args[0];
                 active->state = STATE_SND_BLK;
             }
             break;
         case 13:    //Reply
             if ( tds[args[0]].state == STATE_RPL_BLK ) {
-                strcpy(active->msg.rpl->value, ((message *)args[1])->value);
-                active->msg.rpl->type = ((message *)args[1])->type;
+                // bwprintf(COM2, "CRYING5\n");
+                strcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value);
+                ((mailbox *)(tds[args[0]].args[1]))->rpl->type = ((message *)args[1])->type;
                 pq_push_back(td_pq, tds, args[0]);
             }
             break;
@@ -212,7 +241,7 @@ int main( int argc, char* argv[] ) {
         req = req & 0xf;
         handle( active, req, args, &free_list_lo, &free_list_hi, tds, td_pq );
         if (active->state == STATE_READY || active->state == STATE_ACTIVE ){
-            pq_push_back(td_pq, tds, active->tid);   
+            pq_push_back(td_pq, tds, active->tid);
         }
     }
     return 0;

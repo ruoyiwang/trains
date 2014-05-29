@@ -19,8 +19,8 @@ void initialize_look_up_array(name_server_element lookupArray[]) {
     @desc:      inserts tid, name into the lookup array
 */
 int NameServerInsert(
-    int tid, 
-    char name[], 
+    int tid,
+    char name[],
     name_server_element lookupArray[]
 ) {
     // TODO: implement overwrite
@@ -36,7 +36,7 @@ int NameServerInsert(
         if (lookupArray[i].tid == -1) {
             strcpy(lookupArray[i].task_name, name);
             lookupArray[i].tid = tid;
-            return 0;            
+            return 0;
         }
     }
     // if it gets here it means the array is full, return neg 1
@@ -53,7 +53,7 @@ int NameServerInsert(
     @desc:      find the task id with the name in the lookup array
 */
 int NameServerLookUp(
-    char name[], 
+    char name[],
     name_server_element lookupArray[]
 ) {
     int i = 0;
@@ -114,7 +114,7 @@ int RegisterAs(char* name) {
     message msg_struct, reply_struct;
     char reply[64] = {0};
     char msg[64] = {0};
-    
+
     // the msg is the name;
     strcpy(msg, name);
 
@@ -123,8 +123,9 @@ int RegisterAs(char* name) {
     msg_struct.type = REGISTER;
 
     reply_struct.value = reply;
+    int tid = NAMESERVER_TID;
 
-    Send (NAMESERVER_TID, (char *)&msg_struct, 64, (char *)&reply_struct, 64);
+    Send (tid, (char *)&msg_struct, 64, (char *)&reply_struct, 64);
 
     // TODO: check the reply struct for errs
     if (strcmp(reply_struct.value, "fail") == 0) {
@@ -146,8 +147,9 @@ int WhoIs(char* name) {
     msg_struct.type = WHOIS;
 
     reply_struct.value = reply;
+    int tid = NAMESERVER_TID;
 
-    Send (NAMESERVER_TID, (char *)&msg_struct, 64, (char *)&reply_struct, 64);
+    Send (tid, (char *)&msg_struct, 64, (char *)&reply_struct, 64);
 
     // TODO: check the reply struct for errs
     if (strcmp(reply_struct.value, "fail") == 0) {
