@@ -11,7 +11,7 @@
 #define STATE_ACTIVE        1
 #define STATE_ZOMBIE        2
 
-#define USER_STACK_SIZE     0x100
+#define USER_STACK_SIZE     0x1000      // 0x1000 = 4096
 #define USER_STACK_BEGIN    0x1000000
 
 typedef struct td_t {
