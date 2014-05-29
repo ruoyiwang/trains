@@ -14,7 +14,7 @@
 #define STATE_SND_BLK       4
 #define STATE_RPL_BLK       5
 
-#define USER_STACK_SIZE     0x1000
+#define USER_STACK_SIZE     0x1000      // 0x1000 = 4096
 #define USER_STACK_BEGIN    0x1000000
 
 typedef struct message_t
