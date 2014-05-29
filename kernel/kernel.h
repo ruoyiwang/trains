@@ -24,12 +24,12 @@ typedef struct message_t
 } message;
 
 typedef struct mailbox_t {
-	unsigned int *sender_tid;
+	int *sender_tid;
 	message *msg;
 	int msg_len;
 	message *rpl;
 	int rpl_len;
-	int has_msg;
+    struct mailbox_t * next;
 } mailbox;
 
 typedef struct td_t {
@@ -41,7 +41,8 @@ typedef struct td_t {
     unsigned int priority;
     unsigned int parent_tid;
     unsigned int state;
-    mailbox msg;
+    unsigned int args[5];
+    mailbox *sendQ;
     struct td_t * next;
 } td;
 
