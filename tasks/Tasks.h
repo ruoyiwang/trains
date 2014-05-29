@@ -6,4 +6,6 @@
 void spawnedTask ();
 void FirstUserTask ();
 
+void nameServerTest1 ();
+void nameServerTest2 ();
 #endif

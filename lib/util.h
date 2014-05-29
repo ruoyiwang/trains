@@ -7,6 +7,6 @@ int strlen ( const char * str );
 
 int strcmp ( const char * str1, const char * str2 );
 
-void * memcpy ( void * destination, const void * source, int num );
+void * memcpy ( void * destination, const void * source, unsigned int num );
 
 #endif

@@ -16,19 +16,16 @@ int strlen ( const char * str ) {
 
 int strcmp ( const char * str1, const char * str2 ) {
     int i = 0;
-    for ( i = 0; str1[i]; i++ ) {
-        if (str1[i] > str2[i]) {
-            return i;
-        }
-        else if (str1[i] < str2[i]) {
-            return 0 - i;
+    for ( i = 0; str1[i] || str2[i]; i++ ) {
+        if (str1[i] != str2[i]) {
+            return -1;
         }
     }
     return 0;
 }
 
-// this doesn't work
-void * memcpy ( void * destination, const void * source, int num ) {
+// this works, maybe? Bill says we need to write unit tests
+void * memcpy ( void * destination, const void * source, unsigned int num ) {
     int i = 0;
     char * dest = (char*) destination;
     char * src = (char*) source;
