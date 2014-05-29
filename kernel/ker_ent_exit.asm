@@ -4,11 +4,15 @@
 .global	ker_entry
 .type	ker_entry, %function
 ker_entry:
-	ldmia sp!, {r5}
+	msr cpsr_c, #0xdf 				/* change to system mode */
+	ldr     r4, [fp, #4]			/* get the 5th argument*/
+	msr cpsr_c, #0xd3 				/* change back to superviser mode */
+	ldmia sp!, {r5}					/* save all the argments */
 	str r0, [r5]
 	str r1, [r5, #0x4]
 	str r2, [r5, #0x8]
 	str r3, [r5, #0xc]
+	str r4, [r5, #0x10]
 
 	mov r3, lr 						/* save the lr to r3 */
 	msr cpsr_c, #0xdf 				/* change to system mode */

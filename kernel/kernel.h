@@ -10,9 +10,27 @@
 #define STATE_READY         0
 #define STATE_ACTIVE        1
 #define STATE_ZOMBIE        2
+#define STATE_RCV_BLK       3
+#define STATE_SND_BLK       4
+#define STATE_RPL_BLK       5
 
-#define USER_STACK_SIZE     0x100
+#define USER_STACK_SIZE     0x1000
 #define USER_STACK_BEGIN    0x1000000
+
+typedef struct message_t
+{
+	char *value;
+	int type;
+} message;
+
+typedef struct mailbox_t {
+	unsigned int *sender_tid;
+	message *msg;
+	int msg_len;
+	message *rpl;
+	int rpl_len;
+	int has_msg;
+} mailbox;
 
 typedef struct td_t {
     unsigned int tid;
@@ -23,6 +41,7 @@ typedef struct td_t {
     unsigned int priority;
     unsigned int parent_tid;
     unsigned int state;
+    mailbox msg;
     struct td_t * next;
 } td;
 
@@ -54,7 +73,11 @@ int Pass();
 
 int Exit();
 
-void spawnedTask ();
+int Send ( int tid, char *msg, int msglen, char * reply, int replylen );
+
+int Receive ( int *tid, char *msg, int msglen );
+
+int Reply ( int tid, char *msg, int msglen );
 
 int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi);
 
