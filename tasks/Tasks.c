@@ -11,6 +11,8 @@ void FirstUserTask () {
     msg_struct.type = 12;
     reply_struct.value = reply;
 
+    bwsetfifo( COM2, OFF);
+
     // create nameserver
     int ns_tid = Create(1, CODE_OFFSET + (&NameServer));
     // check if the created nameserver tid == NAMESERVER_TID
@@ -30,18 +32,10 @@ void FirstUserTask () {
     // bwprintf(COM2, "Got reply from %d with type %d: %s\n",tid,reply_struct.type, reply);
 
     Create(4, CODE_OFFSET + (&rpsServer));
-
-    Create(4, CODE_OFFSET + (&rpsClient));
-    Create(4, CODE_OFFSET + (&rpsClient));
-    Create(4, CODE_OFFSET + (&rpsClient));
-    Create(4, CODE_OFFSET + (&rpsClient));
-    Create(4, CODE_OFFSET + (&rpsClient));
-    Create(4, CODE_OFFSET + (&rpsClient));
-    Create(4, CODE_OFFSET + (&rpsClient));
-    Create(4, CODE_OFFSET + (&rpsClient));
-    Create(4, CODE_OFFSET + (&rpsClient));
-    Create(4, CODE_OFFSET + (&rpsClient));
-
+    int i;
+    for (i = 0; i< 50; i++) {
+        Create(4, CODE_OFFSET + (&rpsClient));
+    }
 
     Exit();
 }
@@ -310,6 +304,10 @@ void rpsServer() {
                         // bwprintf(COM2, "Sever | replying to player%d\n", opponent );
                         Reply (opponent, (char *)&reply_struct2, 64);
                         // bwprintf(COM2, "Server | sent play result to player %d\n", opponent);
+
+                        bwprintf (COM2, "Press any key to see result of next match. (press 'q' to exit)\n\n");
+                        char input = bwgetc(COM2);
+                        if (input == 'q') Exit();
                     }
                 }
                 else {
