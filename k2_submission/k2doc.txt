@@ -28,7 +28,8 @@ LOADING AND RUNNING THE PRE-COMPILED VERSION
 load -b 0x00218000 -h 10.15.167.4 "ARM/r59wang/k2.elf;go
 
 OPERATING THE PROGRAM
-// TODO: @Bill you wanna fill this in on how to faceroll?
+    - enter 'q' to quit program
+    - press any other key to view next match results
 
 2. kernel description, its structure, data structure and explainations and stuff
 
@@ -129,7 +130,6 @@ WhoIs
 Justification
 	This data structure, as well as the RegisterAs and WhoIs implementation was chosen because its ease of implementation. Because the code is so small, the room for error is also very small, which makes the NameServer very robust.
 
-// TODO: either put the RPS stuff here or put them with 7.
 RPS SERVER
 	The server will FOREVER loop receive. On each receive the server will determine what type of message it is and process it accordingly.
 	SIGNUP will be queued until two players signedup, which then they will be put into a playerMatchUp array and the queue will be flushed, the server will also reply to the two players that they are play now.
@@ -175,9 +175,8 @@ b475056a53d4a9420025cbf8c9da4ba0  k2_submission/tasks/Tasks.h
 
 
 5. Game task priority
-All the game tasks all have the same priority. 
-The game tasks both server and client were given the same priority because it does not matter which tasks are being excuted first or second. 
-// TODO: uhhh it doesn't matter because we have a queue?
+All the game tasks all have the same priority.
+The game tasks both server and client were given the same priority because it does not matter which tasks are being excuted first or second, as long as they all get a turn. The namspace will not be an issue as well since the clients will loop on the Whois call for the rps server until they get a valid response.
 
 6. Measurements, where tiem is being spent
 MEASUREMENTS
@@ -199,8 +198,7 @@ MEASUREMENTS
 64 bytes	on	no	on	r59wang_z23he	broken
 
 TIME SPENT
-Much of the time is spent on strcpy, as sending a larger message is much slower than seding a small message
-// TODO: dunno... context switch?
+Much of the time is spent on strcpy, as sending a larger message is much slower than sending a small message. The rest of the time is spent on context switching and the actual execution of logic of the message passing logic.
 
 7. Output
 The output will be apparing in pairs, which is one round of RPS.
@@ -213,5 +211,3 @@ The output prints are on each player's task, right after they received a reply f
 The pair output was able to work because the "getc" for user input is on the server task, right before the server replies to both players in the current round. The two replies will be sent in sequence, each reply will trigger the print from the player's task, which results in the paired prints.
 
 Each player's play of r/p/s is randomly generated, each player will singup and play a random (5-10) amount of times, so there is no definitive output results without running the program.
-
-// TODO: Bill, anything to iterate on?
