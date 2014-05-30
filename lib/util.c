@@ -1,4 +1,5 @@
 #include <util.h>
+#include <ts7200.h>
 // #include <cstdio>
 
 char * strcpy ( char * destination, const char * source ) {
@@ -33,6 +34,25 @@ void * memcpy ( void * destination, const void * source, unsigned int num ) {
         dest[i] = src[i];
     }
     return destination;
+}
+
+void initTimers() {
+    // clockworks
+    // init load and control
+    unsigned int *timer_4_enable_hi;
+    timer_4_enable_hi = (unsigned int *) ( TIMER4_ENABLE_HI );
+
+    //set the control bits
+    unsigned int buf;
+    buf = *timer_4_enable_hi;
+    buf = buf | TIMER4_ENABLE_MASK;
+    *timer_4_enable_hi = buf;
+
+}
+
+unsigned int rand(unsigned int seed) {
+    seed = (1103515245 * seed + 12345);
+    return seed;
 }
 
 // // for testing purposes
