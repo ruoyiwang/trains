@@ -221,7 +221,7 @@ void handle (td *active, int req, int args[5],
 
 int main( int argc, char* argv[] ) {
 
-    TurnCacheOn();
+//    TurnCacheOn();
 
     td *active;
     td tds[64];

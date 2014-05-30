@@ -38,8 +38,8 @@ void FirstUserTask () {
     // Send (tid, (char *)&msg_struct, 14, (char *)&reply_struct, 10);
     // bwprintf(COM2, "Got reply from %d with type %d: %s\n",tid,reply_struct.type, reply);
 
-    // playtRPS()
-    perfTest();
+    playtRPS();
+    // perfTest();
 
     Exit();
 }
@@ -421,10 +421,10 @@ void testReceive() {
     while (sender_id < 0) {
         sender_id = WhoIs("testSend");
     }
-    int msglen = 4;
+    int msglen = 64;
     int sender_tid;
-    char msg[4] = {0};
-    char reply[4] = {0};
+    char msg[64] = {0};
+    char reply[64] = {0};
 
     int i = 0;
     for ( i = 0; i < msglen - 1; i++) {

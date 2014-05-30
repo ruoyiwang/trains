@@ -57,7 +57,8 @@ unsigned int rand(unsigned int seed) {
 
 void TurnCacheOn() {
     asm("MRC p15, 0, R4, c1, c0, 0");
-    asm("ORR R4, R4, #0x800");
+    asm("ORR R4, R4, #0x1000");
+    asm("ORR R4, R4, #0x4");
     asm("MCR p15, 0, R4, c1, c0, 0");
 }
 
