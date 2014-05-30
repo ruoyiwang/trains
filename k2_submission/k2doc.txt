@@ -1,30 +1,34 @@
-Assignment 1 Documment
+Assignment 2 Documment
 Ruoyi Wang      20373611
 Zhenqian He     20383235
 
 1. A description of how to operate your program in a readme file, including the full pathname of your executable file which we will download for testing.
 
+DOWNLOADING THE SOURCE CODE
 Download the zip file
-    goto https://drive.google.com/file/d/0B6crUQZllvyhMWhNZi1ndTJqMHc/
+    goto http://goo.gl/uDY3AW
     click File->Download
-    this will download the r59wang_z23he_k1.zip file
+    this will download the r59wang_z23he_k2.zip file
 
-Unzip the zipfile will result in a k1_submission folder
+Unzip the zipfile will result in a k2_submission folder
 
-navigate to k1_submission/kernel, the makefile resides there
-
-compile the program in kernel folder
-    make clean && make
+REBUILD
+compile the program in k2_submission folder
+	make clean && make
 copy the compiled elf file onto tftp
-    cp kernel.elf /u/cs452/tftp/ARM/ur_user_name/
+	cp kernel.elf /u/cs452/tftp/ARM/ur_user_name/
 change the permission of the copied file
-    chmod 744 /u/cs452/tftp/ARM/ur_user_name/kernel.elf
+	chmod 744 /u/cs452/tftp/ARM/ur_user_name/kernel.elf
 load the program onto the board
-    load -b 0x00218000 -h 10.15.167.4 "ARM/ur_user_name/kernel.elf
+	load -b 0x00218000 -h 10.15.167.4 "ARM/ur_user_name/kernel.elf
 type go
-    go
+	go
 
-the kernel will need no user interaction and will create tasks, print, and exit themselves accordingly
+LOADING AND RUNNING THE PRE-COMPILED VERSION
+load -b 0x00218000 -h 10.15.167.4 "ARM/r59wang/k2.elf;go
+
+OPERATING THE PROGRAM
+// TODO: @Bill you wanna fill this in on how to faceroll?
 
 2. kernel description, its structure, data structure and explainations and stuff
 
@@ -110,13 +114,104 @@ Reply
 
 NAMESERVER
 
+Data Structure
+	The nameserver keeps the registration data in an array of structs. The struct is as followe
+		typedef struct {
+		    char task_name[32];
+		    int tid;
+		} name_server_element;
+	The struct keeps track of a task name to its corresponding task id. The array acts as a list and is not ordered.
+RegisterAs
+	Ooverwrite is allowed, that is, if a task is killed and re-created, when it re-registers, the nameserver is able to update the array accodring. This is, however, under ths assumption that there will be no malicious user program that will try to take over a name. Because only we are writing the user code, such malicious user programs should not exist.
+	Because overwrite is allowed, and the array is unordered, the registration will be have a linear run time
+WhoIs
+	Because is array is unordered, WhoIs has to linearly look through all the elements in the array to find the right one. Therefore WhoIs also has a linear run time
+Justification
+	This data structure, as well as the RegisterAs and WhoIs implementation was chosen because its ease of implementation. Because the code is so small, the room for error is also very small, which makes the NameServer very robust.
+
+// TODO: either put the RPS stuff here or put them with 7.
+RPS SERVER
+	The server will FOREVER loop receive. On each receive the server will determine what type of message it is and process it accordingly.
+	SIGNUP will be queued until two players signedup, which then they will be put into a playerMatchUp array and the queue will be flushed, the server will also reply to the two players that they are play now.
+	PLAY will be stored each player's play (r/p/s) into a playerPlay array. If both players from the playerMatchUp has played then the results will be calculated and replied. If upon a player play, the opponent has sent quit before, a "oppoent has quit" will be replied.
+	QUIT will be stored in the playerPlay array. a reply will be sent right away. If the player's opponent has already played, a "oppoent has quit" will be replied to that player.
+
+RPS Client
+	The client will generate a random number between 5 and 10 as the number of times it wants to play the game.
+	It generates a random r/p/s. then signs up and plays the the throw. The process will repeat.
+	After the desired amount has been played, the player will call quit.
+
+3 & 4. source code and MD5s
+
+f47beb24b24de182157c5937a227bdac  k2_submission/Perf
+
+d612addd5e16ee06b870c07ad6ebf2eb  k2_submission/README
+
+feb4494a4ccb42685db62f65bd9c8465  k2_submission/include/ts7200.h
+
+646f59ed3027a40ebb5a224ca4a48475  k2_submission/kernel/ker_ent_exit.asm
+2346b2f758d7adbf5dfc2c38cfbd1ac2  k2_submission/kernel/kernel.c
+bdc8977e06856a148e403a5493beede9  k2_submission/kernel/kernel.h
+605a1438ac7738c0c486430e52b165e5  k2_submission/kernel/queue.h
+5fc9980bb9bbcbeedc9e226f8364961c  k2_submission/kernel/bwio.c
+57d7ecc932e069e6f3c8f5044ea66a6f  k2_submission/kernel/queue.c
+fe178ee05cba742a7b79153dbb1e4edf  k2_submission/kernel/nameserver.c
+1a69f84e7cda9f0c4a76bb93b8c436b8  k2_submission/kernel/README
+4c7903df0ada55219827ec269eba5185  k2_submission/kernel/nameserver.h
+acf5cbd58430eb0908e0ab796e6c735f  k2_submission/kernel.elf
+
+6ceb1a0c85fdab0f2119876ee03917cd  k2_submission/lib/libbwio.a
+25757ddee6d82a16be926075e04b4972  k2_submission/lib/bwio.c
+d32dda3f6cd59b210c03d1ed8332c581  k2_submission/lib/bwio.h
+bec86307038bfec7aa389e3562a367d0  k2_submission/lib/libutil.a
+c6538628a9719d785aa380e531606c8b  k2_submission/lib/util.c
+01322e434a9ce0580ded7f1ff1b8a0e2  k2_submission/lib/util.h
+
+03e9787757653cf473db65e21d3ce200  k2_submission/makefile
+9d0946ab946bf682994dedaa174192d3  k2_submission/orex.ld
+
+ec06466d88a33331e86ce93e8df102c7  k2_submission/tasks/Tasks.c
+b475056a53d4a9420025cbf8c9da4ba0  k2_submission/tasks/Tasks.h
 
 
-3. source code and MD5s
+5. Game task priority
+All the game tasks all have the same priority. 
+The game tasks both server and client were given the same priority because it does not matter which tasks are being excuted first or second. 
+// TODO: uhhh it doesn't matter because we have a queue?
 
+6. Measurements, where tiem is being spent
+MEASUREMENTS
+4 bytes	off	yes	off	r59wang_z23he	394
+64 bytes	off	yes	off	r59wang_z23he	881
+4 bytes	on	yes	off	r59wang_z23he	31
+64 bytes	on	yes	off	r59wang_z23he	65
+4 bytes	off	no	off	r59wang_z23he	398
+64 bytes	off	no	off	r59wang_z23he	889
+4 bytes	on	no	off	r59wang_z23he	29
+64 bytes	on	no	off	r59wang_z23he	62
+4 bytes	off	yes	on	r59wang_z23he	broken
+64 bytes	off	yes	on	r59wang_z23he	broken
+4 bytes	on	yes	on	r59wang_z23he	broken
+64 bytes	on	yes	on	r59wang_z23he	broken
+4 bytes	off	no	on	r59wang_z23he	broken
+64 bytes	off	no	on	r59wang_z23he	broken
+4 bytes	on	no	on	r59wang_z23he	broken
+64 bytes	on	no	on	r59wang_z23he	broken
 
-4. Game task priorities
+TIME SPENT
+Much of the time is spent on strcpy, as sending a larger message is much slower than seding a small message
+// TODO: dunno... context switch?
 
-All the game tasks all have the same priority
+7. Output
+The output will be apparing in pairs, which is one round of RPS.
+Each one of the paired output will contain the following info
+	player's tid
+	player's play: either (r)ock, (p)aper, or (s)cissors
+	player's result: which can be "WIN", "LOSE", or "TIE"
 
+The output prints are on each player's task, right after they received a reply from "PLAY".
+The pair output was able to work because the "getc" for user input is on the server task, right before the server replies to both players in the current round. The two replies will be sent in sequence, each reply will trigger the print from the player's task, which results in the paired prints.
 
+Each player's play of r/p/s is randomly generated, each player will singup and play a random (5-10) amount of times, so there is no definitive output results without running the program.
+
+// TODO: Bill, anything to iterate on?
