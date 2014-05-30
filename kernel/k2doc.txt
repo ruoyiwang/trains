@@ -1,0 +1,122 @@
+Assignment 1 Documment
+Ruoyi Wang      20373611
+Zhenqian He     20383235
+
+1. A description of how to operate your program in a readme file, including the full pathname of your executable file which we will download for testing.
+
+Download the zip file
+    goto https://drive.google.com/file/d/0B6crUQZllvyhMWhNZi1ndTJqMHc/
+    click File->Download
+    this will download the r59wang_z23he_k1.zip file
+
+Unzip the zipfile will result in a k1_submission folder
+
+navigate to k1_submission/kernel, the makefile resides there
+
+compile the program in kernel folder
+    make clean && make
+copy the compiled elf file onto tftp
+    cp kernel.elf /u/cs452/tftp/ARM/ur_user_name/
+change the permission of the copied file
+    chmod 744 /u/cs452/tftp/ARM/ur_user_name/kernel.elf
+load the program onto the board
+    load -b 0x00218000 -h 10.15.167.4 "ARM/ur_user_name/kernel.elf
+type go
+    go
+
+the kernel will need no user interaction and will create tasks, print, and exit themselves accordingly
+
+2. kernel description, its structure, data structure and explainations and stuff
+
+DATA STRUCTURES
+
+Message
+    This is the struct used by the client to pass messages. The message struct holds only two things, the message and the type. The message contains the character array that is too be passed, and the Type describes the type of the message:
+
+    typedef struct message_t
+    {
+        char *value;
+        int type;
+    } message;
+
+    we wanted to keep the message simple so that clint code won't be complex either.
+
+Mail
+    Mail is a structure that is internal to the kernel. When the user calls send or receive the kernel function will wrap the message structs with meta data into the mail. Even though it is only used by the kernel it is kept on the kernel stack. Here is what the struct looks like:
+
+    typedef struct mailbox_t {
+        int *sender_tid;
+        message *msg;
+        int msg_len;
+        message *rpl;
+        int rpl_len;
+        struct mailbox_t * next;
+    } mailbox;
+
+    On top of the messages, the mail also contains the sender it reference which is kept as a reference for Send to manipulate. It also has the reply address so the kernel can keep track of where to reply to when reply is called. Lastly, the mail contains a next pointer since it is the node for the SendQ structure
+
+SendQ
+    The SendQ is a is a queue maintained by the kernel to keep track of the messages that are sent to the task. If there are multiple messages sent to a particular task they will be queued up in the SendQ of the task, before the task replies to them. This allows messages to support multiple send natively. Since the nodes of the queue is kept on the user stacks it does not require any kernel memory. The head of the sendQ lives inside the task descriptors.
+
+Task Descriptors
+    Two more fields are added to the task descriptors since the last lab. They are SendQ and arguements:
+
+    typedef struct td_t {
+        unsigned int tid;
+        unsigned int pc;
+        unsigned int sp;
+        unsigned int spsr;
+        unsigned int ret;
+        unsigned int priority;
+        unsigned int parent_tid;
+        unsigned int state;
+        unsigned int args[5];   // newly added
+        mailbox *sendQ;         // newly added
+        struct td_t * next;
+    } td;
+
+    The SendQ is explained in the previews section to support data queueing. The decision to incude the arguements in the task descriptor arised from the need suuport output arguements. Since each task needs to track its output arguements, it is neccessary to have that stored for each task.
+
+SEND, RECEIVE, REPLY
+
+Send
+    Send follows 2 code paths, the following is psudo code for how it operates:
+
+    if receiving task is send blocked
+        fill in the receiving tasks request
+        unblock receiving task
+        current task (sending task) becomes reply blocked
+    else
+        push the message to the receivers sendQ
+        become receive blocked
+
+Receive
+    Receive also follows 2 code paths, the following is psudo code for how it operates:
+
+    if the sendQ is not empty
+        fill in the output arguements with the sendQ content
+        pop the front of the SendQ
+        set sender to be reply blocked
+    else
+        become send blocked
+        add a empty node to the sendQ for the sender to fullfill
+
+Reply
+    The following pseudo code describes how Reply operates:
+
+    If the sender is reply blocked
+        fill in the output arguemnt of the sender with the reply
+        unblock the sender
+
+NAMESERVER
+
+
+
+3. source code and MD5s
+
+
+4. Game task priorities
+
+All the game tasks all have the same priority
+
+
