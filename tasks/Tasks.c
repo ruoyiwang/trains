@@ -1,9 +1,16 @@
 #include <Tasks.h>
 #include <bwio.h>
 #include <util.h>
+#include <ts7200.h>
 #include <nameserver.h>
 
 void FirstUserTask () {
+    // fire off the
+    initTimers();
+    volatile unsigned int * timer_4_low;
+    timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
+    // bwprintf(COM2, "%d\n", *timer_4_low );
+
     char msg[20] = "I am a message";
     char reply[20];
     message msg_struct, reply_struct;
@@ -107,6 +114,9 @@ void nameServerTest2 () {
 void rpsClient () {
     int myTid = MyTid();
 
+    volatile unsigned int * timer_4_low;
+    timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
+
     // make msg and reply
     message msg_struct, reply_struct;
     char reply[64] = {0};
@@ -115,27 +125,29 @@ void rpsClient () {
     reply_struct.value = reply;
 
     // test code: my RPS play will be the tid%3
-    int iMyPlay = myTid % 3;
-    char myPlay;
-    switch (iMyPlay) {
-        case 0:
-            myPlay = 'r';
-            break;
-        case 1:
-            myPlay = 'p';
-            break;
-        case 2:
-            myPlay = 's';
-            break;
-        case 3:
-            break;
-    }
-
+    int iMyPlay = 0 ;
     // lookup who's the server
     int rpsServerTid = WhoIs(RPS_SERVER_NAME);
 
     int i = 0;
-    for (i = 0; i < myTid; i++) {
+    for (i = 0; i < rand(*timer_4_low) % 5 + 5; i++) {
+        //figure out what my play is
+        iMyPlay = rand(*timer_4_low) % 3;
+        char myPlay;
+        switch (iMyPlay) {
+            case 0:
+                myPlay = 'r';
+                break;
+            case 1:
+                myPlay = 'p';
+                break;
+            case 2:
+                myPlay = 's';
+                break;
+            case 3:
+                break;
+        }
+
         // SIGNUP
         msg_struct.type = SIGNUP;
         // bwprintf(COM2, "Tid: %d | signing up\n", myTid );
