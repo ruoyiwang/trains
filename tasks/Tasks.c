@@ -1,5 +1,6 @@
 #include <Tasks.h>
 #include <bwio.h>
+#include <util.h>
 #include <nameserver.h>
 
 void FirstUserTask () {
@@ -11,13 +12,13 @@ void FirstUserTask () {
     reply_struct.value = reply;
 
     // create nameserver
-    int ns_tid = Create(4, CODE_OFFSET + (&NameServer));
+    int ns_tid = Create(1, CODE_OFFSET + (&NameServer));
     // check if the created nameserver tid == NAMESERVER_TID
     if (ns_tid != 1) {
         bwprintf(COM2, "WTF is happening\n\n");
         Exit();
     }
-    Create(2, CODE_OFFSET + (&spawnedTask));
+    // Create(2, CODE_OFFSET + (&spawnedTask));
 
     // // making name server test task
     // Create(3, CODE_OFFSET + (&nameServerTest1));
@@ -27,6 +28,20 @@ void FirstUserTask () {
     // bwprintf(COM2, "Sending message to %d: %s\n",tid, msg);
     // Send (tid, (char *)&msg_struct, 14, (char *)&reply_struct, 10);
     // bwprintf(COM2, "Got reply from %d with type %d: %s\n",tid,reply_struct.type, reply);
+
+    Create(4, CODE_OFFSET + (&rpsServer));
+
+    Create(4, CODE_OFFSET + (&rpsClient));
+    Create(4, CODE_OFFSET + (&rpsClient));
+    Create(4, CODE_OFFSET + (&rpsClient));
+    Create(4, CODE_OFFSET + (&rpsClient));
+    Create(4, CODE_OFFSET + (&rpsClient));
+    Create(4, CODE_OFFSET + (&rpsClient));
+    Create(4, CODE_OFFSET + (&rpsClient));
+    Create(4, CODE_OFFSET + (&rpsClient));
+    Create(4, CODE_OFFSET + (&rpsClient));
+    Create(4, CODE_OFFSET + (&rpsClient));
+
 
     Exit();
 }
@@ -127,8 +142,9 @@ void rpsClient () {
 
     // SIGNUP
     msg_struct.type = SIGNUP;
+    bwprintf(COM2, "Tid: %d | signing up\n", myTid );
     Send (rpsServerTid, (char *)&msg_struct, 2, (char *)&reply_struct, 64);
-    bwprintf(COM2, "Tid: %d | Playes: %s\n", myTid, reply_struct.value );
+    bwprintf(COM2, "Tid: %d | singed up\n", myTid );
     // TODO: loop if reply tells me I can't play
     //  if reply fails, try signup again
     //  if reply goes, try play
@@ -136,15 +152,17 @@ void rpsClient () {
     // send PLAY
     msg_struct.type = PLAY;
     msg_struct.value[0] = myPlay;
+    bwprintf(COM2, "Tid: %d | Playes: %c\n", myTid, myPlay );
     Send (rpsServerTid, (char *)&msg_struct, 2, (char *)&reply_struct, 64);
 
     // display results: debug line?
     bwprintf(COM2, "Tid: %d | Player result: %s\n", myTid, reply_struct.value );
     // loop or quit
 
-    // send quit
-    msg_struct.type = QUIT;
-    Send (rpsServerTid, (char *)&msg_struct, 2, (char *)&reply_struct, 64);
+    // // send quit
+    // msg_struct.type = QUIT;
+    // bwprintf(COM2, "Tid: %d | quits" );
+    // Send (rpsServerTid, (char *)&msg_struct, 2, (char *)&reply_struct, 64);
     // don't care result
     // exit
     Exit();
@@ -153,6 +171,8 @@ void rpsClient () {
 
 // assuming no malicious client
 void rpsServer() {
+    int myTid = MyTid();
+
     // register name
     RegisterAs(RPS_SERVER_NAME);
 
@@ -162,9 +182,11 @@ void rpsServer() {
     int i = 0;
     for (i = 0; i < 64; i++) {
         playerMatchUp[i] = -1;
-        playerPlay[64] = NULL;
+        playerPlay[i] = NULL;
     }
-    int playerSignUpQueue[2] = {-1};
+    int playerSignUpQueue[2];
+    playerSignUpQueue[0] = -1;
+    playerSignUpQueue[1] = -1;
 
     // make msg and reply
     message msg_struct, reply_struct1, reply_struct2;
@@ -178,15 +200,19 @@ void rpsServer() {
 
     int sender_tid;
     int opponent;
+    int playcounter = 0;
 
     FOREVER {
         // get request
+        msg_struct.value[0] = 0;
         Receive( &sender_tid, (char*)&msg_struct, msglen );
+        bwprintf(COM2, "Sever | Received from player%d\n", sender_tid );
         // switch type
         switch( msg_struct.type ) {
             // if signup
             case SIGNUP:
                 // queue player
+                // bwprintf(COM2, "Tid: %d | Player %d SIGNEDUP\n", myTid, sender_tid );
                 if (playerSignUpQueue[0] == -1) {
                     playerSignUpQueue[0] = sender_tid;
                 }
@@ -197,8 +223,14 @@ void rpsServer() {
                     playerMatchUp[playerSignUpQueue[0]] = playerSignUpQueue[1];
                     playerMatchUp[playerSignUpQueue[1]] = playerSignUpQueue[0];
                     // reply let them play
-                    reply_struct1.type = PLAY;
+
+                    // bwprintf(COM2, "Tid: %d | replying to player%d\n", myTid, sender_tid );
+
+                    bwprintf(COM2, "Sever | replying to player%d\n", sender_tid );
                     Reply (sender_tid, (char *)&reply_struct1, 64);
+                    // bwprintf(COM2, "Tid: %d | replying to player%d\n", myTid, playerSignUpQueue[0] );
+                    bwprintf(COM2, "Sever | replying to player%d\n", sender_tid );
+                    Reply (playerSignUpQueue[0], (char *)&reply_struct1, 64);
                     // clear playerSignUpQueue
                     playerSignUpQueue[0] = -1;
                     playerSignUpQueue[1] = -1;
@@ -207,6 +239,7 @@ void rpsServer() {
             // if play
             case PLAY:
                 // store the play into playerPlay, since the play is only 1 char, we just do 1 char
+                playcounter++;
                 playerPlay[sender_tid] = msg_struct.value[0];
                 opponent = playerMatchUp[sender_tid];
                 // check opponent has exists
@@ -215,62 +248,74 @@ void rpsServer() {
                     if (playerPlay[opponent] == 'q') {
                         // reply to cur dude you matchup ditch you
                         reply_struct1.value = "Your opponenet has quit";
-                        Reply (sender_tid, (char *)&reply_struct1, 64);
+                        // Reply (sender_tid, (char *)&reply_struct1, 64);
                         // clear match up and player play for these two players
                         playerPlay[sender_tid] = NULL;
                         playerPlay[opponent] = NULL;
                         playerMatchUp[sender_tid] = -1;
                         playerMatchUp[opponent] = -1;
+                        bwprintf(COM2, "It shouldn't be here\n");
                     }
                     // if opponent has played
-                    else if (playerPlay[opponent] != NULL) {
+                    else if (playerPlay[opponent] != NULL /*&& playcounter == 2*/) {
                         // it's either r, p, or s
                         // compare results, reply both
+                        // bwprintf(COM2, "player: %d played %c\n", sender_tid, playerPlay[sender_tid]);
+                        // bwprintf(COM2, "player: %d played %c\n", opponent, playerPlay[opponent]);
                         if (playerPlay[opponent] == playerPlay[sender_tid]) {
-                            reply_struct1.value = "TIE";
-                            reply_struct2.value = "TIE";
+                            strcpy(reply_struct1.value, "TIE");
+                            strcpy(reply_struct2.value, "TIE");
                         }
                         else if (playerPlay[sender_tid] == 'r' && playerPlay[opponent] == 'p') {
-                            reply_struct1.value = "LOSE";
-                            reply_struct2.value = "WIN";
+                            strcpy(reply_struct1.value, "\033[31mLOSE\033[37m");
+                            strcpy(reply_struct2.value, "\033[32mWIN\033[37m");
                         }
                         else if (playerPlay[sender_tid] == 'r' && playerPlay[opponent] == 's') {
-                            reply_struct1.value = "WIN";
-                            reply_struct2.value = "LOSE";
+                            strcpy(reply_struct1.value, "\033[32mWIN\033[37m");
+                            strcpy(reply_struct2.value, "\033[31mLOSE\033[37m");
                         }
                         else if (playerPlay[sender_tid] == 'p' && playerPlay[opponent] == 's') {
-                            reply_struct1.value = "LOSE";
-                            reply_struct2.value = "WIN";
+                            strcpy(reply_struct1.value, "\033[31mLOSE\033[37m");
+                            strcpy(reply_struct2.value, "\033[32mWIN\033[37m");
                         }
                         else if (playerPlay[sender_tid] == 'p' && playerPlay[opponent] == 'r') {
-                            reply_struct1.value = "WIN";
-                            reply_struct2.value = "LOSE";
+                            strcpy(reply_struct1.value, "\033[32mWIN\033[37m");
+                            strcpy(reply_struct2.value, "\033[31mLOSE\033[37m");
                         }
                         else if (playerPlay[sender_tid] == 's' && playerPlay[opponent] == 'r') {
-                            reply_struct1.value = "LOSE";
-                            reply_struct2.value = "WIN";
+                            strcpy(reply_struct1.value, "\033[31mLOSE\033[37m");
+                            strcpy(reply_struct2.value, "\033[32mWIN\033[37m");
                         }
                         else if (playerPlay[sender_tid] == 's' && playerPlay[opponent] == 'p') {
-                            reply_struct1.value = "WIN";
-                            reply_struct2.value = "LOSE";
+                            strcpy(reply_struct1.value, "\033[32mWIN\033[37m");
+                            strcpy(reply_struct2.value, "\033[31mLOSE\033[37m");
                         }
                         else {
                             bwprintf(COM2, "WTF, it shouldn't get here TT_TT\n");
                         }
 
-                        Reply (sender_tid, (char *)&reply_struct1, 64);
-                        Reply (opponent, (char *)&reply_struct2, 64);
-
                         // clear match up and player play for these two players
                         playerPlay[sender_tid] = NULL;
                         playerPlay[opponent] = NULL;
                         playerMatchUp[sender_tid] = -1;
                         playerMatchUp[opponent] = -1;
+                        playcounter = 0;
+
+                        //bwprintf(COM2, "Server | sending play result to player %d\n", sender_tid);
+
+                        bwprintf(COM2, "Sever | replying to player%d\n", sender_tid );
+                        Reply (sender_tid, (char *)&reply_struct1, 64);
+                        // bwprintf(COM2, "Server | sending play result to player %d\n", opponent);
+                        bwprintf(COM2, "Sever | replying to player%d\n", opponent );
+                        Reply (opponent, (char *)&reply_struct2, 64);
+                        // bwprintf(COM2, "Server | sent play result to player %d\n", opponent);
+
+
                     }
                 }
                 else {
                     // this means the player played before they signup, BM
-                    bwprintf(COM2, "WTF, some player played without signup\n");
+                    bwprintf(COM2, "WTF, player%d played without signup\n", sender_tid);
                 }
                 break;
             // if quit
@@ -288,4 +333,7 @@ void rpsServer() {
                 break;
         }
     }
+
+    bwprintf(COM2, "Server Exiting\n");
+    Exit();
 }

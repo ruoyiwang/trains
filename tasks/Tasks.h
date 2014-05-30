@@ -15,7 +15,7 @@ void FirstUserTask ();
 void nameServerTest1 ();
 void nameServerTest2 ();
 
-void ReceiveTask1();
-void sendTask1();
+void rpsClient ();
+void rpsServer();
 
 #endif
