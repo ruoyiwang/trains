@@ -443,3 +443,82 @@ void testReceive() {
 
     Exit();
 }
+
+void clockServerNotifier() {
+    // msg shits
+    char msg[64];
+    char reply[64];
+    int receiver_tid, msglen = 64;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.type = NOTIFIER;
+    reply_struct.value = reply;
+    receiver_tid = WhoIs(CLOCK_SERVER_NAME);
+    // Initialization, probably including device
+    // Synchronization
+    FOREVER {
+        data = AwaitEvent( evtType );
+        msg_struct.data = data;
+        Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+    }
+}
+
+void clockServer() {
+    int curTime = 0;
+    // Create Notifier and send any initialization data
+    Create(2, CODE_OFFSET + (&clockServerNotifier));
+    // Initialize self
+    RegisterAs(CLOCK_SERVER_NAME);
+    // msg shits
+    char msg[64];
+    char reply[64];
+    int sender_tid, msglen = 64;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = reply;
+
+    FOREVER {
+        Receive( &sender_tid, (char*)&msg_struct, msglen );
+        switch(msg_struct.type) {
+            case NOTIFIER:
+                // reply to notifier I got ur time (don't really care)
+                Reply (sender_tid, (char *)&reply_struct, msglen);
+                // update time
+                curTime++;
+                break;
+            case TIME_REQUEST:
+                // reply what the time is
+                break;
+            case DELAY_REQUEST:
+                // add request to list of suspended tasks
+                break;
+        }
+    }
+}
+
+int Delay( int ticks ) {
+
+}
+
+int Time () {
+    char msg[64];
+    char reply[64];
+    int sender_tid, msglen = 64;
+    int receiver_tid = WhoIs(CLOCK_SERVER_NAME);
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.type = TIME_REQUEST;
+    reply_struct.value = reply;
+    
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+
+    if (strcmp(msg_struct.value, "FAIL") != 0) {
+        // if succeded
+        bwa2i(msg_struct.value);
+    }
+
+    
+}
+
+int DelayUntil( int ticks ) {
+}
