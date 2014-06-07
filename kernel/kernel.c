@@ -45,6 +45,10 @@ int Exit() {
     asm ("swi 8");
 }
 
+int AwaitEvent( int eventId) {
+    asm ("swi 9");
+}
+
 int _send ( int tid, mailbox *mail ) {
     asm ("swi 11");
 }
@@ -114,7 +118,13 @@ int initialize_td(
     return tid;
 }
 
+void initialize_interrupts() {
+    int * VIC2Enable =(int *) (VIC2_BASE + VICxIntEnable);
+    *VIC2Enable = *VIC2Enable | (1 << 19);
+}
+
 void initialize (td tds[64]) {
+    TurnCacheOn();
     int i = 0;
     // place the svc_handler to jump table
     void (*syscall)();
@@ -123,11 +133,15 @@ void initialize (td tds[64]) {
     handler = (void*)0x28;
     *handler = (int) syscall;
 
+    syscall = (void *) (CODE_OFFSET + (&int_ker_entry));
+    handler = (void *) 0x38;
+    *handler = (int) syscall;
+    initialize_interrupts();
     // initialize all the tds;
     for (i = 0 ; i < 64; i++) {
         tds[i].tid          = i;
         tds[i].sp           = USER_STACK_BEGIN + i * 4 * USER_STACK_SIZE;
-        tds[i].spsr         = 0xd0;
+        tds[i].spsr         = 0x5f;
         tds[i].ret          = 0;
         tds[i].priority     = 15;
         tds[i].parent_tid   = -1;
@@ -144,12 +158,17 @@ void handle (td *active, int req, int args[5],
             unsigned int * free_list_hi,
             td tds[64],
             td_queue td_pq[16] )   {
-    int i;
+    int i, *timer3clear;
     for (i = 0; i<5 ; i++) {
         active->args[i] = args[i];
     }
 
     switch ( req ) {
+        case 20:    //interrupts
+            timer3clear = (int *) ( TIMER3_BASE + CLR_OFFSET );
+            *timer3clear = 1;
+            bwprintf(COM2, "IM AN INTERRUPT!\n");
+            break;
         case 5:
             active->ret = active->tid;
             break;
@@ -220,9 +239,6 @@ void handle (td *active, int req, int args[5],
 }
 
 int main( int argc, char* argv[] ) {
-
-    TurnCacheOn();
-
     td *active;
     td tds[64];
     message messages[64];
@@ -239,9 +255,15 @@ int main( int argc, char* argv[] ) {
         tid = schedule(td_pq);
         if (tid == -1) break;
         active = (tds + tid);
-        req = ker_exit ( active, (int *) args );
+        if (req == 20) {
+            req = int_ker_exit ( active, (int *) args );
+        }
+        else {
+            req = ker_exit ( active, (int *) args );
+        }
+
         // put the task back on the queue
-        req = req & 0xf;
+        req = req & 0xff;
         handle( active, req, args, &free_list_lo, &free_list_hi, tds, td_pq );
         if (active->state == STATE_READY || active->state == STATE_ACTIVE ){
             pq_push_back(td_pq, tds, active->tid);

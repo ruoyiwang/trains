@@ -17,6 +17,14 @@
 #define USER_STACK_SIZE     0x1000      // 0x1000 = 4096
 #define USER_STACK_BEGIN    0x1000000
 
+#define VIC1_BASE            0x800b0000
+#define VIC2_BASE            0x800c0000
+    #define VICxIRQStatus   0
+    #define VICxIntEnable   0x10
+    #define VICxIntEnClear  0x14
+    #define VICxSoftInt  0x18
+    #define VICxSoftIntClear  0x1c
+
 typedef struct message_t
 {
 	char *value;
@@ -61,6 +69,10 @@ int main( int argc, char* argv[] );
 int ker_exit ( td *active, int* args );
 
 void ker_entry ();
+
+int int_ker_exit ( td *active, int* args );
+
+void int_ker_entry ();
 
 void swi_stub();
 

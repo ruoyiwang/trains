@@ -48,6 +48,24 @@ void initTimers() {
     buf = buf | TIMER4_ENABLE_MASK;
     *timer_4_enable_hi = buf;
 
+
+    // set the load (init value)
+    int *line;
+    line = (int *)( TIMER3_BASE + LDR_OFFSET );
+    *line = 2000;
+
+    // set the control
+    line = (int *)( TIMER3_BASE + CRTL_OFFSET );
+
+    buf = *line;
+    // set to 2k Hz mode
+    buf = buf & ~CLKSEL_MASK;
+    // enable timer
+    buf = buf | ENABLE_MASK;
+    // set to preload mode
+    buf = buf | MODE_MASK;
+    *line = buf;
+
 }
 
 unsigned int rand(unsigned int seed) {
