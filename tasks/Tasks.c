@@ -7,6 +7,9 @@
 void FirstUserTask () {
     // fire off the
     initTimers();
+    // int * VIC2SoftInt =(int *) (VIC2_BASE + VICxSoftInt);
+    // *VIC2SoftInt = *VIC2SoftInt | (1 << 19);
+
     volatile unsigned int * timer_4_low;
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
     // bwprintf(COM2, "%d\n", *timer_4_low );
@@ -38,8 +41,8 @@ void FirstUserTask () {
     // Send (tid, (char *)&msg_struct, 14, (char *)&reply_struct, 10);
     // bwprintf(COM2, "Got reply from %d with type %d: %s\n",tid,reply_struct.type, reply);
 
-    // playtRPS()
-    perfTest();
+    playtRPS();
+    // perfTest();
 
     Exit();
 }
@@ -176,6 +179,7 @@ void rpsClient () {
 
 // assuming no malicious client
 void rpsServer() {
+    // for(;;){}
     int myTid = MyTid();
 
     // register name

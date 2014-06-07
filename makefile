@@ -23,7 +23,7 @@ kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h kernel/queue.h tas
 	$(XCC) -S $(CFLAGS) kernel/kernel.c
 
 kernel.o: kernel.s kernel/ker_ent_exit.asm
-	$(AS) $(ASFLAGS) -o kernel.o kernel.s kernel/ker_ent_exit.asm
+	$(AS) $(ASFLAGS) -o kernel.o kernel.s kernel/ker_ent_exit.asm kernel/int_ker_ent_exit.asm
 
 nameserver.s: kernel/nameserver.c kernel/nameserver.h
 	$(XCC) -S $(CFLAGS) kernel/nameserver.c
