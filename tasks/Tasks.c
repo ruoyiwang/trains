@@ -3,6 +3,7 @@
 #include <util.h>
 #include <ts7200.h>
 #include <nameserver.h>
+#include <kernel.h>
 
 void FirstUserTask () {
     // fire off the
@@ -458,11 +459,12 @@ void clockServerNotifier() {
     msg_struct.type = NOTIFIER;
     reply_struct.value = reply;
     receiver_tid = WhoIs(CLOCK_SERVER_NAME);
-    // Initialization, probably including device
-    // Synchronization
+
+    int data;
+
     FOREVER {
-        data = AwaitEvent( evtType );
-        msg_struct.data = data;
+        data = AwaitEvent( EVENT_CLOCK );
+        // send evt to data
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
     }
 }
@@ -491,17 +493,25 @@ void clockServer() {
                 curTime++;
                 break;
             case TIME_REQUEST:
+                int *retTime = (int*)(msg_struct.value);
+                *retTime = curTime;
+                Reply (sender_tid, (char *)&reply_struct, msglen);
                 // reply what the time is
                 break;
             case DELAY_REQUEST:
                 // add request to list of suspended tasks
                 break;
+            default:
+                // wtf
+                break;
         }
     }
+
 }
 
 int Delay( int ticks ) {
 
+    return -1;
 }
 
 int Time () {
@@ -513,16 +523,19 @@ int Time () {
     msg_struct.value = msg;
     msg_struct.type = TIME_REQUEST;
     reply_struct.value = reply;
-    
+
+    int * curTime = 0;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
     if (strcmp(msg_struct.value, "FAIL") != 0) {
         // if succeded
-        bwa2i(msg_struct.value);
+        *curTime = (int *) msg_struct.value;
+        return *curTime;
     }
-
-    
+    return -1;
 }
 
 int DelayUntil( int ticks ) {
+
+    return -1;
 }

@@ -45,7 +45,7 @@ int Exit() {
     asm ("swi 8");
 }
 
-int AwaitEvent( int eventId) {
+int AwaitEvent( int eventId ) {
     asm ("swi 9");
 }
 

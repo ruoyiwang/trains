@@ -25,6 +25,9 @@
     #define VICxSoftInt  0x18
     #define VICxSoftIntClear  0x1c
 
+// define for events
+#define EVENT_CLOCK         0x20
+
 typedef struct message_t
 {
 	char *value;
@@ -93,5 +96,7 @@ int Receive ( int *tid, char *msg, int msglen );
 int Reply ( int tid, char *msg, int msglen );
 
 int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi);
+
+int AwaitEvent( int eventId );
 
 #endif
