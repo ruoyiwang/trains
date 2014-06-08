@@ -15,10 +15,6 @@ void FirstUserTask ();
 void nameServerTest1 ();
 void nameServerTest2 ();
 
-void rpsClient ();
-void rpsServer();
-void playtRPS();
-
 void perfTest();
 void testSend();
 void testReceive();
