@@ -29,6 +29,14 @@ void perfTest();
 void testSend();
 void testReceive();
 
+void clockServerNotifier();
 void clockServer();
+int Time();
+void ClockServerTest();
+
+typedef struct {
+	int tid;
+	unsigned int delay;
+} delay_element;
 
 #endif
