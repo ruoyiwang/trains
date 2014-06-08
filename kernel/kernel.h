@@ -13,6 +13,8 @@
 #define STATE_RCV_BLK       3
 #define STATE_SND_BLK       4
 #define STATE_RPL_BLK       5
+#define STATE_EVT_BLK       5
+#define STATE_READY_INT     6
 
 #define USER_STACK_SIZE     0x1000      // 0x1000 = 4096
 #define USER_STACK_BEGIN    0x1000000
@@ -24,6 +26,8 @@
     #define VICxIntEnClear  0x14
     #define VICxSoftInt  0x18
     #define VICxSoftIntClear  0x1c
+
+#define EVENT_CLOCK 0
 
 typedef struct message_t
 {
@@ -58,7 +62,7 @@ void first();
 
 void SVC_HANDLER();
 
-void initialize ( td tds[64] );
+void initialize ( td tds[64], int event_blocked_tds[5] );
 
 void testContextNOP();
 
