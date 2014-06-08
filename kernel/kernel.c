@@ -123,7 +123,7 @@ void initialize_interrupts() {
     *VIC2Enable = *VIC2Enable | (1 << 19);
 }
 
-void initialize (td tds[64]) {
+void initialize (td tds[64], int event_blocked_tds[5]) {
     TurnCacheOn();
     int i = 0;
     // place the svc_handler to jump table
@@ -149,6 +149,9 @@ void initialize (td tds[64]) {
         tds[i].next         = NULL;
         tds[i].sendQ        = NULL;
     }
+    for (i = 0 ; i < 5; i++) {
+        event_blocked_tds[i] = 0;
+    }
 
     return;
 }
@@ -157,17 +160,26 @@ void handle (td *active, int req, int args[5],
             unsigned int* free_list_lo,
             unsigned int * free_list_hi,
             td tds[64],
-            td_queue td_pq[16] )   {
-    int i, *timer3clear;
+            td_queue td_pq[16],
+            int event_blocked_tds[5] )   {
+    int i, *timer3clear, *VIC2Status, *VIC1Status;
     for (i = 0; i<5 ; i++) {
         active->args[i] = args[i];
     }
 
     switch ( req ) {
         case 20:    //interrupts
-            timer3clear = (int *) ( TIMER3_BASE + CLR_OFFSET );
-            *timer3clear = 1;
-            bwprintf(COM2, "IM AN INTERRUPT!\n");
+            VIC2Status = (int *) (VIC2_BASE + VICxIRQStatus);
+            VIC1Status = (int *) (VIC1_BASE + VICxIRQStatus);
+            if (*VIC2Status & (1 << 19) ){
+                timer3clear = (int *) ( TIMER3_BASE + CLR_OFFSET );
+                *timer3clear = 1;
+                if (event_blocked_tds[EVENT_CLOCK]) {
+                    pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_CLOCK])->tid);
+                }
+                event_blocked_tds[EVENT_CLOCK] = 0;
+                bwprintf(COM2, "INTERRUPT\n");
+            }
             break;
         case 5:
             active->ret = active->tid;
@@ -182,6 +194,10 @@ void handle (td *active, int req, int args[5],
             break;
         case 8:
             active->state = STATE_ZOMBIE;
+            break;
+        case 9:     // wait
+            active->state = STATE_EVT_BLK;
+            event_blocked_tds[args[0]] = active;
             break;
         case 11:    //Send
             if ( tds[args[0]].state == STATE_SND_BLK ) {    //if receive first
@@ -247,9 +263,10 @@ int main( int argc, char* argv[] ) {
     message messages[64];
     td_queue td_pq[16];
     int args[5];
+    int event_blocked_tds[5];
 
     unsigned int free_list_lo = 0, free_list_hi = 0;
-    initialize(tds);
+    initialize(tds, event_blocked_tds);
     initialize_td_pq(td_pq);
     int tid = initialize_td(2, &free_list_lo, &free_list_hi, CODE_OFFSET + (&FirstUserTask), tds, td_pq, -1);
 
@@ -258,7 +275,7 @@ int main( int argc, char* argv[] ) {
         tid = schedule(td_pq);
         if (tid == -1) break;
         active = (tds + tid);
-        if (req == 20) {
+        if ( active->state == STATE_READY_INT) {
             req = int_ker_exit ( active, (int *) args );
         }
         else {
@@ -267,9 +284,13 @@ int main( int argc, char* argv[] ) {
 
         // put the task back on the queue
         req = req & 0xff;
-        handle( active, req, args, &free_list_lo, &free_list_hi, tds, td_pq );
+        handle( active, req, args, &free_list_lo, &free_list_hi, tds, td_pq, event_blocked_tds );
+
         if (active->state == STATE_READY || active->state == STATE_ACTIVE ){
             pq_push_back(td_pq, tds, active->tid);
+        }
+        if (req == 20){
+            active->state = STATE_READY_INT;
         }
     }
     return 0;
