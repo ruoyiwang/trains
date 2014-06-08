@@ -32,6 +32,7 @@
 typedef struct message_t
 {
 	char *value;
+    int iValue;
 	int type;
 } message;
 
