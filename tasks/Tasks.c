@@ -10,8 +10,6 @@ void FirstUserTask () {
 
     // fire off the
     initTimers();
-    // int * VIC2SoftInt =(int *) (VIC2_BASE + VICxSoftInt);
-    // *VIC2SoftInt = *VIC2SoftInt | (1 << 19);
 
     volatile unsigned int * timer_4_low;
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );

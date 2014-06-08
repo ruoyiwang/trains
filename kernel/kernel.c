@@ -123,6 +123,11 @@ void initialize_interrupts() {
     *VIC2Enable = *VIC2Enable | (1 << 19);
 }
 
+void uninitialize() {
+    int * timer3ctrl = (int *)( TIMER3_BASE + CRTL_OFFSET );
+    * timer3ctrl = 0;
+}
+
 void initialize (td tds[64], int event_blocked_tds[5]) {
     TurnCacheOn();
     int i = 0;
@@ -293,5 +298,6 @@ int main( int argc, char* argv[] ) {
             active->state = STATE_READY_INT;
         }
     }
+    uninitialize();
     return 0;
 }
