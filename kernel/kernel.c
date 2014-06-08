@@ -188,6 +188,7 @@ void handle (td *active, int req, int args[5],
                 *(tds[args[0]].sendQ->sender_tid) = active->tid;
                 // bwprintf(COM2, "CRYING1\n");
                 strcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value);
+                tds[args[0]].sendQ->msg->iValue = ((mailbox *)args[1])->msg->iValue;
                 tds[args[0]].sendQ->msg->type = ((mailbox *)args[1])->msg->type;
                 tds[args[0]].sendQ->msg_len = ((mailbox *)args[1])->msg_len;
                 tds[args[0]].sendQ->rpl = ((mailbox *)args[1])->rpl;
@@ -217,6 +218,7 @@ void handle (td *active, int req, int args[5],
                 // bwprintf(COM2, "CRYING3\n");
                 *((mailbox*)args[0])->sender_tid = *(active->sendQ->sender_tid);
                 strcpy(((mailbox*)args[0])->msg->value, active->sendQ->msg->value);
+                active->sendQ->msg->iValue = ((mailbox*)args[0])->msg->iValue;
                 ((mailbox*)args[0])->msg->type = active->sendQ->msg->type;
                 tds[*(active->sendQ->sender_tid)].state = STATE_RPL_BLK;
                 active->sendQ = active->sendQ->next;
@@ -231,6 +233,7 @@ void handle (td *active, int req, int args[5],
             if ( tds[args[0]].state == STATE_RPL_BLK ) {
                 // bwprintf(COM2, "CRYING5\n");
                 strcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value);
+                ((message *)args[1])->iValue = ((mailbox *)(tds[args[0]].args[1]))->rpl->iValue;
                 ((mailbox *)(tds[args[0]].args[1]))->rpl->type = ((message *)args[1])->type;
                 pq_push_back(td_pq, tds, args[0]);
             }
