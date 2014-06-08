@@ -29,8 +29,11 @@ void perfTest();
 void testSend();
 void testReceive();
 
+void SystemIdleTask();
+
 void clockServerNotifier();
 void clockServer();
+int Delay( int ticks );
 int Time();
 void ClockServerTest();
 

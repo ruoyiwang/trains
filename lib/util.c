@@ -52,7 +52,7 @@ void initTimers() {
     // set the load (init value)
     int *line;
     line = (int *)( TIMER3_BASE + LDR_OFFSET );
-    *line = 2000;
+    *line = 200;
 
     // set the control
     line = (int *)( TIMER3_BASE + CRTL_OFFSET );

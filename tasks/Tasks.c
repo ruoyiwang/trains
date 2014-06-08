@@ -6,6 +6,7 @@
 #include <kernel.h>
 
 void FirstUserTask () {
+
     // fire off the
     initTimers();
     // int * VIC2SoftInt =(int *) (VIC2_BASE + VICxSoftInt);
@@ -42,7 +43,10 @@ void FirstUserTask () {
     // Send (tid, (char *)&msg_struct, 14, (char *)&reply_struct, 10);
     // bwprintf(COM2, "Got reply from %d with type %d: %s\n",tid,reply_struct.type, reply);
 
-    // playtRPS();
+    // system idle task at lowest pri
+    Create(15, CODE_OFFSET + (&SystemIdleTask));
+
+    playtRPS();
     // perfTest();
 
     ClockServerTest();
@@ -322,8 +326,8 @@ void rpsServer() {
                         // bwprintf(COM2, "Server | sent play result to player %d\n", opponent);
 
                         bwprintf (COM2, "Press any key to see result of next match. (press 'q' to exit)\n\n");
-                        char input = bwgetc(COM2);
-                        if (input == 'q') Exit();
+                        Delay(30);
+                        bwprintf (COM2, "current tick: %d\n", Time());
                     }
                 }
                 else {
@@ -496,11 +500,11 @@ void queueDelay(delay_element delays[64], int tid, int delay) {
 }
 
 void clockServer() {
-    int curTime = 0;
-    // Create Notifier and send any initialization data
-    Create(2, CODE_OFFSET + (&clockServerNotifier));
     // Initialize self
     RegisterAs(CLOCK_SERVER_NAME);
+    int curTime = 0;
+    // Create Notifier and send any initialization data
+    Create(1, CODE_OFFSET + (&clockServerNotifier));
     // msg shits
     char msg[8] = {0};
     char reply[8] = {0};
@@ -573,14 +577,13 @@ int Time () {
     msg_struct.value = msg;
     msg_struct.type = TIME_REQUEST;
     reply_struct.value = reply;
+    reply_struct.iValue = 0;
 
-    int curTime = 0;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
-    if (strcmp(msg_struct.value, "FAIL") != 0) {
+    if (strcmp(reply_struct.value, "FAIL") != 0) {
         // if succeded
-        curTime = msg_struct.iValue;
-        return curTime;
+        return reply_struct.iValue;
     }
     return -1;
 }
@@ -591,7 +594,11 @@ int DelayUntil( int ticks ) {
 }
 
 void ClockServerTest() {
-    Create(2, CODE_OFFSET + (&clockServer));
+    Create(1, CODE_OFFSET + (&clockServer));
     int t = Time();
     bwprintf(COM2, "curTime%d\n", t);
+}
+
+void SystemIdleTask() {
+    FOREVER;
 }
