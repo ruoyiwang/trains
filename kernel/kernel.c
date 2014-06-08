@@ -178,7 +178,7 @@ void handle (td *active, int req, int args[5],
                     pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_CLOCK])->tid);
                 }
                 event_blocked_tds[EVENT_CLOCK] = 0;
-                bwprintf(COM2, "INTERRUPT\n");
+                // bwprintf(COM2, "INTERRUPT\n");
             }
             break;
         case 5:

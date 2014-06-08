@@ -13,6 +13,7 @@
 #define NOTIFIER			0x30
 #define TIME_REQUEST		0x31
 #define DELAY_REQUEST		0x32
+#define DELAY_UNTIL_REQUEST	0x33
 #define CLOCK_SERVER_NAME	"CLOCK SERVER"
 
 void spawnedTask ();

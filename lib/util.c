@@ -52,14 +52,14 @@ void initTimers() {
     // set the load (init value)
     int *line;
     line = (int *)( TIMER3_BASE + LDR_OFFSET );
-    *line = 200;
+    *line = 5080;
 
     // set the control
     line = (int *)( TIMER3_BASE + CRTL_OFFSET );
 
     buf = *line;
-    // set to 2k Hz mode
-    buf = buf & ~CLKSEL_MASK;
+    // set to 508k Hz mode
+    buf = buf | CLKSEL_MASK;
     // enable timer
     buf = buf | ENABLE_MASK;
     // set to preload mode

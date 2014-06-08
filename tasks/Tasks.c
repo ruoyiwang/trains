@@ -495,6 +495,7 @@ void queueDelay(delay_element delays[64], int tid, int delay) {
         if (delays[i].tid == -1) {
             delays[i].tid = tid;
             delays[i].delay = delay;
+            return;
         }
     }
 }
@@ -539,6 +540,10 @@ void clockServer() {
             case DELAY_REQUEST:
                 // add request to list of suspended tasks
                 queueDelay(delays, sender_tid, msg_struct.iValue);
+                break;
+            case DELAY_UNTIL_REQUEST:
+                // add request to list of suspended tasks
+                queueDelay(delays, sender_tid, msg_struct.iValue - curTime);
                 break;
             default:
                 // wtf
@@ -589,14 +594,35 @@ int Time () {
 }
 
 int DelayUntil( int ticks ) {
+    char msg[8] = {0};
+    char reply[8] = {0};
+    int msglen = 8;
+    int receiver_tid = WhoIs(CLOCK_SERVER_NAME);
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.iValue = ticks;
+    msg_struct.type = DELAY_UNTIL_REQUEST;
+    reply_struct.value = reply;
 
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+
+    if (strcmp(msg_struct.value, "FAIL") != 0) {
+        // if succeded
+        return 0;
+    }
     return -1;
 }
 
 void ClockServerTest() {
     Create(1, CODE_OFFSET + (&clockServer));
-    int t = Time();
-    bwprintf(COM2, "curTime%d\n", t);
+    int t;
+
+    DelayUntil(500);
+    t = Time();
+    bwprintf(COM2, "30s begine%d\n", t);
+    DelayUntil(6500);
+    t = Time();
+    bwprintf(COM2, "so much swag 200%d\n", t);
 }
 
 void SystemIdleTask() {
