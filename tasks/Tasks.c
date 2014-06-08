@@ -194,17 +194,78 @@ void testReceive() {
 }
 
 void ClockServerTest() {
+    // make the server
     Create(1, CODE_OFFSET + (&clockServer));
-    int t;
 
-    DelayUntil(500);
-    t = Time();
-    bwprintf(COM2, "30s begine%d\n", t);
-    DelayUntil(6500);
-    t = Time();
-    bwprintf(COM2, "so much swag 200%d\n", t);
+    // make the test task
+    Create(3, CODE_OFFSET + (&ClockServerTestTask));
+    Create(4, CODE_OFFSET + (&ClockServerTestTask));
+    Create(5, CODE_OFFSET + (&ClockServerTestTask));
+    Create(6, CODE_OFFSET + (&ClockServerTestTask));
+
+    // msg boilerplate
+    int sender_tid1, sender_tid2, sender_tid3, sender_tid4;
+    char msg[8] = {0};
+    char reply[8] = {0};
+    int msglen = 8;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = reply;
+
+    Receive( &sender_tid1, (char*)&msg_struct, msglen );
+    Receive( &sender_tid2, (char*)&msg_struct, msglen );
+    Receive( &sender_tid3, (char*)&msg_struct, msglen );
+    Receive( &sender_tid4, (char*)&msg_struct, msglen );
+
+    reply[0] = 10;
+    reply[1] = 20;
+    Reply ( sender_tid1, (char *)&reply_struct, msglen );
+    reply[0] = 23;
+    reply[1] = 9;
+    Reply ( sender_tid2, (char *)&reply_struct, msglen );
+    reply[0] = 33;
+    reply[1] = 6;
+    Reply ( sender_tid3, (char *)&reply_struct, msglen );
+    reply[0] = 71;
+    reply[1] = 3;
+    Reply ( sender_tid4, (char *)&reply_struct, msglen );
+
 }
 
 void SystemIdleTask() {
-    FOREVER;
+    char c;
+    FOREVER{
+        c = bwgetc(COM2);
+        if (c == 'q') {
+            Exit();
+        }
+    }
+}
+
+void ClockServerTestTask() {
+    int delay_times, number_of_delays, parent_tid, tid;
+
+    // get my parent tid;
+    parent_tid = MyParentTid();
+    tid = MyTid();
+
+    char msg[8] = {0};
+    char reply[8] = {0};
+    int msglen = 8;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = reply;
+
+    Send (parent_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+
+    delay_times = (int) reply[0];
+    number_of_delays = (int) reply[1];
+
+    int i;
+    for (i = 0; i < number_of_delays; i++) {
+        Delay(delay_times);
+        bwprintf(COM2, "Task: %d | ticks delayed: %d | %d | delays completed: %d\n", tid, delay_times, Time(), i);
+    }
+
+    Exit();
 }

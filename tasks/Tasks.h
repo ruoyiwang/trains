@@ -19,6 +19,8 @@ void perfTest();
 void testSend();
 void testReceive();
 
+void ClockServerTestTask();
+
 void SystemIdleTask();
 
 #endif
