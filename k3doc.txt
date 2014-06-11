@@ -2,10 +2,62 @@
 A description of how to access, make and operate your program.
 2.
 A description of the structure of your kernel so far.
-*
-We will judge
-your kernel primarily on the basis of this description. Describe which
-algorithms and data structures you used and why you chose them.
+
+HARDWARE INTERRUPTS
+
+	The hardware interrupt kernel entry an exit are kept separated from the software interrupt kernel codes. Even though the code is kept separated, their functionality is quite similar.
+
+	Entry code:
+		msr cpsr_c, #0xdf 				/* change to system mode */
+		stmdb   sp!, {r0-r12, lr, ip} 	/* store the task registers */
+		mov ip, sp
+
+		msr cpsr_c, #0xd2 				/* change back to irq mode */
+		mov r3, lr 						/* save the lr to r3 */
+		sub r3, lr, #4
+
+		msr cpsr_c, #0xd3
+		ldmia 	sp!, {r1}				/* save all the argments */
+		ldmia   sp!, {r0}			 	/* pop the kernal stack */
+		str r3, [r0, #0x4] 				/* write to the lr of the TD */
+		mrs r2, spsr 					/* save the spsr to r2 */
+		str r2, [r0, #0xc]				/* store spsr to TD */
+		str ip, [r0, #0x8]				/* store the sp to the TD */
+		mov r0, #20						/* get the swi arguemnt and return it */
+		ldmia   sp!, { r4-r12, lr} 		/* pop the kernal stack */
+		mov pc, lr 						/* this go back to kernel */
+
+		The first step done on entry is to go to system mode with interrupt turned off to prevent interrupt overloading. Then all the registers including the scratch registers are saved onto the user mode stack. Then switch to irq mode to get the lr to be saved in the task descriptor. Lastly, switch to supervisor mode and save the state to the task descripter and pop the kernal stack before finally entering the kernel.
+
+	Exit code:
+		stmdb   sp!, { r4-r12, lr}		/* move registers to the kernal stack */
+	    stmdb   sp!, {r0}				/* move registers to the kernal stack */
+	 	stmdb   sp!, {r1}				/* move registers to the kernal stack */
+
+	    ldr r2, [r0, #0xc]				/* load the task spsr bak into cpsr */
+	    msr spsr, r2 					/* TODO: need to investigate this line */
+		ldr lr, [r0, #4] 				/* load the pc of the td */
+
+		msr cpsr_c, #0xdf				/* change to system mode */
+	    ldr sp, [r0, #8]				/* load the td sp */
+	    ldmia   sp!, {r0-r12, lr, ip}		/* reload r0 - r10 of the task */
+
+	    msr cpsr_c, #0xd3				/* change to system mode */
+	    movs pc, lr
+
+		First save the kernel registers to the kernel stack. Now load the spsr and the lr accordingly. Go to system mode and get the sp to unwind the stack. Lastly return to the user task with the movs command.
+
+		The key thing to note is that since there is a separate kernel entry and exit for software vs hardware interrupts, they must match each other correctly. A new state READY_INT is created to make the differentiation. A task that was hardware interrupted will always return using the hardware kernel exit, and similarily for the software interrupts entry and exit will always match.
+
+	Interrupt handling
+
+		Interrupt handling is done in the normal handle function. It has a jump entry for an interrupt request, whcih will read the interrupt status and handle it accordingly. Generally, it will clear the interrupt flagand unblock the task that was waiting on the particular even related to the interrupt.
+
+	Event Block
+
+		A new state is created for tasks that are blocked on wait events. Since each type of event can only have at most one task waiting for it, a simple array of the blocked tasks is used to allow for fast constant time access of the blocked tasks given the event. So far the array size is 5, but can be increased if more types of events are introduced.
+
+
 3.
 The location of all source code you created for the assignment and a
 set of MD5 hashes of each file. The code must remain unmodified
