@@ -1,0 +1,15 @@
+1.
+A description of how to access, make and operate your program.
+2.
+A description of the structure of your kernel so far.
+*
+We will judge
+your kernel primarily on the basis of this description. Describe which
+algorithms and data structures you used and why you chose them.
+3.
+The location of all source code you created for the assignment and a
+set of MD5 hashes of each file. The code must remain unmodified
+after submission until the assignments are returned.
+4.
+Output produced by your client tasks and an explanation of why it
+occurs in the order it does
