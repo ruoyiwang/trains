@@ -65,3 +65,42 @@ after submission until the assignments are returned.
 4.
 Output produced by your client tasks and an explanation of why it
 occurs in the order it does
+
+Task: 5 | ticks delayed: 10 | 11 | delays completed: 0
+Task: 5 | ticks delayed: 10 | 21 | delays completed: 1
+Task: 6 | ticks delayed: 23 | 24 | delays completed: 0
+Task: 5 | ticks delayed: 10 | 31 | delays completed: 2
+Task: 7 | ticks delayed: 33 | 34 | delays completed: 0
+Task: 5 | ticks delayed: 10 | 41 | delays completed: 3
+Task: 6 | ticks delayed: 23 | 47 | delays completed: 1
+Task: 5 | ticks delayed: 10 | 51 | delays completed: 4
+Task: 5 | ticks delayed: 10 | 61 | delays completed: 5
+Task: 7 | ticks delayed: 33 | 67 | delays completed: 1
+Task: 6 | ticks delayed: 23 | 70 | delays completed: 2
+Task: 5 | ticks delayed: 10 | 71 | delays completed: 6
+Task: 8 | ticks delayed: 71 | 72 | delays completed: 0
+Task: 5 | ticks delayed: 10 | 81 | delays completed: 7
+Task: 5 | ticks delayed: 10 | 91 | delays completed: 8
+Task: 6 | ticks delayed: 23 | 93 | delays completed: 3
+Task: 7 | ticks delayed: 33 | 100 | delays completed: 2
+Task: 5 | ticks delayed: 10 | 101 | delays completed: 9
+Task: 5 | ticks delayed: 10 | 111 | delays completed: 10
+Task: 6 | ticks delayed: 23 | 116 | delays completed: 4
+Task: 5 | ticks delayed: 10 | 121 | delays completed: 11
+Task: 5 | ticks delayed: 10 | 131 | delays completed: 12
+Task: 7 | ticks delayed: 33 | 133 | delays completed: 3
+Task: 6 | ticks delayed: 23 | 139 | delays completed: 5
+Task: 5 | ticks delayed: 10 | 141 | delays completed: 13
+Task: 8 | ticks delayed: 71 | 143 | delays completed: 1
+Task: 5 | ticks delayed: 10 | 151 | delays completed: 14
+Task: 5 | ticks delayed: 10 | 161 | delays completed: 15
+Task: 6 | ticks delayed: 23 | 162 | delays completed: 6
+Task: 7 | ticks delayed: 33 | 166 | delays completed: 4
+Task: 5 | ticks delayed: 10 | 171 | delays completed: 16
+Task: 5 | ticks delayed: 10 | 181 | delays completed: 17
+Task: 6 | ticks delayed: 23 | 185 | delays completed: 7
+Task: 5 | ticks delayed: 10 | 191 | delays completed: 18
+Task: 7 | ticks delayed: 33 | 199 | delays completed: 5
+Task: 5 | ticks delayed: 10 | 201 | delays completed: 19
+Task: 6 | ticks delayed: 23 | 208 | delays completed: 8
+Task: 8 | ticks delayed: 71 | 214 | delays completed: 2
