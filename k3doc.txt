@@ -180,3 +180,7 @@ Task: 7 | ticks delayed: 33 | 199 | delays completed: 5
 Task: 5 | ticks delayed: 10 | 201 | delays completed: 19
 Task: 6 | ticks delayed: 23 | 208 | delays completed: 8
 Task: 8 | ticks delayed: 71 | 214 | delays completed: 2
+
+Note: The "delay compeleted" is zero-based.
+Note: The third column is current clock tick.
+The output is in the order of "delay completed" times the "ticks delayed". Which is the expected outcome.
