@@ -11,5 +11,5 @@ type go
 	go
 
 LOADING AND RUNNING THE PRE-COMPILED VERSION
-load -b 0x00218000 -h 10.15.167.4 "ARM/z23he/k3.elf;go
+load -b 0x00218000 -h 10.15.167.4 "ARM/z23he/kernel3.elf;go
 
