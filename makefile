@@ -23,7 +23,7 @@ all:  lib/libbwio.a lib/libutil.a kernel.s kernel.elf
 kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h tasks/clockserver.h kernel/queue.h tasks/Tasks.h lib/bwio.h
 	$(XCC) -S $(CFLAGS) kernel/kernel.c
 
-kernel.o: kernel.s kernel/ker_ent_exit.asm
+kernel.o: kernel.s kernel/ker_ent_exit.asm kernel/int_ker_ent_exit.asm
 	$(AS) $(ASFLAGS) -o kernel.o kernel.s kernel/ker_ent_exit.asm kernel/int_ker_ent_exit.asm
 
 
