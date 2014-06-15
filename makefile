@@ -4,7 +4,7 @@
 XCC     = gcc
 AS	= as
 AR	= ar
-CFLAGS  = -c -O0 -fPIC -Wall -I. -I./include -I./lib -I./kernel -I./tasks -mcpu=arm920t -msoft-float
+CFLAGS  = -c -fPIC -Wall -I. -I./include -I./lib -I./kernel -I./tasks -mcpu=arm920t -msoft-float
 # -g: include hooks for gdb
 # -c: only compile
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -21,7 +21,7 @@ all:  lib/libbwio.a lib/libutil.a kernel.s kernel.elf
 
 
 kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h tasks/clockserver.h kernel/queue.h tasks/Tasks.h lib/bwio.h
-	$(XCC) -S $(CFLAGS) kernel/kernel.c
+	$(XCC) -S $(CFLAGS) -O2 kernel/kernel.c
 
 kernel.o: kernel.s kernel/ker_ent_exit.asm kernel/int_ker_ent_exit.asm
 	$(AS) $(ASFLAGS) -o kernel.o kernel.s kernel/ker_ent_exit.asm kernel/int_ker_ent_exit.asm
@@ -56,14 +56,14 @@ Tasks.o: Tasks.s lib/bwio.h
 
 
 bwio.s: lib/bwio.c lib/bwio.h
-	$(XCC) -S $(CFLAGS) lib/bwio.c
+	$(XCC) -S $(CFLAGS) -O2 lib/bwio.c
 
 lib/libbwio.a: bwio.s
 	$(AS) $(ASFLAGS) -o $@ bwio.s
 
 
 util.s: lib/util.c lib/util.h
-	$(XCC) -S $(CFLAGS) lib/util.c
+	$(XCC) -S $(CFLAGS) -O2 lib/util.c
 
 lib/libutil.a: util.s
 	$(AS) $(ASFLAGS) -o $@ util.s

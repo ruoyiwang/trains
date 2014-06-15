@@ -142,6 +142,7 @@ void initialize (td tds[64], int event_blocked_tds[5]) {
     handler = (void *) 0x38;
     *handler = (int) syscall;
     initialize_interrupts();
+    volatile _tds = tds;
     // initialize all the tds;
     for (i = 0 ; i < 64; i++) {
         tds[i].tid          = i;
@@ -153,6 +154,7 @@ void initialize (td tds[64], int event_blocked_tds[5]) {
         tds[i].state        = STATE_READY;
         tds[i].next         = NULL;
         tds[i].sendQ        = NULL;
+        tds[i].flags        = 0;
     }
     for (i = 0 ; i < 5; i++) {
         event_blocked_tds[i] = 0;
@@ -183,7 +185,6 @@ void handle (td *active, int req, int args[5],
                     pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_CLOCK])->tid);
                 }
                 event_blocked_tds[EVENT_CLOCK] = 0;
-                // bwprintf(COM2, "INTERRUPT\n");
             }
             break;
         case 5:
@@ -271,17 +272,20 @@ int main( int argc, char* argv[] ) {
     int event_blocked_tds[5];
 
     unsigned int free_list_lo = 0, free_list_hi = 0;
+
     initialize(tds, event_blocked_tds);
     initialize_td_pq(td_pq);
     int tid = initialize_td(2, &free_list_lo, &free_list_hi, CODE_OFFSET + (&FirstUserTask), tds, td_pq, -1);
 
     int i, req = 0;
     for (;;) {
+
         tid = schedule(td_pq);
         if (tid == -1) break;
         active = (tds + tid);
-        if ( active->state == STATE_READY_INT) {
+        if ( active->flags & 1 ) {
             req = int_ker_exit ( active, (int *) args );
+            active->flags = active->flags & ~1;
         }
         else {
             req = ker_exit ( active, (int *) args );
@@ -295,7 +299,7 @@ int main( int argc, char* argv[] ) {
             pq_push_back(td_pq, tds, active->tid);
         }
         if (req == 20){
-            active->state = STATE_READY_INT;
+            active->flags = active->flags | 1;
         }
     }
     uninitialize();

@@ -56,6 +56,7 @@ typedef struct td_t {
     unsigned int parent_tid;
     unsigned int state;
     unsigned int args[5];
+    unsigned int flags;
     mailbox *sendQ;
     struct td_t * next;
 } td;

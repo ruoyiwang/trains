@@ -46,7 +46,7 @@ void FirstUserTask () {
     Create(15, CODE_OFFSET + (&SystemIdleTask));
 
     // playtRPS();
-    // perfTest();
+    perfTest();
 
     ClockServerTest();
 
@@ -129,9 +129,9 @@ void testSend() {
         receiver_tid = WhoIs("testReceive");
     }
 
-    int msglen = 4;
-    char msg[4] = {0};
-    char reply[4] = {0};
+    int msglen = 64;
+    char msg[64] = {0};
+    char reply[64] = {0};
     int i = 0;
     for ( i = 0; i < msglen - 1; i++) {
         msg[i] = 'a';
@@ -151,7 +151,7 @@ void testSend() {
     bwprintf(COM2, "hi: %u\n", hi);
     bwprintf(COM2, "lo: %u\n", (*timer_4_low));
 
-    for (i = 0; i < 100000; i++) {
+    for (i = 0; i < 1000; i++) {
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
     }
     // end timing
@@ -168,10 +168,10 @@ void testReceive() {
     while (sender_id < 0) {
         sender_id = WhoIs("testSend");
     }
-    int msglen = 4;
+    int msglen = 64;
     int sender_tid;
-    char msg[4] = {0};
-    char reply[4] = {0};
+    char msg[64] = {0};
+    char reply[64] = {0};
 
     int i = 0;
     for ( i = 0; i < msglen - 1; i++) {
