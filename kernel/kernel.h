@@ -28,7 +28,11 @@
     #define VICxSoftIntClear  0x1c
 
 // define for events
-#define EVENT_CLOCK 0
+#define EVENT_CLOCK             0
+#define EVENT_COM2_RECEIVE      1
+#define EVENT_COM2_TRANSMIT     2
+#define EVENT_COM1_RECEIVE      3
+#define EVENT_COM1_TRANSMIT     4
 
 typedef struct message_t
 {
