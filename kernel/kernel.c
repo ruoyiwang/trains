@@ -120,7 +120,16 @@ int initialize_td(
 
 void initialize_interrupts() {
     int * VIC2Enable =(int *) (VIC2_BASE + VICxIntEnable);
+    int * VIC1Enable =(int *) (VIC1_BASE + VICxIntEnable);
     *VIC2Enable = *VIC2Enable | (1 << 19);
+    *VIC1Enable = *VIC1Enable | (1 << 23);
+    *VIC1Enable = *VIC1Enable | (1 << 24);
+    *VIC1Enable = *VIC1Enable | (1 << 25);
+    *VIC1Enable = *VIC1Enable | (1 << 26);
+
+    int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
+    * uart2_ctrl = * uart2_ctrl | RIEN_MASK;
+    * uart2_ctrl = * uart2_ctrl | UARTEN_MASK;
 }
 
 void uninitialize() {
@@ -159,7 +168,6 @@ void initialize (td tds[64], int event_blocked_tds[5]) {
     for (i = 0 ; i < 5; i++) {
         event_blocked_tds[i] = 0;
     }
-
     return;
 }
 
@@ -170,6 +178,15 @@ void handle (td *active, int req, int args[5],
             td_queue td_pq[16],
             int event_blocked_tds[5] )   {
     int i, *timer3clear, *VIC2Status, *VIC1Status;
+    char c;
+    int *uart2_flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
+    int *uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
+    int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
+
+    int *uart1_flags = (int *)( UART1_BASE + UART_FLAG_OFFSET );
+    int *uart1_data = (int *)( UART1_BASE + UART_DATA_OFFSET );
+    int * uart1_ctrl = (int *)( UART1_BASE + UART_CTLR_OFFSET );
+
     for (i = 0; i<5 ; i++) {
         active->args[i] = args[i];
     }
@@ -178,13 +195,42 @@ void handle (td *active, int req, int args[5],
         case 20:    //interrupts
             VIC2Status = (int *) (VIC2_BASE + VICxIRQStatus);
             VIC1Status = (int *) (VIC1_BASE + VICxIRQStatus);
+
             if (*VIC2Status & (1 << 19) ){
                 timer3clear = (int *) ( TIMER3_BASE + CLR_OFFSET );
                 *timer3clear = 1;
                 if (event_blocked_tds[EVENT_CLOCK]) {
                     pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_CLOCK])->tid);
+                    event_blocked_tds[EVENT_CLOCK] = 0;
                 }
-                event_blocked_tds[EVENT_CLOCK] = 0;
+            }
+            if (*VIC1Status & (1 << 24) ){
+                if (event_blocked_tds[EVENT_COM1_TRANSMIT]) {
+                    *uart1_ctrl = * uart1_ctrl & ~TIEN_MASK;
+                    pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM1_TRANSMIT])->tid);
+                    event_blocked_tds[EVENT_COM1_TRANSMIT] = 0;
+                }
+            }
+            if (*VIC1Status & (1 << 23) ){
+                if (event_blocked_tds[EVENT_COM1_RECEIVE]) {
+                    ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->ret = *uart1_data;
+                    pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->tid);
+                    event_blocked_tds[EVENT_COM1_RECEIVE] = 0;
+                }
+            }
+            if (*VIC1Status & (1 << 26) ){
+                if (event_blocked_tds[EVENT_COM2_TRANSMIT]) {
+                    *uart2_ctrl = * uart2_ctrl & ~TIEN_MASK;
+                    pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM2_TRANSMIT])->tid);
+                    event_blocked_tds[EVENT_COM2_TRANSMIT] = 0;
+                }
+            }
+            if (*VIC1Status & (1 << 25) ){
+                if (event_blocked_tds[EVENT_COM2_RECEIVE]) {
+                    ((td *) event_blocked_tds[EVENT_COM2_RECEIVE])->ret = *uart2_data;
+                    pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM2_RECEIVE])->tid);
+                    event_blocked_tds[EVENT_COM2_RECEIVE] = 0;
+                }
             }
             break;
         case 5:
@@ -202,6 +248,12 @@ void handle (td *active, int req, int args[5],
             active->state = STATE_ZOMBIE;
             break;
         case 9:     // wait
+            if (args[0] == EVENT_COM2_TRANSMIT) {
+                *uart2_ctrl = * uart2_ctrl | TIEN_MASK;
+            }
+            if (args[0] == EVENT_COM1_TRANSMIT) {
+                *uart1_ctrl = * uart1_ctrl | TIEN_MASK;
+            }
             active->state = STATE_EVT_BLK;
             event_blocked_tds[args[0]] = active;
             break;

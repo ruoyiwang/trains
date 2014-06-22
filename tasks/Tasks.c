@@ -4,6 +4,8 @@
 #include <ts7200.h>
 #include <nameserver.h>
 #include <clockserver.h>
+#include <comservers.h>
+#include <interface.h>
 #include <kernel.h>
 
 void FirstUserTask () {
@@ -46,10 +48,10 @@ void FirstUserTask () {
     Create(15, CODE_OFFSET + (&SystemIdleTask));
 
     // playtRPS();
-    perfTest();
+    // perfTest();
 
-    ClockServerTest();
-
+    // ClockServerTest();
+    initInterface();
     Exit();
 }
 

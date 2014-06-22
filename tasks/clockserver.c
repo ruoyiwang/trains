@@ -92,7 +92,12 @@ void clockServer() {
                 break;
             case DELAY_UNTIL_REQUEST:
                 // add request to list of suspended tasks
-                queueDelay(delays, sender_tid, msg_struct.iValue - curTime);
+                if (msg_struct.iValue > curTime) {
+                    queueDelay(delays, sender_tid, msg_struct.iValue - curTime);
+                }
+                else {
+                    queueDelay(delays, sender_tid, 0);
+                }
                 break;
             default:
                 // wtf
