@@ -18,6 +18,8 @@ void TrainTask () {
     // msg shits
     char msg[10] = {0};
     char reply[10] = {0};
+    char commandstr[10] = {0};
+
     int sender_tid, msglen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -35,22 +37,20 @@ void TrainTask () {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch (msg_struct.type) {
             case TRAIN_REVERSE:
-                Delay(COMMAND_DELAY);
-                putc(COM1, 15);
-                Delay(COM1_PUT_DELAY);
-                putc(COM1, train_id);
-                Delay(COMMAND_DELAY);
-                putc(COM1, speed);
-                Delay(COM1_PUT_DELAY);
-                putc(COM1, train_id);
+                commandstr[0] = 15;
+                commandstr[1] = train_id;
+                commandstr[2] = speed;
+                commandstr[3] = train_id;
+                commandstr[4] = 0;
+                putstr(COM1, commandstr);
                 Reply (sender_tid, (char *)&reply_struct, msglen);
                 break;
             case TRAIN_SET_SPEED:
                 speed = msg_struct.iValue;
-                Delay(COM1_PUT_DELAY);
-                putc(COM1, speed);
-                Delay(COM1_PUT_DELAY);
-                putc(COM1, train_id);
+                commandstr[0] = speed;
+                commandstr[1] = train_id;
+                commandstr[2] = 0;
+                putstr(COM1, commandstr);
                 Reply (sender_tid, (char *)&reply_struct, msglen);
                 break;
             default:
@@ -67,6 +67,7 @@ void TracksTask () {
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
+    char commandstr[10] = {0};
 
     RegisterAs(TRACK_TASK);
 
@@ -76,17 +77,16 @@ void TracksTask () {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch (msg_struct.type) {
             case SET_SWITCH:
-                Delay(COMMAND_DELAY);
                 if (msg_struct.value[0] == 's') {
-                    putc(COM1, SW_STRAIGHT);
+                    commandstr[0] = SW_STRAIGHT;
                 }
                 else if (msg_struct.value[0] == 'c'){
-                    putc(COM1, SW_CURVE);
+                    commandstr[0] = SW_CURVE;
                 }
-                Delay(COM1_PUT_DELAY);
-                putc(COM1, msg_struct.iValue);
-                Delay(COMMAND_DELAY);
-                putc(COM1, 32);
+                commandstr[1] = msg_struct.iValue;
+                commandstr[2] = 32;
+                commandstr[3] = 0;
+                putstr(COM1, commandstr);
                 Reply (sender_tid, (char *)&reply_struct, msglen);
                 break;
             default:

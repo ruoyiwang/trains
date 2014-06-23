@@ -235,7 +235,7 @@ void initInterface() {
     row = CMD_POSITION_X; col = 1;
     outputPutStr ( "cmd>", &row, &col );
 
-    Create(4, CODE_OFFSET + (&clockDisplayTask));
+    Create(3, CODE_OFFSET + (&clockDisplayTask));
     Create(5, CODE_OFFSET + (&handleCommandTask));
 
 }
@@ -285,7 +285,7 @@ void SensorsTask() {
     // char sensors_bytes[10];
     int sensorDisplayPosition = 0;
     FOREVER {
-        Delay(20);
+        Delay(30);
         putc(COM1, 133);
         for (i = 0; i<10 ; i ++){
             c = getc(COM1);
