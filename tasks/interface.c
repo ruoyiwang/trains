@@ -2,6 +2,7 @@
 #include <nameserver.h>
 #include <interface.h>
 #include <clockserver.h>
+#include <train.h>
 #include <kernel.h>
 #include <bwio.h>
 #include <util.h>
@@ -99,13 +100,27 @@ int getSwCursor ( int sw, int *row, int *col ) {
 }
 
 void setSwitch ( int state, int address ) {
+    char msg[2];
+    char reply[2];
+    int server_tid, msglen = 2, track_task_id;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.type = SET_SWITCH;
+    reply_struct.value = reply;
+
+    track_task_id = WhoIs(TRACK_TASK);
+    msg_struct.iValue = address;
     int r = 0, c = 0;
     if ( getSwCursor ( address, &r, &c ) ) {
         if (state == SW_STRAIGHT) {
             outputPutStr ( "S", &r, &c );
+            msg_struct.value[0] = 's';
+            Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
         }
         else if (state == SW_CURVE) {
             outputPutStr ( "C", &r, &c );
+            msg_struct.value[0] = 'c';
+            Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
         }
     }
 }
@@ -220,6 +235,107 @@ void initInterface() {
     row = CMD_POSITION_X; col = 1;
     outputPutStr ( "cmd>", &row, &col );
 
+    Create(3, CODE_OFFSET + (&clockDisplayTask));
+    Create(3, CODE_OFFSET + (&SensorsTask));
+    Create(4, CODE_OFFSET + (&handleCommandTask));
+
+}
+
+void clockDisplayTask() {
+    Create(2, CODE_OFFSET + (&clockServer));
+    char clockstr[10];
+    int clockMinute = 0, clockTenth = 0, clockSecond = 0, sechi, seclo;
+    int currentTime = Time()+10;
+    FOREVER {
+        int row = 18, col = 1;
+        DelayUntil(currentTime);
+        currentTime = currentTime + 10;
+        clockTenth++;
+        if ( clockTenth > 9 ) {
+            clockTenth = 0;
+            clockSecond++;
+        }
+        if ( clockSecond > 59 ) {
+            clockSecond = 0;
+            clockMinute++;
+        }
+        saveCursorPosition();
+        setCursor( CLOCK_POSITION_X, CLOCK_POSITION_Y );
+        flushLine ();
+        sechi = ( clockSecond / 10 );
+        seclo = ( clockSecond % 10 );
+
+        clockstr[0] = '0' + clockMinute;
+        clockstr[1] = ':';
+        clockstr[2] = '0' + sechi;
+        clockstr[3] = '0' + seclo;
+        clockstr[4] = '.';
+        clockstr[5] = '0' + clockTenth ;
+        clockstr[6] = 0;
+
+        putstr(COM2, clockstr);
+
+        restoreCursorPosition();
+    }
+}
+
+void SensorsTask() {
+    Create(2, CODE_OFFSET + (&clockServer));
+    char clockstr[10];
+    char c;
+    int clockMinute = 0, clockTenth = 0, clockSecond = 0, sechi, seclo, i,j, row, col;
+    int currentTime = Time()+10;
+    // char sensors_bytes[10];
+    int sensorDisplayPosition = 0;
+    FOREVER {
+        Delay(50);
+        putc(COM1, 133);
+        for (i = 0; i<10 ; i ++){
+            c = getc(COM1);
+            for (j = 0; j< 8 ; j++) {
+                row = SENSORS_POSITION_X; col = sensorDisplayPosition * 4 + 1;
+                unsigned char sensorStr[5];
+                int sensorNum;
+                if ( c & ( 1 << j ) ){
+                    sensorStr[0] = 'A' + (i / 2);
+                    sensorStr[1] = 0;
+                    outputPutStr ( sensorStr, &row, &col );
+                    if ( (i % 2) ) {
+                        sensorNum = 16 - j;
+                        if (sensorNum < 10)
+                            outputPutStr ( "0", &row, &col );
+                        bwi2a ( sensorNum, sensorStr );
+                        outputPutStr ( sensorStr, &row, &col );
+                    }
+                    if ( !(i % 2) ) {
+                        sensorNum = 8 - j;
+                        bwi2a ( sensorNum, sensorStr );
+                        outputPutStr ( "0", &row, &col );
+                        outputPutStr ( sensorStr, &row, &col );
+                    }
+                    outputPutStr ( " ", &row, &col );
+                    sensorDisplayPosition = (sensorDisplayPosition + 1) % SENSORS_DISPLAY_WIDTH;
+                }
+
+            }
+
+        }
+    }
+}
+
+void handleCommandTask() {
+    char commandStr[64];
+    int index=0, row, col;
+    char c;
+
+    char msg[15];
+    char reply[15];
+    int server_tid, msglen = 2, train_task_id, i;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = reply;
+
+    Create(4, CODE_OFFSET + (&TracksTask));
 
     for ( i=1; i <=18 ; i++) {
         setSwitch ( SW_CURVE, i);
@@ -230,53 +346,6 @@ void initInterface() {
     setSwitch ( SW_STRAIGHT, 0x9C);
 
     setCursor( CMD_POSITION_X, CMD_POSITION_Y);
-
-    Create(3, CODE_OFFSET + (&clockDisplayTask));
-    Create(4, CODE_OFFSET + (&handleCommandTask));
-}
-
-void clockDisplayTask() {
-    Create(2, CODE_OFFSET + (&clockServer));
-    char clockstr[10];
-    int clockMinute = 0, clockTenth = 0, clockSecond = 0, sechi, seclo;
-    int currentTime = Time()+10;
-    FOREVER {
-    	int row = 18, col = 1;
-        DelayUntil(currentTime);
-	    currentTime = currentTime + 10;
-        clockTenth++;
-        if ( clockTenth > 9 ) {
-            clockTenth = 0;
-            clockSecond++;
-        }
-        if ( clockSecond > 59 ) {
-            clockSecond = 0;
-            clockMinute++;
-        }
-	    saveCursorPosition();
-	    setCursor( CLOCK_POSITION_X, CLOCK_POSITION_Y );
-	    flushLine ();
-	    sechi = ( clockSecond / 10 );
-	    seclo = ( clockSecond % 10 );
-
-	    clockstr[0] = '0' + clockMinute;
-	    clockstr[1] = ':';
-	    clockstr[2] = '0' + sechi;
-	    clockstr[3] = '0' + seclo;
-	    clockstr[4] = '.';
-	    clockstr[5] = '0' + clockTenth ;
-	    clockstr[6] = 0;
-
-	    putstr(COM2, clockstr);
-
-	    restoreCursorPosition();
-    }
-}
-
-void handleCommandTask() {
-    char commandStr[64];
-    int index=0, row, col;
-    char c;
 
     FOREVER {
     	c = getc(COM2);
@@ -291,25 +360,36 @@ void handleCommandTask() {
             row = 18; col = 1;
             switch (command) {
                 case CMD_TRAIN:
-                    // train_buffer[train_rindex % BUFFER_SIZE] = (unsigned char) atoi(argv[1]);
-                    // train_rindex++;
-                    // train_buffer[train_rindex % BUFFER_SIZE] = (unsigned char) atoi(argv[0]);
-                    // train_rindex++;
-
                     outputPutStrLn ("Starting train ", &row, &col );
                     outputPutStr ( argv[0], &row, &col );
                     outputPutStr ( " at ", &row, &col );
                     outputPutStr ( argv[1], &row, &col );
 
+                    genTrainName(atoi(argv[0]), msg);
+                    train_task_id = WhoIs(msg);
+                    if (train_task_id == -1) {
+                        train_task_id = Create(4, CODE_OFFSET + (&TrainTask));
+                        msg_struct.iValue = atoi(argv[0]);
+                        Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+                    }
+                    msg_struct.type = TRAIN_SET_SPEED;
+                    msg_struct.iValue = atoi(argv[1]);
+                    Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+
                     break;
                 case CMD_REVERSE:
-                    // train_buffer[train_rindex++ % BUFFER_SIZE] = 15;
-                    // train_buffer[train_rindex++ % BUFFER_SIZE] = atoi(argv[0]);
-                    // train_buffer[train_rindex++ % BUFFER_SIZE] = 10;
-                    // train_buffer[train_rindex++ % BUFFER_SIZE] = atoi(argv[0]);
-
                     outputPutStrLn ( "Reversing train ", &row, &col );
                     outputPutStr ( argv[0], &row, &col );
+
+                    genTrainName(atoi(argv[0]), msg);
+                    train_task_id = WhoIs(msg);
+                    if (train_task_id == -1) {
+                        train_task_id = Create(4, CODE_OFFSET + (&TrainTask));
+                        msg_struct.iValue = atoi(argv[0]);
+                        Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+                    }
+                    msg_struct.type = TRAIN_REVERSE;
+                    Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
                     break;
                 case CMD_SWITCH:

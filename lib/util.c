@@ -92,3 +92,32 @@ void TurnCacheOn() {
 //     int a = strcmp(strA, strB);
 //     printf("%d\n", a);
 // }
+
+int setspeed( int channel, int speed ) {
+    int *high, *low;
+    switch( channel ) {
+    case COM1:
+        high = (int *)( UART1_BASE + UART_LCRM_OFFSET );
+        low = (int *)( UART1_BASE + UART_LCRL_OFFSET );
+            break;
+    case COM2:
+        high = (int *)( UART2_BASE + UART_LCRM_OFFSET );
+        low = (int *)( UART2_BASE + UART_LCRL_OFFSET );
+            break;
+    default:
+            return -1;
+            break;
+    }
+    switch( speed ) {
+    case 115200:
+        *high = 0x0;
+        *low = 0x3;
+        return 0;
+    case 2400:
+        *high = 0x0;
+        *low = 0xbf;
+        return 0;
+    default:
+        return -1;
+    }
+}

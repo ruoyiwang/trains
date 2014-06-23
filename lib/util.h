@@ -15,4 +15,5 @@ unsigned int rand(unsigned int seed);
 
 void TurnCacheOn();
 
+int setspeed( int channel, int speed );
 #endif

@@ -20,9 +20,7 @@ void Com2PutServerNotifier() {
     int * uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
 
     FOREVER {
-        // *uart2_ctrl = * uart2_ctrl | TIEN_MASK;
         AwaitEvent( EVENT_COM2_TRANSMIT );
-        // *uart2_ctrl = * uart2_ctrl & ~TIEN_MASK;
         msg[0] = (char) data;
         // send evt to data
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
@@ -41,17 +39,15 @@ void Com1PutServerNotifier() {
     reply_struct.value = reply;
     receiver_tid = WhoIs(COM1_PUT_SERVER);
     int data;
-    int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
-    int * uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
+    int * uart1_ctrl = (int *)( UART1_BASE + UART_CTLR_OFFSET );
+    int * uart1_data = (int *)( UART1_BASE + UART_DATA_OFFSET );
 
     FOREVER {
-        // *uart2_ctrl = * uart2_ctrl | TIEN_MASK;
         AwaitEvent( EVENT_COM1_TRANSMIT );
-        // *uart2_ctrl = * uart2_ctrl & ~TIEN_MASK;
         msg[0] = (char) data;
         // send evt to data
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
-        *uart2_data = (char) reply_struct.value[0];
+        *uart1_data = (char) reply_struct.value[0];
     }
 }
 

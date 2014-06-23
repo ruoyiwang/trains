@@ -20,7 +20,7 @@ LDFLAGS = -init main -N -Map kernel.map -T orex.ld -Llib -L/u/wbcowan/gnuarm-4.0
 all:  lib/libbwio.a lib/libutil.a kernel.s kernel.elf
 
 
-kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h tasks/clockserver.h tasks/comservers.h tasks/interface.h kernel/queue.h tasks/Tasks.h lib/bwio.h
+kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h tasks/clockserver.h tasks/comservers.h tasks/interface.h kernel/queue.h tasks/Tasks.h tasks/train.h lib/bwio.h
 	$(XCC) -S $(CFLAGS) kernel/kernel.c
 
 kernel.o: kernel.s kernel/ker_ent_exit.asm kernel/int_ker_ent_exit.asm
@@ -55,6 +55,13 @@ interface.o: interface.s
 	$(AS) $(ASFLAGS) -o interface.o interface.s
 
 
+train.s: tasks/train.c tasks/train.h
+	$(XCC) -S $(CFLAGS) tasks/train.c
+
+train.o: train.s
+	$(AS) $(ASFLAGS) -o train.o train.s
+
+
 queue.s: kernel/queue.c kernel/queue.h
 	$(XCC) -S $(CFLAGS) kernel/queue.c
 
@@ -83,8 +90,8 @@ lib/libutil.a: util.s
 	$(AS) $(ASFLAGS) -o $@ util.s
 
 
-kernel.elf: kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o -lbwio -lutil -lgcc
+kernel.elf: kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o -lbwio -lutil -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map

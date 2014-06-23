@@ -38,6 +38,7 @@ void outputPutStr ( char* str, int *row, int *col );
 void outputPutStrLn ( char* str, int *row, int *col );
 int getSwCursor ( int sw, int *row, int *col );
 void setSwitch ( int state, int address );
+void SensorsTask();
 void handleCommandTask();
 void parseCommand ( char* str, int *argc, char argv[10][10], int* command);
 #endif
