@@ -128,8 +128,11 @@ void initialize_interrupts() {
     *VIC1Enable = *VIC1Enable | (1 << 26);
 
     int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
+    int * uart1_ctrl = (int *)( UART1_BASE + UART_CTLR_OFFSET );
     * uart2_ctrl = * uart2_ctrl | RIEN_MASK;
     * uart2_ctrl = * uart2_ctrl | UARTEN_MASK;
+    * uart1_ctrl = * uart2_ctrl | RIEN_MASK;
+    * uart1_ctrl = * uart2_ctrl | UARTEN_MASK;
 }
 
 void uninitialize() {

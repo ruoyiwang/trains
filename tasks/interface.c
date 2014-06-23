@@ -235,9 +235,8 @@ void initInterface() {
     row = CMD_POSITION_X; col = 1;
     outputPutStr ( "cmd>", &row, &col );
 
-    Create(3, CODE_OFFSET + (&clockDisplayTask));
-    Create(3, CODE_OFFSET + (&SensorsTask));
-    Create(4, CODE_OFFSET + (&handleCommandTask));
+    Create(4, CODE_OFFSET + (&clockDisplayTask));
+    Create(5, CODE_OFFSET + (&handleCommandTask));
 
 }
 
@@ -280,15 +279,13 @@ void clockDisplayTask() {
 }
 
 void SensorsTask() {
-    Create(2, CODE_OFFSET + (&clockServer));
     char clockstr[10];
     char c;
-    int clockMinute = 0, clockTenth = 0, clockSecond = 0, sechi, seclo, i,j, row, col;
-    int currentTime = Time()+10;
+    int i,j, row, col;
     // char sensors_bytes[10];
     int sensorDisplayPosition = 0;
     FOREVER {
-        Delay(50);
+        Delay(20);
         putc(COM1, 133);
         for (i = 0; i<10 ; i ++){
             c = getc(COM1);
@@ -335,7 +332,7 @@ void handleCommandTask() {
     msg_struct.value = msg;
     reply_struct.value = reply;
 
-    Create(4, CODE_OFFSET + (&TracksTask));
+    Create(5, CODE_OFFSET + (&TracksTask));
 
     for ( i=1; i <=18 ; i++) {
         setSwitch ( SW_CURVE, i);
@@ -345,6 +342,7 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
+    Create(3, CODE_OFFSET + (&SensorsTask));
     setCursor( CMD_POSITION_X, CMD_POSITION_Y);
 
     FOREVER {
