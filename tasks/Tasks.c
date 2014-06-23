@@ -17,12 +17,12 @@ void FirstUserTask () {
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
     // bwprintf(COM2, "%d\n", *timer_4_low );
 
-    char msg[20] = "I am a message";
-    char reply[20];
-    message msg_struct, reply_struct;
-    msg_struct.value = msg;
-    msg_struct.type = 12;
-    reply_struct.value = reply;
+    // char msg[20] = "I am a message";
+    // char reply[20];
+    // message msg_struct, reply_struct;
+    // msg_struct.value = msg;
+    // msg_struct.type = 12;
+    // reply_struct.value = reply;
 
     setspeed( COM1, 2400 );
     bwsetfifo( COM2, OFF);

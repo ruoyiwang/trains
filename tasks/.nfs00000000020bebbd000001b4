@@ -20,7 +20,9 @@ void Com2PutServerNotifier() {
     int * uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
 
     FOREVER {
+        // *uart2_ctrl = * uart2_ctrl | TIEN_MASK;
         AwaitEvent( EVENT_COM2_TRANSMIT );
+        // *uart2_ctrl = * uart2_ctrl & ~TIEN_MASK;
         msg[0] = (char) data;
         // send evt to data
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
@@ -39,24 +41,25 @@ void Com1PutServerNotifier() {
     reply_struct.value = reply;
     receiver_tid = WhoIs(COM1_PUT_SERVER);
     int data;
-    int * uart1_ctrl = (int *)( UART1_BASE + UART_CTLR_OFFSET );
-    int * uart1_data = (int *)( UART1_BASE + UART_DATA_OFFSET );
+    int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
+    int * uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
 
     FOREVER {
+        // *uart2_ctrl = * uart2_ctrl | TIEN_MASK;
         AwaitEvent( EVENT_COM1_TRANSMIT );
+        // *uart2_ctrl = * uart2_ctrl & ~TIEN_MASK;
         msg[0] = (char) data;
         // send evt to data
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
-        *uart1_data = (char) reply_struct.value[0];
-        Delay(15);
+        *uart2_data = (char) reply_struct.value[0];
     }
 }
 
 void PutServer() {
     // msg shits
-    char msg[710] = {0};
-    char reply[8] = {0};
-    int sender_tid, msglen = 710;
+    char msg[64] = {0};
+    char reply[64] = {0};
+    int sender_tid, msglen = 64;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -117,11 +120,14 @@ void PutServer() {
                 break;
             case PUTSTR_REQUEST:
                 i=0;
-                while ( (char_from_request = msg[i++]) ) {
+                while ( char_from_request = msg[i] ) {
+                    i++;
                     insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
                     string_buffer[insetion_point] = char_from_request;
                     buf_len++;
                 }
+                // don't really care what we reply
+                Reply (sender_tid, (char *)&reply_struct, msglen);
                 // if a task wanted something and is blocked, we return it to it
                 if (blocked_notifier != -1) {
                     reply[0] = string_buffer[buf_start];
@@ -130,8 +136,6 @@ void PutServer() {
                     Reply (blocked_notifier, (char *)&reply_struct, msglen);
                     blocked_notifier = -1;
                 }
-                // don't really care what we reply
-                Reply (sender_tid, (char *)&reply_struct, msglen);
                 break;
             case PUTC_NOTIFIER:
                 // read char from the buffer
@@ -280,7 +284,7 @@ void GetServer() {
 
 void putc(int COM, char c) {
     char msg[2] = {0};
-    char reply[64] = {0};
+    char reply[2] = {0};
     int msglen = 2;
     int receiver_tid;
     message msg_struct, reply_struct;
@@ -307,9 +311,9 @@ void putc(int COM, char c) {
 }
 
 void putstr(int COM, char* str ) {
-    char msg[710] = {0};
-    char reply[64] = {0};
-    int msglen = 710;
+    char msg[64] = {0};
+    char reply[2] = {0};
+    int msglen = 64;
     int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;

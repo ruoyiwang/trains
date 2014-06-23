@@ -239,7 +239,8 @@ void initInterface() {
     buffer[(index)++] = 0;
     putstr(COM2, buffer);
 
-    Create(3, CODE_OFFSET + (&clockDisplayTask));
+    Create(2, CODE_OFFSET + (&clockServer));
+    // Create(3, CODE_OFFSET + (&clockDisplayTask));
     Create(5, CODE_OFFSET + (&handleCommandTask));
 
 }
@@ -290,53 +291,53 @@ void clockDisplayTask() {
 }
 
 void SensorsTask() {
-    FOREVER{}
-    // char buffer[128] = {0};
-    // int index = 0;
+    // FOREVER{}
+    char buffer[512] = {0};
+    int index = 0;
 
-    // char clockstr[10];
-    // char c;
-    // int i,j, row, col;
-    // // char sensors_bytes[10];
-    // int sensorDisplayPosition = 0;
-    // FOREVER {
-    //     Delay(30);
-    //     putc(COM1, 133);
-    //     for (i = 0; i<10 ; i ++){
-    //         c = getc(COM1);
-    //         for (j = 0; j< 8 ; j++) {
-    //             index = 0;
+    char clockstr[10];
+    char c;
+    int i,j, row, col;
+    // char sensors_bytes[10];
+    int sensorDisplayPosition = 0;
+    FOREVER {
+        Delay(30);
+        putc(COM1, 133);
+        for (i = 0; i<10 ; i ++){
+            c = getc(COM1);
+            for (j = 0; j< 8 ; j++) {
+                index = 0;
 
-    //             row = SENSORS_POSITION_X; col = sensorDisplayPosition * 4 + 1;
-    //             unsigned char sensorStr[5];
-    //             int sensorNum;
-    //             if ( c & ( 1 << j ) ){
-    //                 sensorStr[0] = 'A' + (i / 2);
-    //                 sensorStr[1] = 0;
-    //                 outputPutStr ( sensorStr, &row, &col, buffer, &index );
-    //                 if ( (i % 2) ) {
-    //                     sensorNum = 16 - j;
-    //                     if (sensorNum < 10)
-    //                         outputPutStr ( "0", &row, &col, buffer, &index  );
-    //                     bwi2a ( sensorNum, sensorStr );
-    //                     outputPutStr ( sensorStr, &row, &col, buffer, &index  );
-    //                 }
-    //                 if ( !(i % 2) ) {
-    //                     sensorNum = 8 - j;
-    //                     bwi2a ( sensorNum, sensorStr );
-    //                     outputPutStr ( "0", &row, &col, buffer, &index  );
-    //                     outputPutStr ( sensorStr, &row, &col, buffer, &index  );
-    //                 }
-    //                 outputPutStr ( " ", &row, &col, buffer, &index  );
-    //                 sensorDisplayPosition = (sensorDisplayPosition + 1) % SENSORS_DISPLAY_WIDTH;
-    //             }
+                row = SENSORS_POSITION_X; col = sensorDisplayPosition * 4 + 1;
+                unsigned char sensorStr[5];
+                int sensorNum;
+                if ( c & ( 1 << j ) ){
+                    sensorStr[0] = 'A' + (i / 2);
+                    sensorStr[1] = 0;
+                    outputPutStr ( sensorStr, &row, &col, buffer, &index );
+                    if ( (i % 2) ) {
+                        sensorNum = 16 - j;
+                        if (sensorNum < 10)
+                            outputPutStr ( "0", &row, &col, buffer, &index  );
+                        bwi2a ( sensorNum, sensorStr );
+                        outputPutStr ( sensorStr, &row, &col, buffer, &index  );
+                    }
+                    if ( !(i % 2) ) {
+                        sensorNum = 8 - j;
+                        bwi2a ( sensorNum, sensorStr );
+                        outputPutStr ( "0", &row, &col, buffer, &index  );
+                        outputPutStr ( sensorStr, &row, &col, buffer, &index  );
+                    }
+                    outputPutStr ( " ", &row, &col, buffer, &index  );
+                    sensorDisplayPosition = (sensorDisplayPosition + 1) % SENSORS_DISPLAY_WIDTH;
+                }
 
-    //             buffer[(index)++] = 0;
-    //             putstr(COM2, buffer);
-    //         }
+                buffer[(index)++] = 0;
+                putstr(COM2, buffer);
+            }
 
-    //     }
-    // }
+        }
+    }
 }
 
 void handleCommandTask() {
@@ -356,12 +357,11 @@ void handleCommandTask() {
     reply_struct.value = reply;
 
 
-    // Create(3, CODE_OFFSET + (&SensorsTask));
     setCursor( CMD_POSITION_X, CMD_POSITION_Y, buffer, &index);
     buffer[index++] = 0;
     putstr(COM2, buffer);
 
-    Create(5, CODE_OFFSET + (&TracksTask));
+    Create(3, CODE_OFFSET + (&TracksTask));
     for ( i=1; i <=18 ; i++) {
         setSwitch ( SW_CURVE, i);
     }
@@ -369,6 +369,8 @@ void handleCommandTask() {
     setSwitch ( SW_STRAIGHT, 0x9A);
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
+
+    Create(3, CODE_OFFSET + (&SensorsTask));
 
     FOREVER {
     	c = getc(COM2);
