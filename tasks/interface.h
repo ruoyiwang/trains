@@ -25,17 +25,17 @@
 #define CMD_QUIT 4
 #define CMD_INVALID 5
 
-void restoreCursorPosition ();
-void saveCursorPosition ();
-void setCursor ( int row, int col );
-void flushLine ();
-void flushScreen ();
-void cursorCommand( char * cmd );
+void restoreCursorPosition (char* buffer, int* index);
+void saveCursorPosition (char* buffer, int* index);
+void setCursor ( int row, int col, char* buffer, int* index );
+void flushLine (char* buffer, int* index);
+void flushScreen (char* buffer, int* index);
+void cursorCommand( char * cmd, char* buffer, int* index );
 void clockDisplayTask();
 void initInterface();
-void drawSwitchesTable ( int *row, int *col );
-void outputPutStr ( char* str, int *row, int *col );
-void outputPutStrLn ( char* str, int *row, int *col );
+void drawSwitchesTable ( int *row, int *col, char* buffer, int* index );
+void outputPutStr ( char* str, int *row, int *col, char* buffer, int* index );
+void outputPutStrLn ( char* str, int *row, int *col, char* buffer, int* index );
 int getSwCursor ( int sw, int *row, int *col );
 void setSwitch ( int state, int address );
 void SensorsTask();

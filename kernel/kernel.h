@@ -17,7 +17,7 @@
 #define STATE_READY_INT     6
 
 #define USER_STACK_SIZE     0x1000      // 0x1000 = 4096
-#define USER_STACK_BEGIN    0x1000000
+#define USER_STACK_BEGIN    0x1004000
 
 #define VIC1_BASE            0x800b0000
 #define VIC2_BASE            0x800c0000

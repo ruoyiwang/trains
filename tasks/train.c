@@ -87,6 +87,7 @@ void TracksTask () {
                 commandstr[2] = 32;
                 commandstr[3] = 0;
                 putstr(COM1, commandstr);
+                // bwprintf(COM2, "received sw command\n\n");
                 Reply (sender_tid, (char *)&reply_struct, msglen);
                 break;
             default:

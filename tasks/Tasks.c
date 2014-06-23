@@ -32,7 +32,7 @@ void FirstUserTask () {
     int ns_tid = Create(1, CODE_OFFSET + (&NameServer));
     // check if the created nameserver tid == NAMESERVER_TID
     if (ns_tid != 1) {
-        bwprintf(COM2, "WTF is happening\n\n");
+        // bwprintf(COM2, "WTF is happening\n\n");
         Exit();
     }
     // Create(2, CODE_OFFSET + (&spawnedTask));
@@ -237,10 +237,10 @@ void FirstUserTask () {
 void SystemIdleTask() {
     char c;
     FOREVER{
-        c = bwgetc(COM2);
-        if (c == 'q') {
-            Exit();
-        }
+        // c = bwgetc(COM2);
+        // if (c == 'q') {
+        //     Exit();
+        // }
     }
 }
 

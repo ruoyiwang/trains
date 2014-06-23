@@ -54,9 +54,9 @@ void Com1PutServerNotifier() {
 
 void PutServer() {
     // msg shits
-    char msg[64] = {0};
+    char msg[710] = {0};
     char reply[64] = {0};
-    int sender_tid, msglen = 64;
+    int sender_tid, msglen = 710;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -308,9 +308,9 @@ void putc(int COM, char c) {
 }
 
 void putstr(int COM, char* str ) {
-    char msg[64] = {0};
+    char msg[710] = {0};
     char reply[2] = {0};
-    int msglen = 64;
+    int msglen = 710;
     int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
