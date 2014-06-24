@@ -158,7 +158,7 @@ void initialize (td tds[64], int event_blocked_tds[5]) {
     // initialize all the tds;
     for (i = 0 ; i < 64; i++) {
         tds[i].tid          = i;
-        tds[i].sp           = USER_STACK_BEGIN + i * 4 * USER_STACK_SIZE;
+        tds[i].sp           = USER_STACK_BEGIN - i * 4 * USER_STACK_SIZE;
         tds[i].spsr         = 0x5f;
         tds[i].ret          = 0;
         tds[i].priority     = 15;
