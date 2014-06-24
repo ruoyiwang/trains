@@ -17,7 +17,7 @@ ASFLAGS	= -mcpu=arm920t -mapcs-32
 
 LDFLAGS = -init main -N -Map kernel.map -T orex.ld -Llib -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L../lib
 
-all:  lib/libbwio.a lib/libutil.a kernel.s kernel.elf
+all:  kernel.s kernel.elf
 
 
 kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h tasks/clockserver.h tasks/comservers.h tasks/interface.h kernel/queue.h tasks/Tasks.h tasks/train.h lib/bwio.h
@@ -79,19 +79,19 @@ Tasks.o: Tasks.s lib/bwio.h
 bwio.s: lib/bwio.c lib/bwio.h
 	$(XCC) -S $(CFLAGS) -O2 lib/bwio.c
 
-lib/libbwio.a: bwio.s
+bwio.o: bwio.s
 	$(AS) $(ASFLAGS) -o $@ bwio.s
 
 
 util.s: lib/util.c lib/util.h
 	$(XCC) -S $(CFLAGS) lib/util.c
 
-lib/libutil.a: util.s
+util.o: util.s
 	$(AS) $(ASFLAGS) -o $@ util.s
 
 
-kernel.elf: kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o -lbwio -lutil -lgcc
+kernel.elf: kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map
