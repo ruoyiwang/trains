@@ -239,8 +239,8 @@ void initInterface() {
     buffer[(index)++] = 0;
     putstr(COM2, buffer);
 
-    Create(2, CODE_OFFSET + (&clockServer));
-    // Create(3, CODE_OFFSET + (&clockDisplayTask));
+    // Create(2, CODE_OFFSET + (&clockServer));
+    Create(3, CODE_OFFSET + (&clockDisplayTask));
     Create(5, CODE_OFFSET + (&handleCommandTask));
 
 }
@@ -306,12 +306,12 @@ void SensorsTask() {
         for (i = 0; i<10 ; i ++){
             c = getc(COM1);
             for (j = 0; j< 8 ; j++) {
-                index = 0;
 
                 row = SENSORS_POSITION_X; col = sensorDisplayPosition * 4 + 1;
                 unsigned char sensorStr[5];
                 int sensorNum;
                 if ( c & ( 1 << j ) ){
+                    index = 0;
                     sensorStr[0] = 'A' + (i / 2);
                     sensorStr[1] = 0;
                     outputPutStr ( sensorStr, &row, &col, buffer, &index );
@@ -330,10 +330,10 @@ void SensorsTask() {
                     }
                     outputPutStr ( " ", &row, &col, buffer, &index  );
                     sensorDisplayPosition = (sensorDisplayPosition + 1) % SENSORS_DISPLAY_WIDTH;
-                }
 
-                buffer[(index)++] = 0;
-                putstr(COM2, buffer);
+                    buffer[(index)++] = 0;
+                    putstr(COM2, buffer);
+                }
             }
 
         }
