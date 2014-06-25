@@ -27,9 +27,9 @@ int strcmp ( const char * str1, const char * str2 ) {
 
 // this works, maybe? Bill says we need to write unit tests
 void * memcpy ( void * destination, const void * source, unsigned int num ) {
-    int i = 0;
-    char * dest = (char*) destination;
-    char * src = (char*) source;
+    unsigned int i = 0;
+    unsigned char * dest = (unsigned char*) destination;
+    unsigned char * src = (unsigned char*) source;
     for ( i = 0; i < num; i++ ) {
         dest[i] = src[i];
     }
