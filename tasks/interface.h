@@ -27,6 +27,7 @@
 #define CMD_SWITCH 3
 #define CMD_QUIT 4
 #define CMD_INVALID 5
+#define CMD_ASSERT 6
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);

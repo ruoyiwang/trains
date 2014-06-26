@@ -181,6 +181,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
     else if ( strcmp (cmdstr, "sw") == 0 && *argc == 2 ){
         *command = CMD_SWITCH;
     }
+    else if ( cmdstr[0] == 'a' ){
+        *command = CMD_ASSERT;
+        return;
+    }
     else if ( cmdstr[0] == 'q' ){
         *command = CMD_QUIT;
         return;
@@ -386,7 +390,7 @@ void handleCommandTask() {
     buffer[index++] = 0;
     putstr(COM2, buffer);
 
-    Create(3, CODE_OFFSET + (&TracksTask));
+    Create(5, CODE_OFFSET + (&TracksTask));
     for ( i=1; i <=18 ; i++) {
         setSwitch ( SW_CURVE, i);
     }
@@ -395,7 +399,7 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
-    Create(3, CODE_OFFSET + (&SensorsTask));
+    Create(5, CODE_OFFSET + (&SensorsTask));
 
     FOREVER {
     	c = getc(COM2);
@@ -420,7 +424,7 @@ void handleCommandTask() {
                     genTrainName(atoi(argv[0]), msg);
                     train_task_id = WhoIs(msg);
                     if (train_task_id == -1) {
-                        train_task_id = Create(4, CODE_OFFSET + (&TrainTask));
+                        train_task_id = Create(5, CODE_OFFSET + (&TrainTask));
                         msg_struct.iValue = atoi(argv[0]);
                         Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
                     }
@@ -436,7 +440,7 @@ void handleCommandTask() {
                     genTrainName(atoi(argv[0]), msg);
                     train_task_id = WhoIs(msg);
                     if (train_task_id == -1) {
-                        train_task_id = Create(4, CODE_OFFSET + (&TrainTask));
+                        train_task_id = Create(5, CODE_OFFSET + (&TrainTask));
                         msg_struct.iValue = atoi(argv[0]);
                         Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
                     }
@@ -455,6 +459,11 @@ void handleCommandTask() {
                         setSwitch ( SW_CURVE, atoi(argv[0]));
                         outputPutStr ( " to curve", &row, &col, buffer, &index );
                     }
+                    break;
+                case CMD_ASSERT:
+                    // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;
+                    // train_rindex++;
+                    Assert();
                     break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;
