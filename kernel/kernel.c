@@ -9,6 +9,7 @@
 #include <queue.h>
 #include <Tasks.h>
 #include <util.h>
+#include <debug.h>
 
 int schedule ( td_queue td_pq[16] ) {
 	int i = 0;
@@ -78,6 +79,10 @@ int Receive ( int *tid, char *msg, int msglen ) {
 
 int Reply ( int tid, char *msg, int msglen ) {
     asm ("swi 13");
+}
+
+int Assert ( ) {
+    asm ("swi 14");
 }
 
 int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
@@ -314,6 +319,9 @@ void handle (td *active, int req, int args[5],
                 ((mailbox *)(tds[args[0]].args[1]))->rpl->type = ((message *)args[1])->type;
                 pq_push_back(td_pq, tds, args[0]);
             }
+            break;
+        case 14:
+            assert_ker(tds, td_pq);
             break;
     }
 }

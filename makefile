@@ -90,8 +90,15 @@ util.o: util.s
 	$(AS) $(ASFLAGS) -o $@ util.s
 
 
-kernel.elf: kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o -lgcc
+debug.s: kernel/debug.c kernel/debug.h
+	$(XCC) -S $(CFLAGS) kernel/debug.c
+
+debug.o: debug.s
+	$(AS) $(ASFLAGS) -o debug.o debug.s
+
+
+kernel.elf: kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map

@@ -445,6 +445,7 @@ void handleCommandTask() {
             flushLine (buffer, &index);
             buffer[(index)++] = 0;
             putstr(COM2, buffer);
+            Assert();
     	}
     	else {
     		putc(COM2, c);
