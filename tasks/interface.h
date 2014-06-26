@@ -19,6 +19,9 @@
 #define SENSORS_POSITION_X 8
 #define SENSORS_DISPLAY_WIDTH 8
 
+#define IDLE_POSITION_X 2
+#define IDLE_POSITION_Y 20
+
 #define CMD_TRAIN 1
 #define CMD_REVERSE 2
 #define CMD_SWITCH 3
@@ -41,4 +44,6 @@ void setSwitch ( int state, int address );
 void SensorsTask();
 void handleCommandTask();
 void parseCommand ( char* str, int *argc, char argv[10][10], int* command);
+void IdleDisplayTask();
+
 #endif

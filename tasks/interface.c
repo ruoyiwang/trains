@@ -240,14 +240,13 @@ void initInterface() {
     putstr(COM2, buffer);
 
     // Create(2, CODE_OFFSET + (&clockServer));
-    Create(3, CODE_OFFSET + (&clockDisplayTask));
+    Create(5, CODE_OFFSET + (&clockDisplayTask));
+    Create(5, CODE_OFFSET + (&IdleDisplayTask));
     Create(5, CODE_OFFSET + (&handleCommandTask));
 
 }
 
 void clockDisplayTask() {
-    Create(2, CODE_OFFSET + (&clockServer));
-
     char buffer[128] = {0};
     int index = 0;
 
@@ -282,6 +281,32 @@ void clockDisplayTask() {
         buffer[(index)++] = '.';
         buffer[(index)++] = '0' + clockTenth ;
 
+        restoreCursorPosition(buffer, &index);
+
+        buffer[(index)++] = 0;
+        putstr(COM2, buffer);
+
+    }
+}
+
+void IdleDisplayTask() {
+    char buffer[128] = {0};
+    int index = 0;
+
+    char clockstr[10];
+    int currentTime = Time()+10;
+    FOREVER {
+        index = 0;
+
+        Delay(100);
+        saveCursorPosition(buffer, &index);
+        setCursor( IDLE_POSITION_X, IDLE_POSITION_Y, buffer, &index );
+        flushLine (buffer, &index);
+
+        int usage = IdleUsage();
+
+        bwi2a(usage, buffer+index);
+        index+=2;
         restoreCursorPosition(buffer, &index);
 
         buffer[(index)++] = 0;
@@ -445,7 +470,6 @@ void handleCommandTask() {
             flushLine (buffer, &index);
             buffer[(index)++] = 0;
             putstr(COM2, buffer);
-            Assert();
     	}
     	else {
     		putc(COM2, c);

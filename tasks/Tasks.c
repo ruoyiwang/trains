@@ -11,7 +11,6 @@
 void FirstUserTask () {
 
     // fire off the
-    initTimers();
 
     volatile unsigned int * timer_4_low;
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
@@ -31,10 +30,6 @@ void FirstUserTask () {
     // create nameserver
     int ns_tid = Create(1, CODE_OFFSET + (&NameServer));
     // check if the created nameserver tid == NAMESERVER_TID
-    if (ns_tid != 1) {
-        // bwprintf(COM2, "WTF is happening\n\n");
-        Exit();
-    }
     // Create(2, CODE_OFFSET + (&spawnedTask));
 
     // // making name server test task
@@ -47,12 +42,17 @@ void FirstUserTask () {
     // bwprintf(COM2, "Got reply from %d with type %d: %s\n",tid,reply_struct.type, reply);
 
     // system idle task at lowest pri
-    Create(15, CODE_OFFSET + (&SystemIdleTask));
+    int idle_tid = Create(15, CODE_OFFSET + (&SystemIdleTask));
+    if (ns_tid != 1 || idle_tid != 2 ) {
+        // bwprintf(COM2, "WTF is happening\n\n");
+        Exit();
+    }
 
     // playtRPS();
     // perfTest();
 
     // ClockServerTest();
+    Create(2, CODE_OFFSET + (&clockServer));
     initInterface();
     Exit();
 }
@@ -235,12 +235,11 @@ void testReceive() {
 // }
 
 void SystemIdleTask() {
-    char c;
+    int * halt_register = (int *) (ENTER_HALT_REGISTER);
     FOREVER{
-        // c = bwgetc(COM2);
-        // if (c == 'q') {
-        //     Exit();
-        // }
+        // halt
+        int halting = *halt_register;
+        (void) halting;
     }
 }
 

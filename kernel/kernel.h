@@ -35,6 +35,7 @@
 #define EVENT_COM1_RECEIVE      3
 #define EVENT_COM1_TRANSMIT     4
 
+#define IDLE_TID                2
 #define FOREVER for(;;)
 
 typedef struct message_t

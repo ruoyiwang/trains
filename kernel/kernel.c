@@ -26,6 +26,10 @@ int schedule ( td_queue td_pq[16] ) {
     return -1;
 }
 
+int IdleUsage() {
+    asm ("swi 15");
+}
+
 int MyTid() {
     asm ("swi 5");
 }
@@ -102,6 +106,19 @@ int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
     return -1;
 }
 
+void calculate_idle_usage( int *before_idle, int *time_idled, int *current_frame, int *usage) {
+    volatile unsigned int * timer_4_low;
+    timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
+    int after_idle = *timer_4_low;
+    int frame_size = after_idle - *current_frame;
+    *time_idled += after_idle - *before_idle;
+    if ( frame_size > 1000000 ) {
+        *usage = *time_idled * 100 / frame_size;
+        *current_frame = * timer_4_low;
+        *time_idled = 0;
+    }
+}
+
 int initialize_td(
     int pri,
     unsigned int* free_list_lo,
@@ -146,11 +163,12 @@ void uninitialize() {
 }
 
 void initialize (td tds[64], int event_blocked_tds[5]) {
+    initTimers();
     TurnCacheOn();
     int i = 0;
     // place the svc_handler to jump table
     void (*syscall)();
-    syscall = (void *) (CODE_OFFSET+(&ker_entry));
+    syscall = (void *) (CODE_OFFSET + (&ker_entry));
     int *handler;
     handler = (void*)0x28;
     *handler = (int) syscall;
@@ -160,6 +178,11 @@ void initialize (td tds[64], int event_blocked_tds[5]) {
     *handler = (int) syscall;
     initialize_interrupts();
     volatile _tds = tds;
+
+    // set SHena to enable halt mode
+    int *device_cfg = (int *) DEVICE_CFG;
+    *device_cfg = *device_cfg | SHENA_MASK;
+
     // initialize all the tds;
     for (i = 0 ; i < 64; i++) {
         tds[i].tid          = i;
@@ -184,7 +207,8 @@ void handle (td *active, int req, int args[5],
             unsigned int * free_list_hi,
             td tds[64],
             td_queue td_pq[16],
-            int event_blocked_tds[5] )   {
+            int event_blocked_tds[5],
+            int idle_usage )   {
     int i, *timer3clear, *VIC2Status, *VIC1Status;
     char c;
     int *uart2_flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
@@ -323,6 +347,9 @@ void handle (td *active, int req, int args[5],
         case 14:
             assert_ker(tds, td_pq);
             break;
+        case 15:
+            active->ret = idle_usage;
+            break;
     }
 }
 
@@ -339,12 +366,18 @@ int main( int argc, char* argv[] ) {
     initialize(tds, event_blocked_tds);
     initialize_td_pq(td_pq);
     int tid = initialize_td(2, &free_list_lo, &free_list_hi, CODE_OFFSET + (&FirstUserTask), tds, td_pq, -1);
+    // for tracking idle usage
+    volatile unsigned int * timer_4_low;
+    timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
+    unsigned int time_idled = 0, before_idle, idle_frame =*timer_4_low , idle_usage = 0;
 
     int i, req = 0;
     for (;;) {
-
         tid = schedule(td_pq);
         if (tid == -1) break;
+        if (tid == IDLE_TID ) {
+            before_idle = *timer_4_low;
+        }
         active = (tds + tid);
         if ( active->flags & 1 ) {
             req = int_ker_exit ( active, (int *) args );
@@ -356,13 +389,16 @@ int main( int argc, char* argv[] ) {
 
         // put the task back on the queue
         req = req & 0xff;
-        handle( active, req, args, &free_list_lo, &free_list_hi, tds, td_pq, event_blocked_tds );
+        handle( active, req, args, &free_list_lo, &free_list_hi, tds, td_pq, event_blocked_tds, idle_usage );
 
         if (active->state == STATE_READY || active->state == STATE_ACTIVE ){
             pq_push_back(td_pq, tds, active->tid);
         }
         if (req == 20){
             active->flags = active->flags | 1;
+        }
+        if (active->tid == IDLE_TID) {
+            calculate_idle_usage( &before_idle, &time_idled, &idle_frame, &idle_usage);
         }
     }
     uninitialize();
