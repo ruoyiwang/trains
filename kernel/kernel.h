@@ -1,8 +1,6 @@
 #ifndef __KERNEL__
 #define __KERNEL__
 
-#define CODE_OFFSET         0x218000
-
 #define REQUEST_CREATE 	    2
 
 #define NULL                0

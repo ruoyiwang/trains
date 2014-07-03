@@ -28,21 +28,21 @@ void FirstUserTask () {
     bwsetfifo( COM1, OFF);
 
     // create nameserver
-    int ns_tid = Create(1, CODE_OFFSET + (&NameServer));
+    int ns_tid = Create(1, (&NameServer));
     // check if the created nameserver tid == NAMESERVER_TID
-    // Create(2, CODE_OFFSET + (&spawnedTask));
+    // Create(2, (&spawnedTask));
 
     // // making name server test task
-    // Create(3, CODE_OFFSET + (&nameServerTest1));
-    // Create(3, CODE_OFFSET + (&nameServerTest2));
+    // Create(3, (&nameServerTest1));
+    // Create(3, (&nameServerTest2));
 
-    // int tid = Create(2, CODE_OFFSET + (&spawnedTask));
+    // int tid = Create(2, (&spawnedTask));
     // bwprintf(COM2, "Sending message to %d: %s\n",tid, msg);
     // Send (tid, (char *)&msg_struct, 14, (char *)&reply_struct, 10);
     // bwprintf(COM2, "Got reply from %d with type %d: %s\n",tid,reply_struct.type, reply);
 
     // system idle task at lowest pri
-    int idle_tid = Create(15, CODE_OFFSET + (&SystemIdleTask));
+    int idle_tid = Create(15, (&SystemIdleTask));
     if (ns_tid != 1 || idle_tid != 2 ) {
         // bwprintf(COM2, "WTF is happening\n\n");
         Exit();
@@ -52,7 +52,7 @@ void FirstUserTask () {
     // perfTest();
 
     // ClockServerTest();
-    Create(2, CODE_OFFSET + (&clockServer));
+    Create(2, (&clockServer));
     initInterface();
     Exit();
 }
@@ -122,8 +122,8 @@ void nameServerTest2 () {
 }
 
 void perfTest() {
-    Create(4, CODE_OFFSET + (&testSend));
-    Create(4, CODE_OFFSET + (&testReceive));
+    Create(4, (&testSend));
+    Create(4, (&testReceive));
 }
 
 void testSend() {
@@ -197,13 +197,13 @@ void testReceive() {
 
 // void ClockServerTest() {
 //     // make the server
-//     Create(1, CODE_OFFSET + (&clockServer));
+//     Create(1, (&clockServer));
 
 //     // make the test task
-//     Create(3, CODE_OFFSET + (&ClockServerTestTask));
-//     Create(4, CODE_OFFSET + (&ClockServerTestTask));
-//     Create(5, CODE_OFFSET + (&ClockServerTestTask));
-//     Create(6, CODE_OFFSET + (&ClockServerTestTask));
+//     Create(3, (&ClockServerTestTask));
+//     Create(4, (&ClockServerTestTask));
+//     Create(5, (&ClockServerTestTask));
+//     Create(6, (&ClockServerTestTask));
 
 //     // msg boilerplate
 //     int sender_tid1, sender_tid2, sender_tid3, sender_tid4;

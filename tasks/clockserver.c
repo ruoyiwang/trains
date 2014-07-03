@@ -54,7 +54,7 @@ void clockServer() {
     RegisterAs(CLOCK_SERVER_NAME);
     int curTime = 0;
     // Create Notifier and send any initialization data
-    Create(1, CODE_OFFSET + (&clockServerNotifier));
+    Create(1, (&clockServerNotifier));
     // msg shits
     char msg[8] = {0};
     char reply[8] = {0};

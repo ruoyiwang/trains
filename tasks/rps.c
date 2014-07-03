@@ -255,9 +255,9 @@ void rpsServer() {
 }
 
 void playtRPS() {
-    Create(4, CODE_OFFSET + (&rpsServer));
+    Create(4, (&rpsServer));
     int i;
     for (i = 0; i< 50; i++) {
-        Create(4, CODE_OFFSET + (&rpsClient));
+        Create(4, (&rpsClient));
     }
 }

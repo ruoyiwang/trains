@@ -82,12 +82,12 @@ void PutServer() {
         case COM1:
             RegisterAs(COM1_PUT_SERVER);
             // Create Notifier and send any initialization data
-            Create(1, CODE_OFFSET + (&Com1PutServerNotifier));
+            Create(1, (&Com1PutServerNotifier));
             break;
         case COM2:
             RegisterAs(COM2_PUT_SERVER);
             // Create Notifier and send any initialization data
-            Create(1, CODE_OFFSET + (&Com2PutServerNotifier));
+            Create(1, (&Com2PutServerNotifier));
             break;
         default:
             Exit();
@@ -225,12 +225,12 @@ void GetServer() {
         case COM1:
             RegisterAs(COM1_GET_SERVER);
             // Create Notifier and send any initialization data
-            Create(1, CODE_OFFSET + (&Com1GetServerNotifier));
+            Create(1, (&Com1GetServerNotifier));
             break;
         case COM2:
             RegisterAs(COM2_GET_SERVER);
             // Create Notifier and send any initialization data
-            Create(1, CODE_OFFSET + (&Com2GetServerNotifier));
+            Create(1, (&Com2GetServerNotifier));
             break;
         default:
             Exit();

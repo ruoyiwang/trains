@@ -209,19 +209,19 @@ void initInterface() {
     msg_struct.value = msg;
     reply_struct.value = reply;
 
-    server_tid = Create(2, CODE_OFFSET + (&PutServer));
+    server_tid = Create(2, (&PutServer));
     msg_struct.iValue = COM2;
     Send (server_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
-    server_tid = Create(2, CODE_OFFSET + (&GetServer));
+    server_tid = Create(2, (&GetServer));
     msg_struct.iValue = COM2;
     Send (server_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
-    server_tid = Create(2, CODE_OFFSET + (&PutServer));
+    server_tid = Create(2, (&PutServer));
     msg_struct.iValue = COM1;
     Send (server_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
-    server_tid = Create(2, CODE_OFFSET + (&GetServer));
+    server_tid = Create(2, (&GetServer));
 	msg_struct.iValue = COM1;
     Send (server_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
@@ -243,10 +243,10 @@ void initInterface() {
     buffer[(index)++] = 0;
     putstr(COM2, buffer);
 
-    // Create(2, CODE_OFFSET + (&clockServer));
-    Create(5, CODE_OFFSET + (&clockDisplayTask));
-    Create(5, CODE_OFFSET + (&IdleDisplayTask));
-    Create(5, CODE_OFFSET + (&handleCommandTask));
+    // Create(2, (&clockServer));
+    Create(5, (&clockDisplayTask));
+    Create(5, (&IdleDisplayTask));
+    Create(5, (&handleCommandTask));
 
 }
 
@@ -329,6 +329,10 @@ void SensorsTask() {
     int i,j, row, col;
     char sensors_bytes[10];
     int sensorDisplayPosition = 0;
+
+    int k, l;
+    int times[5][16];
+
     FOREVER {
         Delay(30);
         putc(COM1, 133);
@@ -354,6 +358,8 @@ void SensorsTask() {
                             outputPutStr ( "0", &row, &col, buffer, &index  );
                         bwi2a ( sensorNum, sensorStr );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
+
+                        times[i/2][sensorNum] = Time();
                         if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
                             setSwitch ( SW_CURVE, 0x8);
                         }
@@ -367,6 +373,8 @@ void SensorsTask() {
                         bwi2a ( sensorNum, sensorStr );
                         outputPutStr ( "0", &row, &col, buffer, &index  );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
+
+                        times[i/2][sensorNum] = Time();
                         if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
                             setSwitch ( SW_CURVE, 0x8);
                         }
@@ -408,7 +416,7 @@ void handleCommandTask() {
     buffer[index++] = 0;
     putstr(COM2, buffer);
 
-    Create(5, CODE_OFFSET + (&TracksTask));
+    Create(5, (&TracksTask));
     putc(COM1, 0x60);
     Delay(100);
     for ( i=1; i <=18 ; i++) {
@@ -423,7 +431,7 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
-    Create(5, CODE_OFFSET + (&SensorsTask));
+    Create(5, (&SensorsTask));
 
     FOREVER {
     	c = getc(COM2);
@@ -448,7 +456,7 @@ void handleCommandTask() {
                     genTrainName(atoi(argv[0]), msg);
                     train_task_id = WhoIs(msg);
                     if (train_task_id == -1) {
-                        train_task_id = Create(5, CODE_OFFSET + (&TrainTask));
+                        train_task_id = Create(5, (&TrainTask));
                         msg_struct.iValue = atoi(argv[0]);
                         Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
                     }
@@ -464,7 +472,7 @@ void handleCommandTask() {
                     genTrainName(atoi(argv[0]), msg);
                     train_task_id = WhoIs(msg);
                     if (train_task_id == -1) {
-                        train_task_id = Create(5, CODE_OFFSET + (&TrainTask));
+                        train_task_id = Create(5, (&TrainTask));
                         msg_struct.iValue = atoi(argv[0]);
                         Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
                     }

@@ -171,12 +171,12 @@ void initialize (td tds[64], int event_blocked_tds[5]) {
     int i = 0;
     // place the svc_handler to jump table
     void (*syscall)();
-    syscall = (void *) (CODE_OFFSET + (&ker_entry));
+    syscall = (void *) (&ker_entry);
     int *handler;
     handler = (void*)0x28;
     *handler = (int) syscall;
 
-    syscall = (void *) (CODE_OFFSET + (&int_ker_entry));
+    syscall = (void *) (&int_ker_entry);
     handler = (void *) 0x38;
     *handler = (int) syscall;
     initialize_interrupts();
@@ -374,7 +374,7 @@ int main( int argc, char* argv[] ) {
 
     initialize(tds, event_blocked_tds);
     initialize_td_pq(td_pq);
-    int tid = initialize_td(2, &free_list_lo, &free_list_hi, CODE_OFFSET + (&FirstUserTask), tds, td_pq, -1);
+    int tid = initialize_td(2, &free_list_lo, &free_list_hi, (&FirstUserTask), tds, td_pq, -1);
     // for tracking idle usage
     volatile unsigned int * timer_4_low;
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
