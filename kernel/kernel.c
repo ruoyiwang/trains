@@ -301,8 +301,10 @@ void handle (td *active, int req, int args[5],
         case 11:    //Send
             if ( tds[args[0]].state == STATE_SND_BLK ) {    //if receive first
                 *(tds[args[0]].sendQ->sender_tid) = active->tid;
-                // bwprintf(COM2, "CRYING1\n");
-                strcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value);
+                if (tds[args[0]].sendQ->msg_len < ((mailbox *)args[1])->msg_len) {
+                    assert_ker(tds, td_pq);
+                }
+                memcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value, (unsigned int)((mailbox *)args[1])->msg_len);
                 tds[args[0]].sendQ->msg->iValue = ((mailbox *)args[1])->msg->iValue;
                 tds[args[0]].sendQ->msg->type = ((mailbox *)args[1])->msg->type;
                 tds[args[0]].sendQ->msg_len = ((mailbox *)args[1])->msg_len;
@@ -331,8 +333,11 @@ void handle (td *active, int req, int args[5],
         case 12:    //Receive
             if ( active->sendQ ) {    //if send first
                 // bwprintf(COM2, "CRYING3\n");
+                if (((mailbox*)args[0])->msg_len < active->sendQ->msg_len) {
+                    assert_ker(tds, td_pq);
+                }
                 *((mailbox*)args[0])->sender_tid = *(active->sendQ->sender_tid);
-                strcpy(((mailbox*)args[0])->msg->value, active->sendQ->msg->value);
+                memcpy(((mailbox*)args[0])->msg->value, active->sendQ->msg->value, (unsigned int)active->sendQ->msg_len);
                 ((mailbox*)args[0])->msg->iValue = active->sendQ->msg->iValue;
                 ((mailbox*)args[0])->msg->type = active->sendQ->msg->type;
                 tds[*(active->sendQ->sender_tid)].state = STATE_RPL_BLK;
@@ -347,7 +352,10 @@ void handle (td *active, int req, int args[5],
         case 13:    //Reply
             if ( tds[args[0]].state == STATE_RPL_BLK ) {
                 // bwprintf(COM2, "CRYING5\n");
-                strcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value);
+                if (((mailbox *)(tds[args[0]].args[1]))->rpl_len < (unsigned int)args[2]) {
+                    assert_ker(tds, td_pq);
+                }
+                memcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value, (unsigned int)args[2]);
                 ((mailbox *)(tds[args[0]].args[1]))->rpl->iValue = ((message *)args[1])->iValue;
                 ((mailbox *)(tds[args[0]].args[1]))->rpl->type = ((message *)args[1])->type;
                 pq_push_back(td_pq, tds, args[0]);

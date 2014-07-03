@@ -17,10 +17,10 @@ void genTrainName( int train_id, char* bf) {
 void TrainTask () {
     // msg shits
     char msg[10] = {0};
-    char reply[10] = {0};
+    char reply[2] = {0};
     char commandstr[10] = {0};
 
-    int sender_tid, msglen = 10;
+    int sender_tid, msglen = 10, rpllen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -28,7 +28,7 @@ void TrainTask () {
     int train_id, speed = 0;
 
     Receive( &sender_tid, (char*)&msg_struct, msglen );
-    Reply (sender_tid, (char *)&reply_struct, msglen);
+    Reply (sender_tid, (char *)&reply_struct, rpllen);
 
     RegisterAs(msg_struct.value);
     train_id = msg_struct.iValue;
@@ -42,16 +42,16 @@ void TrainTask () {
                 commandstr[2] = speed;
                 commandstr[3] = train_id;
                 commandstr[4] = 0;
-                putstr(COM1, commandstr);
-                Reply (sender_tid, (char *)&reply_struct, msglen);
+                putstr_len(COM1, commandstr, 4);
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             case TRAIN_SET_SPEED:
                 speed = msg_struct.iValue;
                 commandstr[0] = speed;
                 commandstr[1] = train_id;
                 commandstr[2] = 0;
-                putstr(COM1, commandstr);
-                Reply (sender_tid, (char *)&reply_struct, msglen);
+                putstr_len(COM1, commandstr, 2);
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             default:
                 break;
@@ -64,8 +64,8 @@ void TracksTask () {
     RegisterAs(TRACK_TASK);
 
     char msg[10] = {0};
-    char reply[10] = {0};
-    int sender_tid, msglen = 10;
+    char reply[2] = {0};
+    int sender_tid, msglen = 10, rpllen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -86,9 +86,9 @@ void TracksTask () {
                 commandstr[1] = msg_struct.iValue;
                 commandstr[2] = 32;
                 commandstr[3] = 0;
-                putstr(COM1, commandstr);
+                putstr_len(COM1, commandstr, 3);
                 // bwprintf(COM2, "received sw command\n\n");
-                Reply (sender_tid, (char *)&reply_struct, msglen);
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             default:
                 break;

@@ -58,7 +58,7 @@ void clockServer() {
     // msg shits
     char msg[8] = {0};
     char reply[8] = {0};
-    int sender_tid, msglen = 8;
+    int sender_tid, msglen = 8, rpllen = 8;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -83,7 +83,7 @@ void clockServer() {
                 break;
             case TIME_REQUEST:
                 reply_struct.iValue = curTime;
-                Reply (sender_tid, (char *)&reply_struct, msglen);
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 // reply what the time is
                 break;
             case DELAY_REQUEST:

@@ -444,9 +444,9 @@ void handleCommandTask() {
     int command_str_index=0, row, col;
     char c;
 
-    char msg[15];
-    char reply[15];
-    int server_tid, msglen = 2, train_task_id, i;
+    char msg[10];
+    char reply[2];
+    int server_tid, msglen = 10, rpllen = 2, train_task_id, i;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -502,11 +502,11 @@ void handleCommandTask() {
                     if (train_task_id == -1) {
                         train_task_id = Create(5, (&TrainTask));
                         msg_struct.iValue = atoi(argv[0]);
-                        Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+                        Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
                     }
                     msg_struct.type = TRAIN_SET_SPEED;
                     msg_struct.iValue = atoi(argv[1]);
-                    Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+                    Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
                     break;
                 case CMD_REVERSE:
@@ -518,10 +518,10 @@ void handleCommandTask() {
                     if (train_task_id == -1) {
                         train_task_id = Create(5, (&TrainTask));
                         msg_struct.iValue = atoi(argv[0]);
-                        Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+                        Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
                     }
                     msg_struct.type = TRAIN_REVERSE;
-                    Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+                    Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
                     break;
                 case CMD_SWITCH:

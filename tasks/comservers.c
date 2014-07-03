@@ -32,7 +32,7 @@ void Com1PutServerNotifier() {
     // msg shits
     char msg[2] = {0};
     char reply[2] = {0};
-    int receiver_tid, msglen = 8;
+    int receiver_tid, msglen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.type = PUTC_NOTIFIER;
@@ -56,7 +56,7 @@ void PutServer() {
     // msg shits
     char msg[710] = {0};
     char reply[8] = {0};
-    int sender_tid, msglen = 710;
+    int sender_tid, msglen = 710, rpllen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -76,7 +76,7 @@ void PutServer() {
     }
 
     Receive( &sender_tid, (char*)&msg_struct, msglen );
-    Reply (sender_tid, (char *)&reply_struct, msglen);
+    Reply (sender_tid, (char *)&reply_struct, rpllen);
 
     switch(msg_struct.iValue) {
         case COM1:
@@ -102,8 +102,8 @@ void PutServer() {
                 char_from_request = msg[0];
                 if (blocked_notifier != -1) {
                     reply[0] = char_from_request;
-                    Reply (blocked_notifier, (char *)&reply_struct, msglen);
-                    Reply (sender_tid, (char *)&reply_struct, msglen);
+                    Reply (blocked_notifier, (char *)&reply_struct, rpllen);
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
                     blocked_notifier = -1;
                 }
                 else {
@@ -112,7 +112,7 @@ void PutServer() {
                     string_buffer[insetion_point] = char_from_request;
                     buf_len++;
                     // don't really care what we reply
-                    Reply (sender_tid, (char *)&reply_struct, msglen);
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
                 break;
             case PUTSTR_REQUEST:
@@ -127,11 +127,11 @@ void PutServer() {
                     reply[0] = string_buffer[buf_start];
                     buf_start = (buf_start+1) % BUFFER_SIZE;
                     buf_len--;
-                    Reply (blocked_notifier, (char *)&reply_struct, msglen);
+                    Reply (blocked_notifier, (char *)&reply_struct, rpllen);
                     blocked_notifier = -1;
                 }
                 // don't really care what we reply
-                Reply (sender_tid, (char *)&reply_struct, msglen);
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             case PUTC_NOTIFIER:
                 // read char from the buffer
@@ -140,7 +140,7 @@ void PutServer() {
                     reply[0] = string_buffer[buf_start];
                     buf_start = (buf_start+1) % BUFFER_SIZE;
                     buf_len--;
-                    Reply (sender_tid, (char *)&reply_struct, msglen);
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
                 else {
                     // task is blocked;
@@ -158,7 +158,7 @@ void Com1GetServerNotifier() {
     // msg shits
     char msg[2] = {0};
     char reply[2] = {0};
-    int receiver_tid, msglen = 8;
+    int receiver_tid, msglen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.type = GETC_NOTIFIER;
@@ -178,7 +178,7 @@ void Com2GetServerNotifier() {
     // msg shits
     char msg[2] = {0};
     char reply[2] = {0};
-    int receiver_tid, msglen = 8;
+    int receiver_tid, msglen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.type = GETC_NOTIFIER;
@@ -199,7 +199,7 @@ void GetServer() {
     // msg shits
     char msg[2] = {0};
     char reply[2] = {0};
-    int sender_tid, msglen = 8;
+    int sender_tid, msglen = 2, rpllen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -219,7 +219,7 @@ void GetServer() {
     }
 
     Receive( &sender_tid, (char*)&msg_struct, msglen );
-    Reply (sender_tid, (char *)&reply_struct, msglen);
+    Reply (sender_tid, (char *)&reply_struct, rpllen);
 
     switch(msg_struct.iValue) {
         case COM1:
@@ -244,8 +244,8 @@ void GetServer() {
                 // if a task wanted something and is blocked, we return it to it
                 if (blocked_task != -1) {
                     reply[0] = char_from_notifier;
-                    Reply (blocked_task, (char *)&reply_struct, msglen);
-                    Reply (sender_tid, (char *)&reply_struct, msglen);
+                    Reply (blocked_task, (char *)&reply_struct, rpllen);
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
                     blocked_task = -1;
                 }
                 else {
@@ -254,7 +254,7 @@ void GetServer() {
                     string_buffer[insetion_point] = char_from_notifier;
                     buf_len++;
                     // don't really care what we reply
-                    Reply (sender_tid, (char *)&reply_struct, msglen);
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
                 break;
             case GETC_REQUEST:
@@ -264,7 +264,7 @@ void GetServer() {
                     reply[0] = string_buffer[buf_start];
                     buf_start = (buf_start+1) % BUFFER_SIZE;
                     buf_len--;
-                    Reply (sender_tid, (char *)&reply_struct, msglen);
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
                 else {
                     // task is blocked;
@@ -280,7 +280,7 @@ void GetServer() {
 
 void putc(int COM, char c) {
     char msg[2] = {0};
-    char reply[64] = {0};
+    char reply[2] = {0};
     int msglen = 2;
     int receiver_tid;
     message msg_struct, reply_struct;
@@ -308,8 +308,36 @@ void putc(int COM, char c) {
 
 void putstr(int COM, char* str ) {
     char msg[710] = {0};
-    char reply[64] = {0};
-    int msglen = 710;
+    char reply[2] = {0};
+    int msglen , rpllen = 2;
+    int receiver_tid;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = reply;
+    reply_struct.iValue = 0;
+    strcpy(msg, str);
+    msglen = strlen(msg);
+    msg_struct.type = PUTSTR_REQUEST;
+
+    switch (COM){
+        case COM1:
+            receiver_tid = WhoIs(COM1_PUT_SERVER);
+            break;
+        case COM2:
+            receiver_tid = WhoIs(COM2_PUT_SERVER);
+            break;
+        default:
+            break;
+    }
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+    return ;
+}
+
+void putstr_len(int COM, char* str, int msglen ) {
+    char msg[710] = {0};
+    char reply[2] = {0};
+    int rpllen = 2;
     int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -328,7 +356,7 @@ void putstr(int COM, char* str ) {
         default:
             break;
     }
-    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     return ;
 }

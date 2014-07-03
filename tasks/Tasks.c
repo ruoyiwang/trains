@@ -97,7 +97,7 @@ void nameServerTest1 () {
     reply_struct.value = reply;
 
     bwprintf(COM2, "Sending message to %d: %s\n",randomtid, msg);
-    Send (randomtid, (char *)&msg_struct, 14, (char *)&reply_struct, 10);//1
+    Send (randomtid, (char *)&msg_struct, 20, (char *)&reply_struct, 20);//1
     bwprintf(COM2, "Got reply from %d with type %d: %s\n",randomtid,reply_struct.type, reply);
 
     Exit();
@@ -115,7 +115,7 @@ void nameServerTest2 () {
     reply_struct.value = reply;
 
     bwprintf(COM2, "Sending message to %d: %s\n",randomtid, msg);
-    Send (randomtid, (char *)&msg_struct, 14, (char *)&reply_struct, 10);
+    Send (randomtid, (char *)&msg_struct, 20, (char *)&reply_struct, 20);
     bwprintf(COM2, "Got reply from %d with type %d: %s\n",randomtid,reply_struct.type, reply);
 
     Exit();

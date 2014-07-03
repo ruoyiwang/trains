@@ -26,6 +26,7 @@ void GetServer();
 
 void putc(int COM, char c);
 void putstr(int COM, char* str);
+void putstr_len(int COM, char* str, int msglen);
 char getc(int COM);
 
 #endif

@@ -84,7 +84,7 @@ bwio.o: bwio.s
 
 
 util.s: lib/util.c lib/util.h
-	$(XCC) -S $(CFLAGS) lib/util.c
+	$(XCC) -S $(CFLAGS) -O2 lib/util.c
 
 util.o: util.s
 	$(AS) $(ASFLAGS) -o $@ util.s
