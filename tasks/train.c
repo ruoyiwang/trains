@@ -61,6 +61,8 @@ void TrainTask () {
 
 void TracksTask () {
     // msg shits
+    RegisterAs(TRACK_TASK);
+
     char msg[10] = {0};
     char reply[10] = {0};
     int sender_tid, msglen = 10;
@@ -69,9 +71,7 @@ void TracksTask () {
     reply_struct.value = reply;
     char commandstr[10] = {0};
 
-    RegisterAs(TRACK_TASK);
 
-    putc(COM1, 0x60);
 
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );

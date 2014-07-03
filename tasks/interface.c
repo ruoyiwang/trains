@@ -327,13 +327,17 @@ void SensorsTask() {
     char clockstr[10];
     char c;
     int i,j, row, col;
-    // char sensors_bytes[10];
+    char sensors_bytes[10];
     int sensorDisplayPosition = 0;
     FOREVER {
         Delay(30);
         putc(COM1, 133);
         for (i = 0; i<10 ; i ++){
             c = getc(COM1);
+            if (c == sensors_bytes[i]) {
+                continue;
+            }
+            sensors_bytes[i] = c;
             for (j = 0; j< 8 ; j++) {
 
                 row = SENSORS_POSITION_X; col = sensorDisplayPosition * 4 + 1;
@@ -350,12 +354,26 @@ void SensorsTask() {
                             outputPutStr ( "0", &row, &col, buffer, &index  );
                         bwi2a ( sensorNum, sensorStr );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
+                        if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
+                            setSwitch ( SW_CURVE, 0x8);
+                        }
+                        if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
+                            setSwitch ( SW_STRAIGHT, 17);
+                            setSwitch ( SW_CURVE, 13);
+                        }
                     }
                     if ( !(i % 2) ) {
                         sensorNum = 8 - j;
                         bwi2a ( sensorNum, sensorStr );
                         outputPutStr ( "0", &row, &col, buffer, &index  );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
+                        if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
+                            setSwitch ( SW_CURVE, 0x8);
+                        }
+                        if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
+                            setSwitch ( SW_STRAIGHT, 17);
+                            setSwitch ( SW_CURVE, 13);
+                        }
                     }
                     outputPutStr ( " ", &row, &col, buffer, &index  );
                     sensorDisplayPosition = (sensorDisplayPosition + 1) % SENSORS_DISPLAY_WIDTH;
@@ -391,9 +409,15 @@ void handleCommandTask() {
     putstr(COM2, buffer);
 
     Create(5, CODE_OFFSET + (&TracksTask));
+    putc(COM1, 0x60);
+    Delay(100);
     for ( i=1; i <=18 ; i++) {
-        setSwitch ( SW_CURVE, i);
+        setSwitch ( SW_STRAIGHT, i);
     }
+    setSwitch ( SW_CURVE, 3);
+    setSwitch ( SW_CURVE, 14);
+    setSwitch ( SW_CURVE, 17);
+
     setSwitch ( SW_CURVE, 0x99);
     setSwitch ( SW_STRAIGHT, 0x9A);
     setSwitch ( SW_CURVE, 0x9B);
