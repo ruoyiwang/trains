@@ -90,6 +90,17 @@ int getSwCursor ( int sw, int *row, int *col ) {
     return true;
 }
 
+void setAllTrainSpeedToOne() {
+    char commandstr[3];
+    int i = 45;
+    for (i = 45; i < 51; i++) {
+        commandstr[0] = 1;
+        commandstr[1] = (char)i;
+        commandstr[2] = 0;
+        putstr(COM1, commandstr);
+    }
+}
+
 void setSwitch ( int state, int address ) {
     char msg[10];
     char reply[10];
@@ -327,11 +338,21 @@ void SensorsTask() {
     char clockstr[10];
     char c;
     int i,j, row, col;
-    char sensors_bytes[10];
+    char sensors_bytes[10] = {0};
     int sensorDisplayPosition = 0;
 
-    int k, l;
-    int times[5][16];
+    int k;
+    unsigned int times[80];
+    for ( k = 0; k < 80; k++) {
+        times[k] = 0;
+    }
+    int time_index;
+    int cur_time;
+    unsigned char sensorStr[5];
+
+
+    volatile unsigned int * timer_4_low;
+    timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
 
     FOREVER {
         Delay(30);
@@ -345,7 +366,6 @@ void SensorsTask() {
             for (j = 0; j< 8 ; j++) {
 
                 row = SENSORS_POSITION_X; col = sensorDisplayPosition * 4 + 1;
-                unsigned char sensorStr[5];
                 int sensorNum;
                 if ( c & ( 1 << j ) ){
                     index = 0;
@@ -359,13 +379,23 @@ void SensorsTask() {
                         bwi2a ( sensorNum, sensorStr );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
 
-                        times[i/2][sensorNum] = Time();
+                        time_index = (i / 2) * 16 + sensorNum - 1;
+                        cur_time = Time();
+                        times[time_index] = cur_time;
                         if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
                             setSwitch ( SW_CURVE, 0x8);
                         }
                         if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
                             setSwitch ( SW_STRAIGHT, 17);
                             setSwitch ( SW_CURVE, 13);
+                        }
+                        if (sensorNum == 9 && ('A' + (i / 2)) == 'B') {
+                            bwprintf(COM2, "%c[2J", 0x1B);
+                            bwprintf(COM2, "%d \n", Time());
+                            for (k = 0; k < 80; k++) {
+                                bwprintf(COM2, "%c | %d | %u\n", 'A' + k/16, 1 + k%16, times[k]);
+                            }
+                            Assert();
                         }
                     }
                     if ( !(i % 2) ) {
@@ -374,13 +404,23 @@ void SensorsTask() {
                         outputPutStr ( "0", &row, &col, buffer, &index  );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
 
-                        times[i/2][sensorNum] = Time();
+                        time_index = (i / 2) * 16 + sensorNum - 1;
+                        cur_time = Time();
+                        times[time_index] = cur_time;
                         if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
                             setSwitch ( SW_CURVE, 0x8);
                         }
                         if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
                             setSwitch ( SW_STRAIGHT, 17);
                             setSwitch ( SW_CURVE, 13);
+                        }
+                        if (sensorNum == 9 && ('A' + (i / 2)) == 'B') {
+                            bwprintf(COM2, "%c[2J", 0x1B);
+                            bwprintf(COM2, "%d \n", Time());
+                            for (k = 0; k < 80; k++) {
+                                bwprintf(COM2, "%c | %d | %u\n", 'A' + k/16, 1 + k%16, times[k]);
+                            }
+                            Assert();
                         }
                     }
                     outputPutStr ( " ", &row, &col, buffer, &index  );
@@ -419,6 +459,10 @@ void handleCommandTask() {
     Create(5, (&TracksTask));
     putc(COM1, 0x60);
     Delay(100);
+
+    setAllTrainSpeedToOne();
+    // set all train speed to 1 before we do anything
+
     for ( i=1; i <=18 ; i++) {
         setSwitch ( SW_STRAIGHT, i);
     }
