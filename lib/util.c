@@ -8,7 +8,7 @@ char * strcpy ( char * destination, const char * source ) {
 }
 
 int strlen ( const char * str ) {
-    int length = 1;
+    int length = 0;
     while ( (*(str++)) ) {
         length++;
     }

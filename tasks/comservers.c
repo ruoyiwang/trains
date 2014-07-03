@@ -48,7 +48,7 @@ void Com1PutServerNotifier() {
         // send evt to data
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
         *uart1_data = (char) reply_struct.value[0];
-        Delay(15);
+        Delay(10);
     }
 }
 
@@ -77,6 +77,7 @@ void PutServer() {
 
     Receive( &sender_tid, (char*)&msg_struct, msglen );
     Reply (sender_tid, (char *)&reply_struct, rpllen);
+    int copy_len;
 
     switch(msg_struct.iValue) {
         case COM1:
@@ -117,7 +118,9 @@ void PutServer() {
                 break;
             case PUTSTR_REQUEST:
                 i=0;
-                while ( (char_from_request = msg[i++]) ) {
+                copy_len = msg_struct.iValue;
+                while ( copy_len-- > 0) {
+                    char_from_request = msg[i++];
                     insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
                     string_buffer[insetion_point] = char_from_request;
                     buf_len++;
@@ -315,8 +318,9 @@ void putstr(int COM, char* str ) {
     msg_struct.value = msg;
     reply_struct.value = reply;
     reply_struct.iValue = 0;
-    strcpy(msg, str);
-    msglen = strlen(msg);
+    msglen = strlen(str);
+    memcpy(msg, str, msglen);
+    msg_struct.iValue = msglen;
     msg_struct.type = PUTSTR_REQUEST;
 
     switch (COM){
@@ -341,9 +345,10 @@ void putstr_len(int COM, char* str, int msglen ) {
     int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
+    msg_struct.iValue = msglen;
     reply_struct.value = reply;
     reply_struct.iValue = 0;
-    strcpy(msg, str);
+    memcpy(msg, str, msglen);
     msg_struct.type = PUTSTR_REQUEST;
 
     switch (COM){
