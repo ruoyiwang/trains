@@ -48,7 +48,7 @@ void Com1PutServerNotifier() {
         // send evt to data
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
         *uart1_data = (char) reply_struct.value[0];
-        Delay(10);
+        Delay(15);
     }
 }
 
