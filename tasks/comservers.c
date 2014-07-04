@@ -9,7 +9,7 @@ void Com2PutServerNotifier() {
     // msg shits
     char msg[2] = {0};
     char reply[2] = {0};
-    int receiver_tid, msglen = 8;
+    int receiver_tid, msglen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.type = PUTC_NOTIFIER;
@@ -48,7 +48,7 @@ void Com1PutServerNotifier() {
         // send evt to data
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
         *uart1_data = (char) reply_struct.value[0];
-        Delay(10);
+        // Delay(10);
     }
 }
 

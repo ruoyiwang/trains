@@ -16,4 +16,6 @@ unsigned int rand(unsigned int seed);
 void TurnCacheOn();
 
 int setspeed( int channel, int speed );
+
+inline void uart_noops();
 #endif

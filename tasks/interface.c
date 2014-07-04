@@ -475,6 +475,7 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
+    // Delay(700);
     Create(5, (&SensorsTask));
 
     FOREVER {

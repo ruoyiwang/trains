@@ -154,9 +154,13 @@ void initialize_interrupts() {
     int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
     int * uart1_ctrl = (int *)( UART1_BASE + UART_CTLR_OFFSET );
 
+    uart_noops();
     * uart2_ctrl = * uart2_ctrl | RIEN_MASK;
+    uart_noops();
     * uart2_ctrl = * uart2_ctrl | UARTEN_MASK;
+    uart_noops();
     * uart1_ctrl = * uart2_ctrl | RIEN_MASK;
+    uart_noops();
     * uart1_ctrl = * uart2_ctrl | UARTEN_MASK;
 }
 
@@ -211,7 +215,9 @@ void handle (td *active, int req, int args[5],
             td tds[64],
             td_queue td_pq[16],
             int event_blocked_tds[5],
-            int idle_usage )   {
+            int idle_usage,
+            unsigned int *uart1_tx_flag,
+            unsigned int *uart1_cts_flag )   {
     int i, *timer3clear, *VIC2Status, *VIC1Status;
     char c;
     int *uart2_flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
@@ -243,12 +249,28 @@ void handle (td *active, int req, int args[5],
             }
             if (*VIC2Status & (1 << 20)) {
                 if (*uart1_intr & TIS_MASK ){
+                    *uart1_tx_flag = 1;
+                    uart_noops();
+                    *uart1_ctrl = * uart1_ctrl & ~TIEN_MASK;
+                }
+                if (*uart1_intr & MIS_MASK ){
+                    *uart1_intr = 0;
+                    // assert_ker(tds, td_pq);
+                    if (*uart1_flags & CTS_MASK ) {
+                        uart_noops();
+                        *uart1_ctrl = * uart1_ctrl & ~MSIEN_MASK;
+                        *uart1_cts_flag = 1;
+                    }
+                }
+                if ( *uart1_tx_flag && *uart1_cts_flag) {
+                    *uart1_cts_flag = 0;
+                    *uart1_tx_flag = 0;
                     if (event_blocked_tds[EVENT_COM1_TRANSMIT]) {
-                        *uart1_ctrl = * uart1_ctrl & ~TIEN_MASK;
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM1_TRANSMIT])->tid);
                         event_blocked_tds[EVENT_COM1_TRANSMIT] = 0;
                     }
                 }
+
                 if (*uart1_intr & RIS_MASK ){
                     if (event_blocked_tds[EVENT_COM1_RECEIVE]) {
                         ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->ret = *uart1_data;
@@ -260,6 +282,7 @@ void handle (td *active, int req, int args[5],
             if (*VIC2Status & (1 << 22)) {
                 if (*uart2_intr & TIS_MASK ){
                     if (event_blocked_tds[EVENT_COM2_TRANSMIT]) {
+                        uart_noops();
                         *uart2_ctrl = * uart2_ctrl & ~TIEN_MASK;
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM2_TRANSMIT])->tid);
                         event_blocked_tds[EVENT_COM2_TRANSMIT] = 0;
@@ -290,10 +313,12 @@ void handle (td *active, int req, int args[5],
             break;
         case 9:     // wait
             if (args[0] == EVENT_COM2_TRANSMIT) {
+                uart_noops();
                 *uart2_ctrl = * uart2_ctrl | TIEN_MASK;
             }
             if (args[0] == EVENT_COM1_TRANSMIT) {
-                *uart1_ctrl = * uart1_ctrl | TIEN_MASK;
+                uart_noops();
+                *uart1_ctrl = * uart1_ctrl | TIEN_MASK | MSIEN_MASK;
             }
             active->state = STATE_EVT_BLK;
             event_blocked_tds[args[0]] = active;
@@ -388,6 +413,10 @@ int main( int argc, char* argv[] ) {
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
     unsigned int time_idled = 0, before_idle, idle_frame =*timer_4_low , idle_usage = 0;
 
+
+    int *uart1_flags = (int *)( UART1_BASE + UART_FLAG_OFFSET );
+    unsigned int uart1_tx_flag = 0, uart1_cts_flag = *uart1_flags & CTS_MASK;
+
     int i, req = 0;
     for (;;) {
         tid = schedule(td_pq);
@@ -406,7 +435,10 @@ int main( int argc, char* argv[] ) {
 
         // put the task back on the queue
         req = req & 0xff;
-        handle( active, req, args, &free_list_lo, &free_list_hi, tds, td_pq, event_blocked_tds, idle_usage );
+        handle( active, req, args,
+            &free_list_lo, &free_list_hi,
+            tds, td_pq, event_blocked_tds, idle_usage,
+            &uart1_tx_flag, &uart1_cts_flag );
 
         if (active->state == STATE_READY || active->state == STATE_ACTIVE ){
             pq_push_back(td_pq, tds, active->tid);
