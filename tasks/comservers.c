@@ -285,6 +285,7 @@ void putc(int COM, char c) {
     char msg[2] = {0};
     char reply[2] = {0};
     int msglen = 2;
+    static int com1_receiver_tid = -1, com2_receiver_tid = -1;
     int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -304,6 +305,23 @@ void putc(int COM, char c) {
             break;
     }
 
+    switch (COM){
+        case COM1:
+            if (com1_receiver_tid < 0) {
+                com1_receiver_tid = WhoIs(COM1_PUT_SERVER);
+            }
+            receiver_tid = com1_receiver_tid;
+            break;
+        case COM2:
+            if (com2_receiver_tid < 0) {
+                com2_receiver_tid = WhoIs(COM2_PUT_SERVER);
+            }
+            receiver_tid = com2_receiver_tid;
+            break;
+        default:
+            break;
+    }
+
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
     return ;
@@ -313,6 +331,7 @@ void putstr(int COM, char* str ) {
     char msg[710] = {0};
     char reply[2] = {0};
     int msglen , rpllen = 2;
+    static int com1_receiver_tid = -1, com2_receiver_tid = -1;
     int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -325,10 +344,16 @@ void putstr(int COM, char* str ) {
 
     switch (COM){
         case COM1:
-            receiver_tid = WhoIs(COM1_PUT_SERVER);
+            if (com1_receiver_tid < 0) {
+                com1_receiver_tid = WhoIs(COM1_PUT_SERVER);
+            }
+            receiver_tid = com1_receiver_tid;
             break;
         case COM2:
-            receiver_tid = WhoIs(COM2_PUT_SERVER);
+            if (com2_receiver_tid < 0) {
+                com2_receiver_tid = WhoIs(COM2_PUT_SERVER);
+            }
+            receiver_tid = com2_receiver_tid;
             break;
         default:
             break;
@@ -342,6 +367,7 @@ void putstr_len(int COM, char* str, int msglen ) {
     char msg[710] = {0};
     char reply[2] = {0};
     int rpllen = 2;
+    static int com1_receiver_tid = -1, com2_receiver_tid = -1;
     int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -353,10 +379,16 @@ void putstr_len(int COM, char* str, int msglen ) {
 
     switch (COM){
         case COM1:
-            receiver_tid = WhoIs(COM1_PUT_SERVER);
+            if (com1_receiver_tid < 0) {
+                com1_receiver_tid = WhoIs(COM1_PUT_SERVER);
+            }
+            receiver_tid = com1_receiver_tid;
             break;
         case COM2:
-            receiver_tid = WhoIs(COM2_PUT_SERVER);
+            if (com2_receiver_tid < 0) {
+                com2_receiver_tid = WhoIs(COM2_PUT_SERVER);
+            }
+            receiver_tid = com2_receiver_tid;
             break;
         default:
             break;
@@ -370,6 +402,7 @@ char getc(int COM) {
     char msg[2] = {0};
     char reply[2] = {0};
     int msglen = 2;
+    static int com1_receiver_tid = -1, com2_receiver_tid = -1;
     int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -379,10 +412,16 @@ char getc(int COM) {
 
     switch (COM){
         case COM1:
-            receiver_tid = WhoIs(COM1_GET_SERVER);
+            if (com1_receiver_tid < 0) {
+                com1_receiver_tid = WhoIs(COM1_GET_SERVER);
+            }
+            receiver_tid = com1_receiver_tid;
             break;
         case COM2:
-            receiver_tid = WhoIs(COM2_GET_SERVER);
+            if (com2_receiver_tid < 0) {
+                com2_receiver_tid = WhoIs(COM2_GET_SERVER);
+            }
+            receiver_tid = com2_receiver_tid;
             break;
         default:
             break;

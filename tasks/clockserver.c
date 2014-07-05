@@ -111,7 +111,10 @@ int Delay( int ticks ) {
     char msg[8] = {0};
     char reply[8] = {0};
     int msglen = 8;
-    int receiver_tid = WhoIs(CLOCK_SERVER_NAME);
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(CLOCK_SERVER_NAME);
+    }
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.iValue = ticks;
@@ -131,7 +134,10 @@ int Time () {
     char msg[8] = {0};
     char reply[8] = {0};
     int msglen = 8;
-    int receiver_tid = WhoIs(CLOCK_SERVER_NAME);
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(CLOCK_SERVER_NAME);
+    }
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.type = TIME_REQUEST;
@@ -151,7 +157,10 @@ int DelayUntil( int ticks ) {
     char msg[8] = {0};
     char reply[8] = {0};
     int msglen = 8;
-    int receiver_tid = WhoIs(CLOCK_SERVER_NAME);
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(CLOCK_SERVER_NAME);
+    }
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.iValue = ticks;
