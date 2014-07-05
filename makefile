@@ -4,7 +4,7 @@
 XCC     = gcc
 AS	= as
 AR	= ar
-CFLAGS  = -c -fPIC -Wall -I. -I./include -I./lib -I./kernel -I./tasks -mcpu=arm920t -msoft-float
+CFLAGS  = -c -fPIC -Wall -I. -I./include -I./lib -I./kernel -I./tasks -I./track -mcpu=arm920t -msoft-float
 # -g: include hooks for gdb
 # -c: only compile
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -96,9 +96,15 @@ debug.s: kernel/debug.c kernel/debug.h
 debug.o: debug.s
 	$(AS) $(ASFLAGS) -o debug.o debug.s
 
+track_data.s: track/track_data.c track/track_data.h track/track_node.h
+	$(XCC) -S $(CFLAGS) track/track_data.c
 
-kernel.elf: kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o -lgcc
+track_data.o: track_data.s
+	$(AS) $(ASFLAGS) -o track_data.o track_data.s
+
+
+kernel.elf: kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map

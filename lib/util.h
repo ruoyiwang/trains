@@ -9,6 +9,8 @@ int strcmp ( const char * str1, const char * str2 );
 
 void * memcpy ( void * destination, const void * source, unsigned int num );
 
+void *memset(void *s, int c, unsigned int n);
+
 void initTimers();
 
 unsigned int rand(unsigned int seed);
