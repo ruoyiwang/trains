@@ -341,21 +341,24 @@ void SensorsTask() {
     char sensors_bytes[10] = {0};
     int sensorDisplayPosition = 0;
 
-    int k;
-    unsigned int times[80];
-    for ( k = 0; k < 80; k++) {
-        times[k] = 0;
-    }
-    int time_index;
-    int cur_time;
+    // int k;
+    // unsigned int times[80];
+    // for ( k = 0; k < 80; k++) {
+    //     times[k] = 0;
+    // }
+    // int time_index;
+    // int cur_time;
     unsigned char sensorStr[5];
 
+    char commandstr[2];
+    commandstr[0] = 0;
+    commandstr[1] = 50;
 
-    volatile unsigned int * timer_4_low;
-    timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
+    // volatile unsigned int * timer_4_low;
+    // timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
 
     FOREVER {
-        Delay(30);
+        Delay(10);
         putc(COM1, 133);
         for (i = 0; i<10 ; i ++){
             c = getc(COM1);
@@ -379,24 +382,31 @@ void SensorsTask() {
                         bwi2a ( sensorNum, sensorStr );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
 
-                        time_index = (i / 2) * 16 + sensorNum - 1;
-                        cur_time = Time();
-                        times[time_index] = cur_time;
-                        if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
-                            setSwitch ( SW_CURVE, 0x8);
-                        }
-                        if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
-                            setSwitch ( SW_STRAIGHT, 17);
-                            setSwitch ( SW_CURVE, 13);
-                        }
-                        if (sensorNum == 9 && ('A' + (i / 2)) == 'B') {
-                            bwprintf(COM2, "%c[2J", 0x1B);
-                            bwprintf(COM2, "%d \n", Time());
-                            for (k = 0; k < 80; k++) {
-                                bwprintf(COM2, "%c | %d | %u\n", 'A' + k/16, 1 + k%16, times[k]);
-                            }
-                            Assert();
-                        }
+                        // time_index = (i / 2) * 16 + sensorNum - 1;
+                        // cur_time = Time();
+                        // times[time_index] = cur_time;
+                        // if ((sensorNum == 13 || sensorNum == 14)&& ('A' + (i / 2)) == 'C') {
+                        //     putstr_len(COM1, commandstr, 2 );
+                        //     commandstr[1] = 49;
+                        //     putstr_len(COM1, commandstr, 2 );
+                        //     commandstr[1] = 50;
+                        //     bwprintf(COM2, "%d \n", Time());
+                        // }
+                        // if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
+                        //     setSwitch ( SW_CURVE, 0x8);
+                        // }
+                        // if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
+                        //     setSwitch ( SW_STRAIGHT, 17);
+                        //     setSwitch ( SW_CURVE, 13);
+                        // }
+                        // if (sensorNum == 9 && ('A' + (i / 2)) == 'B') {
+                        //     bwprintf(COM2, "%c[2J", 0x1B);
+                        //     bwprintf(COM2, "%d \n", Time());
+                        //     for (k = 0; k < 80; k++) {
+                        //         bwprintf(COM2, "%c | %d | %u\n", 'A' + k/16, 1 + k%16, times[k]);
+                        //     }
+                        //     Assert();
+                        // }
                     }
                     if ( !(i % 2) ) {
                         sensorNum = 8 - j;
@@ -404,24 +414,31 @@ void SensorsTask() {
                         outputPutStr ( "0", &row, &col, buffer, &index  );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
 
-                        time_index = (i / 2) * 16 + sensorNum - 1;
-                        cur_time = Time();
-                        times[time_index] = cur_time;
-                        if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
-                            setSwitch ( SW_CURVE, 0x8);
-                        }
-                        if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
-                            setSwitch ( SW_STRAIGHT, 17);
-                            setSwitch ( SW_CURVE, 13);
-                        }
-                        if (sensorNum == 9 && ('A' + (i / 2)) == 'B') {
-                            bwprintf(COM2, "%c[2J", 0x1B);
-                            bwprintf(COM2, "%d \n", Time());
-                            for (k = 0; k < 80; k++) {
-                                bwprintf(COM2, "%c | %d | %u\n", 'A' + k/16, 1 + k%16, times[k]);
-                            }
-                            Assert();
-                        }
+                        // time_index = (i / 2) * 16 + sensorNum - 1;
+                        // cur_time = Time();
+                        // times[time_index] = cur_time;
+                        // if ((sensorNum == 13 || sensorNum == 14)&& ('A' + (i / 2)) == 'C') {
+                        //     putstr_len(COM1, commandstr, 2 );
+                        //     commandstr[1] = 49;
+                        //     putstr_len(COM1, commandstr, 2 );
+                        //     commandstr[1] = 50;
+                        //     bwprintf(COM2, "%d \n", Time());
+                        // }
+                        // if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
+                        //     setSwitch ( SW_CURVE, 0x8);
+                        // }
+                        // if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
+                        //     setSwitch ( SW_STRAIGHT, 17);
+                        //     setSwitch ( SW_CURVE, 13);
+                        // }
+                        // if (sensorNum == 9 && ('A' + (i / 2)) == 'B') {
+                        //     bwprintf(COM2, "%c[2J", 0x1B);
+                        //     bwprintf(COM2, "%d \n", Time());
+                        //     for (k = 0; k < 80; k++) {
+                        //         bwprintf(COM2, "%c | %d | %u\n", 'A' + k/16, 1 + k%16, times[k]);
+                        //     }
+                        //     Assert();
+                        // }
                     }
                     outputPutStr ( " ", &row, &col, buffer, &index  );
                     sensorDisplayPosition = (sensorDisplayPosition + 1) % SENSORS_DISPLAY_WIDTH;
@@ -467,6 +484,7 @@ void handleCommandTask() {
         setSwitch ( SW_STRAIGHT, i);
     }
     setSwitch ( SW_CURVE, 3);
+    setSwitch ( SW_CURVE, 7);
     setSwitch ( SW_CURVE, 14);
     setSwitch ( SW_CURVE, 17);
 
@@ -475,7 +493,7 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
-    // Delay(700);
+    Delay(700);
     Create(5, (&SensorsTask));
 
     FOREVER {
@@ -507,6 +525,12 @@ void handleCommandTask() {
                     }
                     msg_struct.type = TRAIN_SET_SPEED;
                     msg_struct.iValue = atoi(argv[1]);
+                    if (msg_struct.iValue == 12) {
+                        char tempstr[26] = {0};
+                        bwi2a ( Time(), tempstr );
+                        row = 18; col = 1;
+                        outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                    }
                     Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
                     break;
