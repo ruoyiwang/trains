@@ -20,7 +20,7 @@ LDFLAGS = -init main -N -Map kernel.map -T orex.ld -Llib -L/u/wbcowan/gnuarm-4.0
 all:  kernel.s kernel.elf
 
 
-kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h tasks/clockserver.h tasks/comservers.h tasks/interface.h kernel/queue.h tasks/Tasks.h tasks/train.h lib/bwio.h
+kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h tasks/clockserver.h tasks/sensors.h tasks/comservers.h tasks/interface.h kernel/queue.h tasks/Tasks.h tasks/train.h lib/bwio.h
 	$(XCC) -S $(CFLAGS) -O2 kernel/kernel.c
 
 kernel.o: kernel.s kernel/ker_ent_exit.asm kernel/int_ker_ent_exit.asm
@@ -39,6 +39,13 @@ clockserver.s: tasks/clockserver.c tasks/clockserver.h
 
 clockserver.o: clockserver.s
 	$(AS) $(ASFLAGS) -o clockserver.o clockserver.s
+
+
+sensors.s: tasks/sensors.c tasks/sensors.h
+	$(XCC) -S $(CFLAGS) tasks/sensors.c
+
+sensors.o: sensors.s
+	$(AS) $(ASFLAGS) -o sensors.o sensors.s
 
 
 comservers.s: tasks/comservers.c tasks/comservers.h
@@ -103,8 +110,8 @@ track_data.o: track_data.s
 	$(AS) $(ASFLAGS) -o track_data.o track_data.s
 
 
-kernel.elf: kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o -lgcc
+kernel.elf: kernel.o nameserver.o clockserver.o sensors.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map

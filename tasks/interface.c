@@ -3,6 +3,7 @@
 #include <interface.h>
 #include <clockserver.h>
 #include <train.h>
+#include <sensors.h>
 #include <kernel.h>
 #include <bwio.h>
 #include <util.h>
@@ -330,7 +331,7 @@ void IdleDisplayTask() {
     }
 }
 
-void SensorsTask() {
+void SensorsDisplayTask() {
     // FOREVER{}
     char buffer[512] = {0};
     int index = 0;
@@ -338,6 +339,7 @@ void SensorsTask() {
     char clockstr[10];
     char c;
     int i,j, row, col;
+    char prev_sensors_bytes[10] = {0};
     char sensors_bytes[10] = {0};
     int sensorDisplayPosition = 0;
 
@@ -358,11 +360,12 @@ void SensorsTask() {
     // timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
 
     FOREVER {
-        Delay(10);
-        putc(COM1, 133);
+        Delay(30);
+        memcpy(prev_sensors_bytes, sensors_bytes, 10);
+        getLatestSensors(sensors_bytes);
         for (i = 0; i<10 ; i ++){
-            c = getc(COM1);
-            if (c == sensors_bytes[i]) {
+            c = sensors_bytes[i];
+            if (c == prev_sensors_bytes[i]) {
                 continue;
             }
             sensors_bytes[i] = c;
@@ -493,8 +496,9 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
-    Delay(700);
-    Create(5, (&SensorsTask));
+    Delay(600);
+    Create(3, (&SensorServer));
+    Create(5, (&SensorsDisplayTask));
 
     FOREVER {
     	c = getc(COM2);
