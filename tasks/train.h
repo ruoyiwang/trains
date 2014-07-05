@@ -1,9 +1,16 @@
 #ifndef __TRAIN__
 #define __TRAIN__
 
-#define TRAIN_SET_SPEED 4
-#define TRAIN_REVERSE   3
-#define SET_SWITCH		2
+#include <track_data.h>
+#include <track_node.h>
+
+#define PREDICT             0x51
+#define PATH_FIND           0x52
+
+#define TRAIN_SET_SPEED 	4
+#define TRAIN_REVERSE   	3
+#define SET_SWITCH			2
+
 #define TRACK_TASK 		"track task"
 
 #define COM1_PUT_DELAY 	5
@@ -12,5 +19,16 @@
 void genTrainName( int train_id, char* bf);
 void TrainTask ();
 void TracksTask ();
+
+void setSwitchStatus(unsigned int* switch_status, int sw, int dir);
+int getSwitchStatus(unsigned int* switch_status, int sw);
+
+void predictPath(
+    track_node *tracks,     // the initialized array of tracks
+    unsigned int switch_status,
+    int cur_sensor,         // 0 based
+    int prediction_len,     // amount of predictions wanted
+    char* paths              // the triggers to be triggered
+);
 
 #endif

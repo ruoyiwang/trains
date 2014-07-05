@@ -197,6 +197,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_ASSERT;
         return;
     }
+    else if ( cmdstr[0] == 'p' ){
+        *command = CMD_PREDICT;
+        return;
+    }
     else if ( cmdstr[0] == 'q' ){
         *command = CMD_QUIT;
         return;
@@ -465,8 +469,8 @@ void handleCommandTask() {
     char c;
 
     char msg[10];
-    char reply[2];
-    int server_tid, msglen = 10, rpllen = 2, train_task_id, i;
+    char reply[10];
+    int server_tid, msglen = 10, rpllen = 10, train_task_id, i;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -476,7 +480,7 @@ void handleCommandTask() {
     buffer[index++] = 0;
     putstr(COM2, buffer);
 
-    Create(5, (&TracksTask));
+    int track_task_id = Create(5, (&TracksTask));
     putc(COM1, 0x60);
     Delay(100);
 
@@ -569,6 +573,19 @@ void handleCommandTask() {
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;
                     // train_rindex++;
                     Assert();
+                    break;
+                case CMD_PREDICT:
+                    msg_struct.type = PREDICT;
+                    msg_struct.value[0] = 64;
+                    msg_struct.iValue = 4;
+                    Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+                    int tempi;
+                    char tempstr[3] = {0};
+                    for (tempi = 0; tempi < msg_struct.iValue; tempi++) {
+                        bwi2a(reply_struct.value[tempi], tempstr);
+                        row = 18; col = 1;
+                        outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                    }
                     break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;

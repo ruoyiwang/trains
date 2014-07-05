@@ -22,12 +22,13 @@
 #define IDLE_POSITION_X 2
 #define IDLE_POSITION_Y 20
 
-#define CMD_TRAIN 1
+#define CMD_TRAIN   1
 #define CMD_REVERSE 2
-#define CMD_SWITCH 3
-#define CMD_QUIT 4
+#define CMD_SWITCH  3
+#define CMD_QUIT    4
 #define CMD_INVALID 5
-#define CMD_ASSERT 6
+#define CMD_ASSERT  6
+#define CMD_PREDICT 7
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);
