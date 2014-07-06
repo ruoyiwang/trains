@@ -284,7 +284,7 @@ int predictSensor( int sensor, int prediction_len, char* result ) {
 
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
-    memcpy(result, reply, 10);
+    memcpy(result, reply, prediction_len);
 
     if (strcmp(msg_struct.value, "FAIL") != 0) {
         // if succeded
