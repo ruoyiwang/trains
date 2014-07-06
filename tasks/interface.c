@@ -501,9 +501,9 @@ void handleCommandTask() {
     Delay(100);
 
     // paht finding shits
-    int stopping_sensor;        // returning node
-    int stoppong_sensor_dist;   // returning distance
-    char sensor_route[20];      // the sensors the train's gonna
+    int stopping_sensor;            // returning node
+    int stoppong_sensor_dist;       // returning distance
+    char sensor_route[20] = {0};    // the sensors the train's gonna
 
     setAllTrainSpeedToOne();
     // set all train speed to 1 before we do anything
