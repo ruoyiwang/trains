@@ -22,6 +22,9 @@
 #define IDLE_POSITION_X 2
 #define IDLE_POSITION_Y 20
 
+#define NEXT_POSITION_X 23
+#define PREV_POSITION_X 22
+
 #define CMD_TRAIN           1
 #define CMD_REVERSE         2
 #define CMD_SWITCH          3

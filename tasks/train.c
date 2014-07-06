@@ -76,7 +76,7 @@ int reverseTrain( int num ) {
     receiver_tid = WhoIs(msg);
 
     if (receiver_tid == -1) {
-        receiver_tid = Create(5, (&TrainTask));
+        receiver_tid = Create(2, (&TrainTask));
         msg_struct.iValue = num;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     }
@@ -104,7 +104,7 @@ int setTrainSpeed( int num, int speed ) {
     receiver_tid = WhoIs(msg);
 
     if (receiver_tid == -1) {
-        receiver_tid = Create(5, (&TrainTask));
+        receiver_tid = Create(2, (&TrainTask));
         msg_struct.iValue = num;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     }
@@ -125,6 +125,7 @@ void TracksTask () {
     // msg shits
     char msg[10] = {0};
     char reply[10] = {0};
+    char predict_result[10] = {0};
     int sender_tid, msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -169,7 +170,8 @@ void TracksTask () {
                 prediction_len = msg_struct.iValue;
                 // type PREDICT + value sensor (in int_8 lol) + ivalue n
                 // <== next n switches after sensor, default 8
-                predictSensorTrackTask(tracks, switch_status, cur_sensor, prediction_len, reply);
+                predictSensorTrackTask(tracks, switch_status, cur_sensor, prediction_len, predict_result);
+                memcpy(reply, predict_result, prediction_len);
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             case FIND_DISTANCE_BETWEEN_TWO_LANDMARKS:
@@ -285,12 +287,7 @@ int predictSensor( int sensor, int prediction_len, char* result ) {
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
     memcpy(result, reply, prediction_len);
-
-    if (strcmp(msg_struct.value, "FAIL") != 0) {
-        // if succeded
-        return 1;
-    }
-    return -1;
+    return 0;
 }
 
 int findDistanceBetweenLandmarksTrackTask(

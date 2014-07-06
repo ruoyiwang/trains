@@ -4,6 +4,7 @@
 #include <clockserver.h>
 #include <train.h>
 #include <sensors.h>
+#include <commandcenter.h>
 #include <kernel.h>
 #include <bwio.h>
 #include <util.h>
@@ -55,6 +56,18 @@ void outputPutStrLn ( char* str, int *row, int *col, char* buffer, int* index ) 
     saveCursorPosition(buffer, index);
     setCursor( *row, *col, buffer, index );
     cursorCommand ("D", buffer, index);
+    flushLine (buffer, index);
+    while ( str[i] != '\0' ) {
+        *(buffer+((*index)++)) = str[i++];
+        (*col)++;
+    }
+    restoreCursorPosition(buffer, index);
+}
+
+void outputPutStrClear ( char* str, int *row, int *col, char* buffer, int* index ) {
+    int i = 0;
+    saveCursorPosition(buffer, index);
+    setCursor( *row, *col, buffer, index );
     flushLine (buffer, index);
     while ( str[i] != '\0' ) {
         *(buffer+((*index)++)) = str[i++];
@@ -264,6 +277,10 @@ void initInterface() {
     drawSwitchesTable ( &row, &col, buffer, &index );
     row = CMD_POSITION_X; col = 1;
     outputPutStr ( "cmd>", &row, &col , buffer, &index );
+    row = NEXT_POSITION_X; col = 1;
+    outputPutStr ( "NEXT SENSOR:", &row, &col , buffer, &index );
+    row = PREV_POSITION_X; col = 1;
+    outputPutStr ( "PREV SENSOR:", &row, &col , buffer, &index );
 
     buffer[(index)++] = 0;
     putstr(COM2, buffer);
@@ -349,7 +366,6 @@ void SensorsDisplayTask() {
     char buffer[512] = {0};
     int index = 0;
 
-    char clockstr[10];
     char c;
     int i,j, row, col;
     char prev_sensors_bytes[10] = {0};
@@ -468,6 +484,35 @@ void SensorsDisplayTask() {
     }
 }
 
+void LocationDisplayTask() {
+    char buffer[100] = {0};
+    int index = 0;
+
+    char c;
+    int i,j, row, col;
+    char train_info[10] = {-1};
+    char sensor_str[5] = {0};
+
+    FOREVER {
+        // Delay(30);
+        waitTrainInfo(50, train_info);
+        int index = 0;
+
+        sensor_str[0] = 'A' + (train_info[0] / 16);
+        bwi2a( (train_info[0] % 16) + 1, sensor_str + 1);
+        row = PREV_POSITION_X; col = 15;
+        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
+
+        sensor_str[0] = 'A' + (train_info[1] / 16);
+        bwi2a( (train_info[1] % 16) + 1, sensor_str + 1);
+        row = NEXT_POSITION_X; col = 15;
+        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
+
+        buffer[(index)++] = 0;
+        putstr(COM2, buffer);
+    }
+}
+
 void handleCommandTask() {
 
     int tempi;
@@ -496,7 +541,7 @@ void handleCommandTask() {
     buffer[index++] = 0;
     putstr(COM2, buffer);
 
-    Create(5, (&TracksTask));
+    Create(2, (&TracksTask));
     putc(COM1, 0x60);
     Delay(100);
 
@@ -514,7 +559,7 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 3);
     setSwitch ( SW_CURVE, 7);
     setSwitch ( SW_CURVE, 14);
-    setSwitch ( SW_CURVE, 17);
+    setSwitch ( SW_CURVE, 18);
 
     setSwitch ( SW_CURVE, 0x99);
     setSwitch ( SW_STRAIGHT, 0x9A);
@@ -524,6 +569,10 @@ void handleCommandTask() {
     Delay(600);
     Create(3, (&SensorServer));
     Create(5, (&SensorsDisplayTask));
+
+    Create(3, (&CommandCenterServer));
+    initTrainLocation(50, 2);
+    Create(5, (&LocationDisplayTask));
 
     FOREVER {
     	c = getc(COM2);
