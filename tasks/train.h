@@ -42,7 +42,39 @@ int findDistanceBetweenLandmarksTrackTask(
     int landmark_end,       // 0 based
     int lookup_limit        // amount of predictions wanted
 );
-
+int findDistanceBetweenLandmarks(
+    int landmark1, int landmark2, int lookup_limit
+);
 int predictSensor( int sensor, int prediction_len, char* result );
+
+
+// path shits
+int pathFindTrainTask(
+    track_node *tracks,     // the initialized array of tracks
+    unsigned int* switch_status,
+    int cur_sensor,         // 0 based
+    int stopping_node,      // amount of predictions wanted
+    int* stopping_sensor,   // the triggers to be triggered
+    int* stoppong_sensor_dist,   // returning distance
+    char* sensor_route
+);
+
+int bfsPathFind(        // pretty shit path find lol
+    track_node *tracks,
+    track_node* begin_node,
+    track_node* end_node,
+    track_node** path   // the path the train's gonna take
+);
+
+int pathFind(
+    int cur_sensor,             // current node
+    int dest_node,              // where it wants to go
+    int stopping_dist,          // stoping distance
+    int* stopping_sensor,       // returning node
+    int* stoppong_sensor_dist,  // returning distance
+    char* sensor_route          // the sensors the train's gonna pass
+);
+
+void makePath(track_node* node, track_node** path);
 
 #endif

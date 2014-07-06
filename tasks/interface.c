@@ -198,12 +198,16 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_ASSERT;
         return;
     }
-    else if ( cmdstr[0] == 'p' ){
+    else if ( strcmp (cmdstr, "pd") == 0 && *argc == 2 ){
         *command = CMD_PREDICT_SENSOR;
         return;
     }
     else if ( strcmp (cmdstr, "fd") == 0 && *argc == 2 ){
         *command = CMD_FIND_DISTANCE;
+        return;
+    }
+    else if ( strcmp (cmdstr, "pf") == 0 && *argc == 2 ){
+        *command = CMD_PATH_FIND;
         return;
     }
     else if ( cmdstr[0] == 'q' ){
@@ -466,6 +470,8 @@ void SensorsDisplayTask() {
 
 void handleCommandTask() {
 
+    int tempi;
+
     char buffer[512] = {0};
     int index = 0;
 
@@ -475,7 +481,7 @@ void handleCommandTask() {
 
     char msg[10];
     char reply[10];
-    int server_tid, msglen = 10, rpllen = 10, train_task_id, i;
+    int msglen = 10, rpllen = 10, i;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -490,9 +496,14 @@ void handleCommandTask() {
     buffer[index++] = 0;
     putstr(COM2, buffer);
 
-    int track_task_id = Create(5, (&TracksTask));
+    Create(5, (&TracksTask));
     putc(COM1, 0x60);
     Delay(100);
+
+    // paht finding shits
+    int stopping_sensor;        // returning node
+    int stoppong_sensor_dist;   // returning distance
+    char sensor_route[20];      // the sensors the train's gonna
 
     setAllTrainSpeedToOne();
     // set all train speed to 1 before we do anything
@@ -573,7 +584,6 @@ void handleCommandTask() {
 
                     predictSensor( cur_sensor, prediction_len, predict_result );
 
-                    int tempi;
                     for (tempi = 0; tempi < prediction_len; tempi++) {
                         bwi2a(predict_result[tempi], tempstr);
                         row = 18; col = 1;
@@ -586,6 +596,22 @@ void handleCommandTask() {
                     bwi2a(result, tempstr);
                     row = 18; col = 1;
                     outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                    break;
+                case CMD_PATH_FIND:
+                    result = pathFind(
+                        atoi(argv[0]),          // current node
+                        atoi(argv[1]),          // where it wants to go
+                        81,                     // stoping distance
+                        &stopping_sensor,       // returning node
+                        &stoppong_sensor_dist,  // returning distance
+                        sensor_route           // the sensors the train's gonna pass
+                    );
+
+                    for (tempi = 0; tempi < result; tempi++) {
+                        bwi2a(sensor_route[tempi], tempstr);
+                        row = 18; col = 1;
+                        outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                    }
                     break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;
