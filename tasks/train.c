@@ -124,8 +124,8 @@ void TracksTask () {
 
     // msg shits
     char msg[10] = {0};
-    char reply[10] = {0};
     char predict_result[10] = {0};
+    char reply[80] = {0};
     int sender_tid, msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -193,7 +193,7 @@ void TracksTask () {
                 // path find
                 landmark1 = msg[0];
                 landmark2 = msg[1];
-                reply_struct.iValue = pathFindTrainTask(
+                reply_struct.iValue = pathFindTrackTask(
                     tracks,
                     &switch_status,
                     landmark1,              // cur sensor
@@ -347,15 +347,15 @@ int findDistanceBetweenLandmarks(
 
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
-    if (strcmp(msg_struct.value, "FAIL") != 0) {
+    if (strcmp(reply_struct.value, "FAIL") != 0) {
         // if succeded
         return reply_struct.iValue;
     }
     return -1;
 }
 
-// return succss:1, fail:-1
-int pathFindTrainTask(
+// return succss:j, fail:-1
+int pathFindTrackTask(
     track_node *tracks,     // the initialized array of tracks
     unsigned int* switch_status,
     int cur_sensor,         // 0 based
@@ -369,19 +369,32 @@ int pathFindTrainTask(
     // to find the path through all the nodes
     track_node* path[TRACK_MAX];
     for (i = 0; i < TRACK_MAX; i++) {
-        path[i] = NULL;
+        path[i] = -1;
     }
+
     bfsPathFind(tracks, &tracks[cur_sensor], &tracks[stopping_node], path);
 
     // TODO: then set all the switches
-
+    for (i = 0; i < TRACK_MAX; i++) {
+        if (path[i] == -1 ){
+            break;
+        }
+        else if (path[i]->type == NODE_BRANCH) {
+            if (path[i]->edge[DIR_STRAIGHT].dest == path[i+1] ) {
+                setSwitchTrackTask(path[i]->num, SW_STRAIGHT, switch_status);
+            }
+            else {
+                setSwitchTrackTask(path[i]->num, SW_CURVE, switch_status);
+            }
+        }
+    }
 
     // TODO: find the dist to end
 
     // find the sensor list
     j = 0;
     for (i = 0; i < TRACK_MAX; i++) {
-        if (path[i] != NULL ){
+        if (path[i] != -1 ){
             if (path[i]->type == NODE_SENSOR) {
                 sensor_route[j++] = path[i]->num;
             }
@@ -394,7 +407,7 @@ int pathFindTrainTask(
 }
 
 int bfsPathFind(        // pretty shit path find lol
-    track_node *tracks,
+    track_node* tracks,
     track_node* begin_node,
     track_node* end_node,
     track_node** path   // the path the train's gonna take
@@ -402,7 +415,7 @@ int bfsPathFind(        // pretty shit path find lol
     // init the parents and visisted flags
     int i = 0;
     for (i = 0; i < TRACK_MAX; i++) {
-        tracks[i].parent = 0;
+        tracks[i].parent = -1;
         tracks[i].visisted = 0;
     }
     // shitty queue v
@@ -417,13 +430,14 @@ int bfsPathFind(        // pretty shit path find lol
 
     while (cb_begin != cb_end) {
         cur_node = circ_buff[cb_begin++];
+        cb_begin = cb_begin % buffer_size;
         if (cur_node->visisted == 1) {
             continue;
         }
         cur_node->visisted = 1;
         if (cur_node == end_node) {
             // track the parents and store in paths
-            makePath( cur_node, path);
+            makePath( cur_node, begin_node, path);
             return 1;
         }
         else if (cur_node->type == NODE_ENTER || cur_node->type == NODE_EXIT) {
@@ -431,19 +445,25 @@ int bfsPathFind(        // pretty shit path find lol
         }
         else if (cur_node->type == NODE_BRANCH) {
             // straight
-            cur_node->edge[DIR_STRAIGHT].dest->parent = cur_node;
-            circ_buff[cb_end++] = cur_node->edge[DIR_STRAIGHT].dest;
-            cb_end = cb_end % buffer_size;
+            if (cur_node->edge[DIR_STRAIGHT].dest->visisted != 1) {
+                cur_node->edge[DIR_STRAIGHT].dest->parent = cur_node;
+                circ_buff[cb_end++] = cur_node->edge[DIR_STRAIGHT].dest;
+                cb_end = cb_end % buffer_size;
+            }
             // curve
-            cur_node->edge[DIR_CURVED].dest->parent = cur_node;
-            circ_buff[cb_end++] = cur_node->edge[DIR_CURVED].dest;
-            cb_end = cb_end % buffer_size;
+            if (cur_node->edge[DIR_CURVED].dest->visisted != 1) {
+                cur_node->edge[DIR_CURVED].dest->parent = cur_node;
+                circ_buff[cb_end++] = cur_node->edge[DIR_CURVED].dest;
+                cb_end = cb_end % buffer_size;
+            }
         }
         else {  // either sensor or merge
             // go forward
-            cur_node->edge[DIR_AHEAD].dest->parent = cur_node;
-            circ_buff[cb_end++] = cur_node->edge[DIR_AHEAD].dest;
-            cb_end = cb_end % buffer_size;
+            if (cur_node->edge[DIR_AHEAD].dest->visisted != 1) {
+                cur_node->edge[DIR_AHEAD].dest->parent = cur_node;
+                circ_buff[cb_end++] = cur_node->edge[DIR_AHEAD].dest;
+                cb_end = cb_end % buffer_size;
+            }
             // // try reverse too, especially for merge
             // cur_node->reverse->parent = cur_node;
             // circ_buff[cb_end++] = cur_node->reverse;
@@ -453,14 +473,13 @@ int bfsPathFind(        // pretty shit path find lol
     return -1;
 }
 
-void makePath(track_node* node, track_node** path) {
+void makePath(track_node* node, track_node* init_node, track_node** path) {
     // find how long the path is
     track_node* cur_node = node;
     int path_length = 0;
-    while ( (cur_node = cur_node->parent) ){
+    while ( (cur_node = cur_node->parent) != -1 ){
         path_length++;
     }
-
     // add shits to path backwards
     int i = 0;
     cur_node = node;
@@ -470,6 +489,7 @@ void makePath(track_node* node, track_node** path) {
     }
 }
 
+// expecte sensor_route to be as long as 80 char
 int pathFind(
     int cur_sensor,             // current node
     int dest_node,              // where it wants to go
@@ -479,13 +499,11 @@ int pathFind(
     char* sensor_route          // the sensors the train's gonna pass
 ) {
     int i = 0;
-    for (i = 0; i < 10; i++) {
-        sensor_route[0] = 0;
-    }
 
     char msg[10] = {0};
+    char reply[80];
     int msglen = 10;
-    int rpllen = 20;
+    int rpllen = 80;
     static int receiver_tid = -1;
     if (receiver_tid < 0) {
         receiver_tid = WhoIs(TRACK_TASK);
@@ -495,13 +513,24 @@ int pathFind(
     msg[0] = cur_sensor;
     msg[1] = dest_node;
     msg_struct.type = PATH_FIND;
-    reply_struct.value = sensor_route;
+    reply_struct.value = reply;
 
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
-    if (strcmp(msg_struct.value, "FAIL") != 0) {
+    // memcpy(sensor_route, reply, reply_struct.iValue);
+
+    if (strcmp(reply_struct.value, "FAIL") != 0) {
         // if succeded
-        return reply_struct.iValue;
+        return 0;
     }
     return -1;
+}
+
+void setSwitchTrackTask(int switch_num, char switch_dir, unsigned int* switch_status) {
+    char commandstr[3];
+    commandstr[0] = switch_dir;
+    setSwitchStatus(switch_status, switch_num, switch_dir);
+    commandstr[1] = switch_num;
+    commandstr[2] = 32;
+    putstr_len(COM1, commandstr, 3);
 }

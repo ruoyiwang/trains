@@ -49,7 +49,7 @@ int predictSensor( int sensor, int prediction_len, char* result );
 
 
 // path shits
-int pathFindTrainTask(
+int pathFindTrackTask(
     track_node *tracks,     // the initialized array of tracks
     unsigned int* switch_status,
     int cur_sensor,         // 0 based
@@ -75,6 +75,8 @@ int pathFind(
     char* sensor_route          // the sensors the train's gonna pass
 );
 
-void makePath(track_node* node, track_node** path);
+void makePath(track_node* node, track_node* init_node, track_node** path);
+
+void setSwitchTrackTask(int switch_num, char switch_dir, unsigned int* switch_status);
 
 #endif
