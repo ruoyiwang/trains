@@ -524,37 +524,20 @@ void handleCommandTask() {
                     outputPutStr ( " at ", &row, &col, buffer, &index );
                     outputPutStr ( argv[1], &row, &col, buffer, &index );
 
-                    genTrainName(atoi(argv[0]), msg);
-                    train_task_id = WhoIs(msg);
-                    if (train_task_id == -1) {
-                        train_task_id = Create(5, (&TrainTask));
-                        msg_struct.iValue = atoi(argv[0]);
-                        Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
-                    }
-                    msg_struct.type = TRAIN_SET_SPEED;
-                    msg_struct.iValue = atoi(argv[1]);
-                    if (msg_struct.iValue == 12) {
-                        char tempstr[26] = {0};
-                        bwi2a ( Time(), tempstr );
-                        row = 18; col = 1;
-                        outputPutStrLn (tempstr, &row, &col, buffer, &index );
-                    }
-                    Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+                    setTrainSpeed( atoi(argv[0]), atoi(argv[1]));
+                    // uncomment the following to test starting distance
+                    // if (msg_struct.iValue == 12) {
+                    //     char tempstr[26] = {0};
+                    //     bwi2a ( Time(), tempstr );
+                    //     row = 18; col = 1;
+                    //     outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                    // }
 
                     break;
                 case CMD_REVERSE:
                     outputPutStrLn ( "Reversing train ", &row, &col, buffer, &index );
                     outputPutStr ( argv[0], &row, &col, buffer, &index );
-
-                    genTrainName(atoi(argv[0]), msg);
-                    train_task_id = WhoIs(msg);
-                    if (train_task_id == -1) {
-                        train_task_id = Create(5, (&TrainTask));
-                        msg_struct.iValue = atoi(argv[0]);
-                        Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
-                    }
-                    msg_struct.type = TRAIN_REVERSE;
-                    Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+                    reverseTrain( atoi(argv[0]));
 
                     break;
                 case CMD_SWITCH:

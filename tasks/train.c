@@ -62,6 +62,63 @@ void TrainTask () {
     }
 }
 
+int reverseTrain( int num ) {
+    char msg[10] = {0};
+    char reply[10] = {0};
+    int msglen = 10, rpllen = 10;
+    int receiver_tid;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.type = TRAIN_REVERSE;
+    reply_struct.value = reply;
+
+    genTrainName(num, msg);
+    receiver_tid = WhoIs(msg);
+
+    if (receiver_tid == -1) {
+        receiver_tid = Create(5, (&TrainTask));
+        msg_struct.iValue = num;
+        Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    }
+
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+    if (strcmp(msg_struct.value, "FAIL") != 0) {
+        // if succeded
+        return 0;
+    }
+    return -1;
+}
+
+int setTrainSpeed( int num, int speed ) {
+    char msg[10] = {0};
+    char reply[10] = {0};
+    int msglen = 10, rpllen = 10;
+    int receiver_tid;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.type = TRAIN_SET_SPEED;
+    reply_struct.value = reply;
+
+    genTrainName(num, msg);
+    receiver_tid = WhoIs(msg);
+
+    if (receiver_tid == -1) {
+        receiver_tid = Create(5, (&TrainTask));
+        msg_struct.iValue = num;
+        Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    }
+
+    msg_struct.iValue = speed;
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+    if (strcmp(msg_struct.value, "FAIL") != 0) {
+        // if succeded
+        return 0;
+    }
+    return -1;
+}
+
 void TracksTask () {
     RegisterAs(TRACK_TASK);
 

@@ -18,6 +18,9 @@
 
 void genTrainName( int train_id, char* bf);
 void TrainTask ();
+int setTrainSpeed( int num, int speed );
+int reverseTrain( int num );
+
 void TracksTask ();
 
 void setSwitchStatus(unsigned int* switch_status, int sw, int dir);
