@@ -7,6 +7,7 @@
 #include <kernel.h>
 #include <bwio.h>
 #include <util.h>
+#include <debug.h>
 #include <ts7200.h>
 
 void cursorCommand( char * cmd, char* buffer, int* index ) {
@@ -198,7 +199,7 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         return;
     }
     else if ( cmdstr[0] == 'p' ){
-        *command = CMD_PREDICT;
+        *command = CMD_PREDICT_SENSOR;
         return;
     }
     else if ( cmdstr[0] == 'q' ){
@@ -475,6 +476,10 @@ void handleCommandTask() {
     msg_struct.value = msg;
     reply_struct.value = reply;
 
+    // for sensor predicting
+    char predict_result[10] = {0};
+    int cur_sensor;
+    int prediction_len;
 
     setCursor( CMD_POSITION_X, CMD_POSITION_Y, buffer, &index);
     buffer[index++] = 0;
@@ -557,15 +562,16 @@ void handleCommandTask() {
                     // train_rindex++;
                     Assert();
                     break;
-                case CMD_PREDICT:
-                    msg_struct.type = PREDICT;
-                    msg_struct.value[0] = 64;
-                    msg_struct.iValue = 4;
-                    Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+                case CMD_PREDICT_SENSOR:
+                    cur_sensor = atoi(argv[0]);
+                    prediction_len = atoi(argv[1]);
+
+                    predictSensor( cur_sensor, prediction_len, predict_result );
+
                     int tempi;
                     char tempstr[3] = {0};
-                    for (tempi = 0; tempi < msg_struct.iValue; tempi++) {
-                        bwi2a(reply_struct.value[tempi], tempstr);
+                    for (tempi = 0; tempi < prediction_len; tempi++) {
+                        bwi2a(predict_result[tempi], tempstr);
                         row = 18; col = 1;
                         outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     }

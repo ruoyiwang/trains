@@ -4,7 +4,7 @@
 #include <track_data.h>
 #include <track_node.h>
 
-#define PREDICT             0x51
+#define PREDICT_SENSOR      0x51
 #define PATH_FIND           0x52
 
 #define TRAIN_SET_SPEED 	4
@@ -26,12 +26,14 @@ void TracksTask ();
 void setSwitchStatus(unsigned int* switch_status, int sw, int dir);
 int getSwitchStatus(unsigned int* switch_status, int sw);
 
-void predictPath(
+void predictSensorTrackTask(
     track_node *tracks,     // the initialized array of tracks
     unsigned int switch_status,
     int cur_sensor,         // 0 based
     int prediction_len,     // amount of predictions wanted
     char* paths              // the triggers to be triggered
 );
+
+int predictSensor( int sensor, int prediction_len, char* result );
 
 #endif

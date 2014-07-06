@@ -162,13 +162,13 @@ void TracksTask () {
                 // bwprintf(COM2, "received sw command\n\n");
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
-            case PREDICT:
+            case PREDICT_SENSOR:
                 // predict
                 cur_sensor = msg[0];
                 prediction_len = msg_struct.iValue;
                 // type PREDICT + value sensor (in int_8 lol) + ivalue n
                 // <== next n switches after sensor, default 8
-                predictPath(tracks, switch_status, cur_sensor, prediction_len, reply);
+                predictSensorTrackTask(tracks, switch_status, cur_sensor, prediction_len, reply);
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             case PATH_FIND:
@@ -203,7 +203,7 @@ int getSwitchStatus(unsigned int* switch_status, int sw) {
     return SW_CURVE;
 }
 
-void predictPath(
+void predictSensorTrackTask(
     track_node *tracks,     // the initialized array of tracks
     unsigned int switch_status,
     int cur_sensor,         // 0 based
@@ -241,25 +241,25 @@ void predictPath(
     }
 }
 
-// int waitForSensor( int sensor ) {
-//     char msg[10] = {0};
-//     char reply[10] = {0};
-//     int msglen = 10;
-//     static int receiver_tid = -1;
-//     if (receiver_tid < 0) {
-//         receiver_tid = WhoIs(SENSOR_SERVER_NAME);
-//     }
-//     message msg_struct, reply_struct;
-//     msg_struct.value = msg;
-//     msg_struct.iValue = sensor;
-//     msg_struct.type = WAIT_REQUEST;
-//     reply_struct.value = reply;
+int predictSensor( int sensor, int prediction_len, char* result ) {
+    char msg[10] = {0};
+    int msglen = 10;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(TRACK_TASK);
+    }
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg[0] = sensor;
+    msg_struct.iValue = prediction_len;
+    msg_struct.type = PREDICT_SENSOR;
+    reply_struct.value = result;
 
-//     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
-//     if (strcmp(msg_struct.value, "FAIL") != 0) {
-//         // if succeded
-//         return 0;
-//     }
-//     return -1;
-// }
+    if (strcmp(msg_struct.value, "FAIL") != 0) {
+        // if succeded
+        return 1;
+    }
+    return -1;
+}

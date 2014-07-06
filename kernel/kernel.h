@@ -109,6 +109,8 @@ int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi);
 
 int AwaitEvent( int eventId );
 
+int Assert();
+
 void uninitialize();
 
 #endif
