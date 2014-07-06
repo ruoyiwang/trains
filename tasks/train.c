@@ -141,7 +141,7 @@ void TracksTask () {
     track_node tracks[TRACK_MAX];
     // and we are using track b
     init_trackb(tracks);
-    int cur_sensor, prediction_len = 8;
+    int cur_sensor, prediction_len = 8, landmark1, landmark2, lookup_limit;
 
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
@@ -171,6 +171,22 @@ void TracksTask () {
                 predictSensorTrackTask(tracks, switch_status, cur_sensor, prediction_len, reply);
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
+            case FIND_DISTANCE_BETWEEN_TWO_LANDMARKS:
+                // finds distance between two landmarks
+                landmark1 = msg[0];
+                landmark2 = msg[1];
+                lookup_limit = msg_struct.iValue;
+                reply_struct.iValue =
+                    findDistanceBetweenLandmarksTrackTask(
+                        tracks,
+                        switch_status,
+                        landmark1,
+                        landmark2,
+                        lookup_limit
+                    );
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
+
             case PATH_FIND:
                 // path find
                 // type: PATH_FIND + value cur_sensor, destination
@@ -214,7 +230,6 @@ void predictSensorTrackTask(
     track_node* next_node = cur_node->edge[DIR_AHEAD].dest;
     int i = 0;
     int cur_branch_status;
-
     for (i = 0; i < prediction_len; i++) {
 
         while (next_node->type != NODE_SENSOR) {
@@ -260,6 +275,71 @@ int predictSensor( int sensor, int prediction_len, char* result ) {
     if (strcmp(msg_struct.value, "FAIL") != 0) {
         // if succeded
         return 1;
+    }
+    return -1;
+}
+
+int findDistanceBetweenLandmarksTrackTask(
+    track_node *tracks,     // the initialized array of tracks
+    unsigned int switch_status,
+    int landmark_start,     // 0 based
+    int landmark_end,       // 0 based
+    int lookup_limit        // amount of predictions wanted
+) {
+    track_node* cur_node = &tracks[landmark_start];
+    track_node* next_node;
+    int i = 0;
+    int cur_branch_status;
+    int distance = 0;
+    while (lookup_limit-- > 0) {
+        // calc next_node
+        if (cur_node->type == NODE_BRANCH) {
+            // look up switch status, then find next_node
+            cur_branch_status = getSwitchStatus(&switch_status, cur_node->num);
+            if (cur_branch_status == SW_STRAIGHT) {
+                next_node = cur_node->edge[DIR_STRAIGHT].dest;
+                distance += cur_node->edge[DIR_STRAIGHT].dist;
+            }
+            else {
+                next_node = cur_node->edge[DIR_CURVED].dest;
+                distance += cur_node->edge[DIR_CURVED].dist;
+            }
+        }
+        else {
+            next_node = cur_node->edge[DIR_AHEAD].dest;
+            distance += cur_node->edge[DIR_AHEAD].dist;
+        }
+
+        if (next_node->num == landmark_end) {
+            return distance;
+        }
+
+        cur_node = next_node;
+    }
+    return -1;
+}
+
+int findDistanceBetweenLandmarks(
+    int landmark1, int landmark2, int lookup_limit
+) {
+    unsigned char msg[2] = {0};
+    int msglen = 10;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(TRACK_TASK);
+    }
+    message msg_struct, reply_struct;
+    msg_struct.value = (char *)msg;
+    msg[0] = landmark1;
+    msg[1] = landmark2;
+    msg_struct.iValue = lookup_limit;
+    msg_struct.type = FIND_DISTANCE_BETWEEN_TWO_LANDMARKS;
+
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+
+    if (strcmp(msg_struct.value, "FAIL") != 0) {
+        // if succeded
+        return reply_struct.iValue;
     }
     return -1;
 }

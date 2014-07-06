@@ -6,6 +6,7 @@
 
 #define PREDICT_SENSOR      0x51
 #define PATH_FIND           0x52
+#define FIND_DISTANCE_BETWEEN_TWO_LANDMARKS	0x53
 
 #define TRAIN_SET_SPEED 	4
 #define TRAIN_REVERSE   	3
@@ -32,6 +33,14 @@ void predictSensorTrackTask(
     int cur_sensor,         // 0 based
     int prediction_len,     // amount of predictions wanted
     char* paths              // the triggers to be triggered
+);
+
+int findDistanceBetweenLandmarksTrackTask(
+    track_node *tracks,     // the initialized array of tracks
+    unsigned int switch_status,
+    int landmark_start,     // 0 based
+    int landmark_end,       // 0 based
+    int lookup_limit        // amount of predictions wanted
 );
 
 int predictSensor( int sensor, int prediction_len, char* result );

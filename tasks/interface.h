@@ -29,6 +29,7 @@
 #define CMD_INVALID         5
 #define CMD_ASSERT          6
 #define CMD_PREDICT_SENSOR  7
+#define CMD_FIND_DISTANCE   8
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);

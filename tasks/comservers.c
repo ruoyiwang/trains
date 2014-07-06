@@ -16,7 +16,7 @@ void Com2PutServerNotifier() {
     reply_struct.value = reply;
     receiver_tid = WhoIs(COM2_PUT_SERVER);
     int data;
-    int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
+    // int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
     int * uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
 
     FOREVER {
@@ -39,7 +39,7 @@ void Com1PutServerNotifier() {
     reply_struct.value = reply;
     receiver_tid = WhoIs(COM1_PUT_SERVER);
     int data;
-    int * uart1_ctrl = (int *)( UART1_BASE + UART_CTLR_OFFSET );
+    // int * uart1_ctrl = (int *)( UART1_BASE + UART_CTLR_OFFSET );
     int * uart1_data = (int *)( UART1_BASE + UART_DATA_OFFSET );
 
     FOREVER {

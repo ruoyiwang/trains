@@ -16,7 +16,8 @@ void SensorNotifier() {
     int courier_tid;
 
     char msg[10] = {0};
-    int receiver_tid, msglen = 10, rpllen = 10;
+    // int receiver_tid;
+    int msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.type = SENSOR_NOTIFIER;
@@ -42,7 +43,8 @@ void SensorCourier() {
 
     char msg[10] = {0};
     char rpl[10] = {0};
-    int receiver_tid, msglen = 10, rpllen = 10;
+    // int receiver_tid;
+    int msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.type = SENSOR_NOTIFIER;

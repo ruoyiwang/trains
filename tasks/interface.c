@@ -202,6 +202,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_PREDICT_SENSOR;
         return;
     }
+    else if ( strcmp (cmdstr, "fd") == 0 && *argc == 2 ){
+        *command = CMD_FIND_DISTANCE;
+        return;
+    }
     else if ( cmdstr[0] == 'q' ){
         *command = CMD_QUIT;
         return;
@@ -479,7 +483,8 @@ void handleCommandTask() {
     // for sensor predicting
     char predict_result[10] = {0};
     int cur_sensor;
-    int prediction_len;
+    int prediction_len, result;
+    char tempstr[20] = {0};
 
     setCursor( CMD_POSITION_X, CMD_POSITION_Y, buffer, &index);
     buffer[index++] = 0;
@@ -569,12 +574,18 @@ void handleCommandTask() {
                     predictSensor( cur_sensor, prediction_len, predict_result );
 
                     int tempi;
-                    char tempstr[3] = {0};
                     for (tempi = 0; tempi < prediction_len; tempi++) {
                         bwi2a(predict_result[tempi], tempstr);
                         row = 18; col = 1;
                         outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     }
+                    break;
+                case CMD_FIND_DISTANCE:
+                    result = findDistanceBetweenLandmarks(atoi(argv[0]), atoi(argv[1]), 10);
+
+                    bwi2a(result, tempstr);
+                    row = 18; col = 1;
+                    outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;
