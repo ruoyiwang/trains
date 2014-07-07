@@ -76,7 +76,7 @@ int reverseTrain( int num ) {
     receiver_tid = WhoIs(msg);
 
     if (receiver_tid == -1) {
-        receiver_tid = Create(2, (&TrainTask));
+        receiver_tid = Create(3, (&TrainTask));
         msg_struct.iValue = num;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     }
@@ -104,7 +104,7 @@ int setTrainSpeed( int num, int speed ) {
     receiver_tid = WhoIs(msg);
 
     if (receiver_tid == -1) {
-        receiver_tid = Create(2, (&TrainTask));
+        receiver_tid = Create(3, (&TrainTask));
         msg_struct.iValue = num;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     }

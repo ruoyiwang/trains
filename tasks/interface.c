@@ -541,7 +541,7 @@ void handleCommandTask() {
     buffer[index++] = 0;
     putstr(COM2, buffer);
 
-    Create(2, (&TracksTask));
+    Create(3, (&TracksTask));
     putc(COM1, 0x60);
     Delay(100);
 
@@ -656,11 +656,11 @@ void handleCommandTask() {
                         sensor_route           // the sensors the train's gonna pass
                     );
 
-                    for (tempi = 0; tempi < result; tempi++) {
-                        bwi2a(sensor_route[tempi], tempstr);
-                        row = 18; col = 1;
-                        outputPutStrLn (tempstr, &row, &col, buffer, &index );
-                    }
+                    // for (tempi = 0; tempi < result; tempi++) {
+                    //     bwi2a(sensor_route[tempi], tempstr);
+                    //     row = 18; col = 1;
+                    //     outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                    // }
                     break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;

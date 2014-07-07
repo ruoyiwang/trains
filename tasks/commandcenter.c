@@ -151,7 +151,7 @@ int initTrainLocation( int train_id, int sensor ) {
     train_task_id = WhoIs(msg);
 
     if (train_task_id == -1) {
-        train_task_id = Create(2, (&TrainTask));
+        train_task_id = Create(3, (&TrainTask));
         msg_struct.iValue = train_id;
         Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     }
