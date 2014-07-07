@@ -658,15 +658,30 @@ void handleCommandTask() {
                     outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     break;
                 case CMD_PATH_FIND:
+                     stopping_sensor = -1;
+                     stoppong_sensor_dist = -1;
                     result = pathFind(
                         atoi(argv[0]),          // current node
                         atoi(argv[1]),          // where it wants to go
-                        81,                     // stoping distance
+                        730,                     // stoping distance
                         &stopping_sensor,       // returning node
                         &stoppong_sensor_dist,  // returning distance
                         sensor_route           // the sensors the train's gonna pass
                     );
 
+                    // if (result >= 0) {
+                        bwi2a(stopping_sensor, tempstr);
+                        row = 18; col = 1;
+                        outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                        bwi2a(stoppong_sensor_dist, tempstr);
+                        row = 18; col = 1;
+                        outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                    // }
+                    // else {
+                    //     bwi2a(123456, tempstr);
+                    //     row = 18; col = 1;
+                    //     outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                    // }
                     // for (tempi = 0; tempi < result; tempi++) {
                     //     bwi2a(sensor_route[tempi], tempstr);
                     //     row = 18; col = 1;

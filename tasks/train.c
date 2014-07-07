@@ -125,8 +125,9 @@ void TracksTask () {
     // msg shits
     char msg[10] = {0};
     char predict_result[10] = {0};
-    char reply[80] = {0};
-    int sender_tid, msglen = 10, rpllen = 10;
+    char reply[82] = {0};
+    char path[80] = {0};
+    int sender_tid, msglen = 10, rpllen = 10, path_len = 0;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -193,16 +194,21 @@ void TracksTask () {
                 // path find
                 landmark1 = msg[0];
                 landmark2 = msg[1];
-                reply_struct.iValue = pathFindTrackTask(
+                path_len = pathFindTrackTask(
                     tracks,
                     &switch_status,
                     landmark1,              // cur sensor
                     landmark2,              // stopping sensor
+                    msg_struct.iValue,      // stopping distance
                     &stop_command_sensor,   // the triggers to be triggered
                     &stop_command_sensor_dist,   // returning distance
-                    reply                   // this is the route
+                    path                    // this is the route
                 );
-                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                reply[0] = stop_command_sensor;
+                reply[1] = path_len;
+                reply_struct.iValue = stop_command_sensor_dist;
+                memcpy(reply+2, path, path_len);
+                Reply (sender_tid, (char *)&reply_struct, path_len+2);
                 break;
             default:
                 break;
@@ -257,6 +263,12 @@ void predictSensorTrackTask(
                 else {
                     next_node = cur_node->edge[DIR_CURVED].dest;
                 }
+            }
+            if (cur_node->type == NODE_ENTER || cur_node->type == NODE_EXIT) {
+                while ( i++ < prediction_len) {
+                    paths[i] = -1;
+                }
+                return;
             }
             else {
                 next_node = cur_node->edge[DIR_AHEAD].dest;
@@ -315,6 +327,9 @@ int findDistanceBetweenLandmarksTrackTask(
                 distance += cur_node->edge[DIR_CURVED].dist;
             }
         }
+        else if (cur_node->type == NODE_ENTER || cur_node->type == NODE_EXIT) {
+            return -1;
+        }
         else {
             next_node = cur_node->edge[DIR_AHEAD].dest;
             distance += cur_node->edge[DIR_AHEAD].dist;
@@ -332,8 +347,9 @@ int findDistanceBetweenLandmarksTrackTask(
 int findDistanceBetweenLandmarks(
     int landmark1, int landmark2, int lookup_limit
 ) {
-    unsigned char msg[10] = {0}, rpl[10] = {0};
-    int msglen = 10, rpllen = 10;
+    unsigned char msg[2] = {0};
+    char reply[10] = {0};
+    int msglen = 2, rpllen = 10;
     static int receiver_tid = -1;
     if (receiver_tid < 0) {
         receiver_tid = WhoIs(TRACK_TASK);
@@ -344,7 +360,7 @@ int findDistanceBetweenLandmarks(
     msg[1] = landmark2;
     msg_struct.iValue = lookup_limit;
     msg_struct.type = FIND_DISTANCE_BETWEEN_TWO_LANDMARKS;
-    reply_struct.value = rpl;
+    reply_struct.value = reply;
 
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
@@ -355,17 +371,18 @@ int findDistanceBetweenLandmarks(
     return -1;
 }
 
-// return succss:j, fail:-1
+// return succss:path len, fail:-1
 int pathFindTrackTask(
     track_node *tracks,     // the initialized array of tracks
     unsigned int* switch_status,
     int cur_sensor,         // 0 based
     int stopping_node,      // amount of predictions wanted
+    int stopping_dist,
     int* stopping_sensor,   // the triggers to be triggered
     int* stoppong_sensor_dist,   // returning distance
     char* sensor_route
 ) {
-    int i = 0, j = 0;
+    int i = 0, j = 0, path_landmark_count, pf_result;
     // need to BFS, use another func
     // to find the path through all the nodes
     track_node* path[TRACK_MAX];
@@ -373,11 +390,15 @@ int pathFindTrackTask(
         path[i] = -1;
     }
 
-    bfsPathFind(tracks, &tracks[cur_sensor], &tracks[stopping_node], path);
+    pf_result = bfsPathFind(tracks, &tracks[cur_sensor], &tracks[stopping_node], path);
+    if (pf_result < 0) {
+        return pf_result;
+    }
 
-    // TODO: then set all the switches
+    // then set all the switches
     for (i = 0; i < TRACK_MAX; i++) {
         if (path[i] == -1 ){
+            path_landmark_count = i;
             break;
         }
         else if (path[i]->type == NODE_BRANCH) {
@@ -390,21 +411,36 @@ int pathFindTrackTask(
         }
     }
 
-    // TODO: find the dist to end
+    // find the dist to end, can use find distance
+    int temp_dist;
+    *stopping_sensor = -1;
+    *stoppong_sensor_dist = -1;
+    for (i = path_landmark_count-2; i >= 0; i--) {
+        if (path[i]->type == NODE_SENSOR) {
+            temp_dist = findDistanceBetweenLandmarksTrackTask(
+                tracks, *switch_status,
+                path[i]->num, stopping_node, 80
+            );
+            // bwprintf(COM2, "\n%d\n", temp_dist);
+            // Assert();
+            if (temp_dist > stopping_dist) {
+                // bwprintf(COM2, "\n%d\n", temp_dist);
+                // Assert();
+                *stopping_sensor = path[i]->num;
+                *stoppong_sensor_dist = temp_dist - stopping_dist;
+                break;
+            }
+        }
+    }
 
     // find the sensor list
     j = 0;
-    for (i = 0; i < TRACK_MAX; i++) {
-        if (path[i] != -1 ){
-            if (path[i]->type == NODE_SENSOR) {
-                sensor_route[j++] = path[i]->num;
-            }
-        }
-        else {
-            return j;
+    for (i = 0; i < path_landmark_count; i++) {
+        if (path[i]->type == NODE_SENSOR) {
+            sensor_route[j++] = path[i]->num;
         }
     }
-    return -1;
+    return j;
 }
 
 int bfsPathFind(        // pretty shit path find lol
@@ -416,7 +452,7 @@ int bfsPathFind(        // pretty shit path find lol
     // init the parents and visisted flags
     int i = 0;
     for (i = 0; i < TRACK_MAX; i++) {
-        tracks[i].parent = -1;
+        tracks[i].parent = (track_node*)-1;
         tracks[i].visisted = 0;
     }
     // shitty queue v
@@ -477,7 +513,7 @@ int bfsPathFind(        // pretty shit path find lol
 void makePath(track_node* node, track_node* init_node, track_node** path) {
     // find how long the path is
     track_node* cur_node = node;
-    int path_length = 0;
+    int path_length = 1;
     while ( (cur_node = cur_node->parent) != -1 ){
         path_length++;
     }
@@ -499,12 +535,13 @@ int pathFind(
     int* stoppong_sensor_dist,  // returning distance
     char* sensor_route          // the sensors the train's gonna pass
 ) {
-    int i = 0;
+    int sensor_path_len = 0;
 
+    // msg shits
     char msg[10] = {0};
-    char reply[80];
+    char reply[83] = {0};
     int msglen = 10;
-    int rpllen = 80;
+    int rpllen = 83;
     static int receiver_tid = -1;
     if (receiver_tid < 0) {
         receiver_tid = WhoIs(TRACK_TASK);
@@ -513,18 +550,22 @@ int pathFind(
     msg_struct.value = msg;
     msg[0] = cur_sensor;
     msg[1] = dest_node;
+    msg_struct.iValue = stopping_dist;
     msg_struct.type = PATH_FIND;
     reply_struct.value = reply;
 
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
-    // memcpy(sensor_route, reply, reply_struct.iValue);
 
-    if (strcmp(reply_struct.value, "FAIL") != 0) {
-        // if succeded
-        return 0;
+    *stoppong_sensor_dist = reply_struct.iValue;
+    *stopping_sensor = reply[0];
+    sensor_path_len = reply[1];
+    // memcpy(sensor_route, reply+2, sensor_path_len);
+    if (reply_struct.iValue < 0) {
+        return -1;
     }
-    return -1;
+    return 1;
+
 }
 
 void setSwitchTrackTask(int switch_num, char switch_dir, unsigned int* switch_status) {

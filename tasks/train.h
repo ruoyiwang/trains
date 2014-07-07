@@ -54,6 +54,7 @@ int pathFindTrackTask(
     unsigned int* switch_status,
     int cur_sensor,         // 0 based
     int stopping_node,      // amount of predictions wanted
+    int stopping_dist,
     int* stopping_sensor,   // the triggers to be triggered
     int* stoppong_sensor_dist,   // returning distance
     char* sensor_route
