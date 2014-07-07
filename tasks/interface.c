@@ -296,19 +296,39 @@ void initInterface() {
 
 }
 
+void formClockStr (int time_tick, char* buffer) {
+    time_tick /= 10;
+    int clockTenth = time_tick % 10;
+    time_tick /= 10;
+    int clockSecond = time_tick % 60;
+    time_tick /= 60;
+    int clockMinute = time_tick;
+
+    int sechi = ( clockSecond / 10 );
+    int seclo = ( clockSecond % 10 );
+
+    buffer[0] = '0' + clockMinute;
+    buffer[1] = ':';
+    buffer[2] = '0' + sechi;
+    buffer[3] = '0' + seclo;
+    buffer[4] = '.';
+    buffer[5] = '0' + clockTenth ;
+    buffer[6] = 0;
+
+}
+
 void clockDisplayTask() {
     char buffer[128] = {0};
     int index = 0;
 
-    char clockstr[10];
+    char clockstr[10] = {0};
     int clockMinute = 0, clockTenth = 0, clockSecond = 0, sechi, seclo;
     int currentTime = Time()+10;
     FOREVER {
         index = 0;
 
-        int row = 18, col = 1;
+        int row = CLOCK_POSITION_X, col = CLOCK_POSITION_Y;
         DelayUntil(currentTime);
-        currentTime = currentTime + 10;
         clockTenth++;
         if ( clockTenth > 9 ) {
             clockTenth = 0;
@@ -318,24 +338,13 @@ void clockDisplayTask() {
             clockSecond = 0;
             clockMinute++;
         }
-        saveCursorPosition(buffer, &index);
-        setCursor( CLOCK_POSITION_X, CLOCK_POSITION_Y, buffer, &index );
-        flushLine (buffer, &index);
-        sechi = ( clockSecond / 10 );
-        seclo = ( clockSecond % 10 );
-
-        buffer[(index)++] = '0' + clockMinute;
-        buffer[(index)++] = ':';
-        buffer[(index)++] = '0' + sechi;
-        buffer[(index)++] = '0' + seclo;
-        buffer[(index)++] = '.';
-        buffer[(index)++] = '0' + clockTenth ;
-
-        restoreCursorPosition(buffer, &index);
+        formClockStr(currentTime, clockstr);
+        outputPutStrClear ( clockstr, &row, &col , buffer, &index );
 
         buffer[(index)++] = 0;
         putstr(COM2, buffer);
 
+        currentTime = currentTime + 10;
     }
 }
 
@@ -511,12 +520,12 @@ void LocationDisplayTask() {
         row = NEXT_POSITION_X; col = 15;
         outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
 
-        bwi2a( train_info[2], sensor_str);
         row = EXPECTED_POSITION_X; col = 20;
+        formClockStr(train_info[2], sensor_str);
         outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
 
-        bwi2a( train_info[3], sensor_str);
         row = ACTUAL_POSITION_X; col = 20;
+        formClockStr(train_info[3], sensor_str);
         outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
 
         buffer[(index)++] = 0;
