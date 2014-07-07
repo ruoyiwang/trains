@@ -264,7 +264,7 @@ void predictSensorTrackTask(
                     next_node = cur_node->edge[DIR_CURVED].dest;
                 }
             }
-            if (cur_node->type == NODE_ENTER || cur_node->type == NODE_EXIT) {
+            else if (cur_node->type == NODE_ENTER || cur_node->type == NODE_EXIT) {
                 while ( i++ < prediction_len) {
                     paths[i] = -1;
                 }
