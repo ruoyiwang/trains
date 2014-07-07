@@ -217,7 +217,7 @@ void CommandCenterServer() {
                             stopping_sensor = -1;
                         }
                         else {
-                            stop_delay = distanceToDelay( stopping_sensor, stopping_sensor_dist, train_speed[i]);
+                            stop_delay = distanceToDelay( stopping_sensor, stopping_sensor_dist + msg_struct.value[1], train_speed[i]);
                         }
 
                         msg_struct.value[0] = stopping_sensor;
@@ -303,7 +303,7 @@ int initTrainLocation( int train_id, int sensor ) {
     return -1;
 }
 
-int setTrainDestination( int train_id, int sensor ) {
+int setTrainDestination( int train_id, int sensor, int offset ) {
     char msg[10] = {0};
     char reply[10] = {0};
     int msglen = 10, rpllen = 10;
@@ -324,6 +324,7 @@ int setTrainDestination( int train_id, int sensor ) {
     }
     msg_struct.iValue = sensor;
     msg_struct.value[0] = (char) train_id;
+    msg_struct.value[1] = (char) offset;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     if (strcmp(msg_struct.value, "FAIL") != 0) {

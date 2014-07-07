@@ -268,7 +268,7 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_INIT_TRAIN;
         return;
     }
-    else if ( strcmp (cmdstr, "dt") == 0 && *argc == 3 ){
+    else if ( strcmp (cmdstr, "dt") == 0 && *argc == 4 ){
         *command = CMD_TRAIN_DEST;
         return;
     }
@@ -738,9 +738,12 @@ void handleCommandTask() {
                         outputPutStrLn ("Sending train ", &row, &col, buffer, &index );
                         outputPutStr ( argv[0], &row, &col, buffer, &index );
                         outputPutStr ( " to ", &row, &col, buffer, &index );
+                        outputPutStr ( argv[3], &row, &col, buffer, &index );
+                        outputPutStr ( "cm", &row, &col, buffer, &index );
+                        outputPutStr ( " ahead of ", &row, &col, buffer, &index );
                         outputPutStr ( argv[1], &row, &col, buffer, &index );
                         outputPutStr ( argv[2], &row, &col, buffer, &index );
-                        setTrainDestination(atoi(argv[0]), result );
+                        setTrainDestination(atoi(argv[0]), result, argv[3] );
                     }
                     break;
                 case CMD_PATH_FIND:
