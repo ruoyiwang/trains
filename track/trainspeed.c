@@ -82,4 +82,11 @@ void init_train_speed(int train_num, int* train_speeds) {
 	train_speeds[77] = 806;
 	train_speeds[78] = 574;
 	train_speeds[79] = 574;
+
+	if (train_num == 49) {
+		int i;
+		for ( i = 0; i < 80; i++) {
+			train_speeds[i] = train_speeds[i] * 1.062;
+		}
+	}
 }

@@ -31,7 +31,7 @@ int initTrainLocation( int train_id, int sensor );
 int waitTrainInfo ( int train_id, int *train_info);
 int distanceToDelay( int sensor, int distance, int *train_speed );
 int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed);
-int shortMoveDistanceToDelay( double distance );
 int setTrainDestination( int train_id, int sensor, int offset );
+int shortMoveDistanceToDelay( double distance, int train_num );
 
 #endif

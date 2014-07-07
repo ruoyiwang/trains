@@ -88,6 +88,7 @@ void CommandCenterServer() {
     char reply[30] = {0};
     int sender_tid, msglen = 10, rpllen = 10, expected_time;
     int actual_time, location, total_distance;
+
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -205,14 +206,14 @@ void CommandCenterServer() {
                         pathFind(
                             train_info[i][TRAIN_INFO_SENSOR],          // current node
                             msg_struct.iValue,          // where it wants to go
-                            730,                     // stoping distance
+                            790,                     // stoping distance
                             &stopping_sensor,       // returning node
                             &stopping_sensor_dist,  // returning distance
                             sensor_route           // the sensors the train's gonna pass
                         );
                         total_distance = findDistanceBetweenLandmarks( train_info[i][TRAIN_INFO_SENSOR], msg_struct.iValue, TRACK_MAX) - location;
                         if ( total_distance < 2000 ) { //short move
-                            stop_delay = shortMoveDistanceToDelay((double)total_distance);
+                            stop_delay = shortMoveDistanceToDelay((double)total_distance, train_info[i][TRAIN_INFO_ID]);
                             // bwprintf(COM2, "\n%d ", stop_delay);
                             stopping_sensor = -1;
                         }
@@ -252,13 +253,17 @@ int distanceToDelay( int sensor, int distance, int *train_speed ) {
     return delta_time;
 }
 
-int shortMoveDistanceToDelay( double distance ) {
+int shortMoveDistanceToDelay( double distance, int train_num ) {
     double cubic = 1.5E-7 * distance * distance * distance;
     double square = 0.000489658 * distance * distance;
     double linear = 0.611907 * distance;
     double constant = 62.3535;
-
-    return (int) (cubic - square + linear + constant);
+    double result;
+    result = (cubic - square + linear + constant);
+    if (train_num == 49) {
+        result = result * 0.9416;
+    }
+    return (int) result;
 }
 
 int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed) {
