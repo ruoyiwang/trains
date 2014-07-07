@@ -223,6 +223,14 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_PATH_FIND;
         return;
     }
+    else if ( strcmp (cmdstr, "st") == 0 && *argc == 3 ){
+        *command = CMD_INIT_TRAIN;
+        return;
+    }
+    else if ( strcmp (cmdstr, "dt") == 0 && *argc == 3 ){
+        *command = CMD_TRAIN_DEST;
+        return;
+    }
     else if ( cmdstr[0] == 'q' ){
         *command = CMD_QUIT;
         return;
@@ -591,7 +599,6 @@ void handleCommandTask() {
     Create(5, (&SensorsDisplayTask));
 
     Create(3, (&CommandCenterServer));
-    initTrainLocation(50, 2);
     Create(5, (&LocationDisplayTask));
 
     FOREVER {
@@ -663,8 +670,35 @@ void handleCommandTask() {
                     result = findDistanceBetweenLandmarks(atoi(argv[0]), atoi(argv[1]), 10);
 
                     bwi2a(result, tempstr);
-                    row = 18; col = 1;
                     outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                    break;
+                case CMD_INIT_TRAIN:
+                    result = sensorToInt(argv[1][0], atoi(argv[2]));
+                    if (result < 0 || result > 79) {
+                        outputPutStrLn ("Invalid Sensor", &row, &col, buffer, &index );
+                    }
+                    else {
+                        outputPutStrLn ("Starting train ", &row, &col, buffer, &index );
+                        outputPutStr ( argv[0], &row, &col, buffer, &index );
+                        outputPutStr ( " at ", &row, &col, buffer, &index );
+                        outputPutStr ( argv[1], &row, &col, buffer, &index );
+                        outputPutStr ( argv[2], &row, &col, buffer, &index );
+                        initTrainLocation(atoi(argv[0]), result );
+                    }
+                    break;
+                case CMD_TRAIN_DEST:
+                    result = sensorToInt(argv[1][0], atoi(argv[2]));
+                    if (result < 0 || result > 79) {
+                        outputPutStrLn ("Invalid Sensor", &row, &col, buffer, &index );
+                    }
+                    else {
+                        outputPutStrLn ("Sending train ", &row, &col, buffer, &index );
+                        outputPutStr ( argv[0], &row, &col, buffer, &index );
+                        outputPutStr ( " to ", &row, &col, buffer, &index );
+                        outputPutStr ( argv[1], &row, &col, buffer, &index );
+                        outputPutStr ( argv[2], &row, &col, buffer, &index );
+                        setTrainDestination(atoi(argv[0]), result );
+                    }
                     break;
                 case CMD_PATH_FIND:
                      stopping_sensor = -1;

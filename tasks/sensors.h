@@ -13,5 +13,5 @@ void SensorCourier();
 void SensorServer();
 int waitForSensor( int sensor );
 int getLatestSensors ( char current_sensor_state[10]);
-
+int sensorToInt (char module, int num);
 #endif

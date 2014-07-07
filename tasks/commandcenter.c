@@ -59,6 +59,28 @@ void CommandCenterCourier() {
     }
 }
 
+void CommandCenterStoppingNotifier() {
+    int i;
+    char c;
+    int server_tid;
+
+    char msg[11] = {0};
+    char reply[11] = {0};
+    int receiver_tid, msglen = 10, rpllen = 10;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.type = COMMAND_CENTER_STOPPING_NOTIFIER;
+    reply_struct.value = reply;
+
+    Receive( &server_tid, (char*)&msg_struct, msglen );
+    Reply (server_tid, (char *)&reply_struct, rpllen);
+
+    waitForSensor((int) msg_struct.value[0]);
+    Delay((int) msg_struct.value[1]);
+    Send (server_tid, (char *)&reply_struct, rpllen, (char *)&msg_struct, msglen);
+    Exit();
+}
+
 void CommandCenterServer() {
     // Create Notifier and send any initialization data
     // msg shits
@@ -72,7 +94,10 @@ void CommandCenterServer() {
     int requests[64] = {-1};
     char sensors_ahead[5] = {-1};
     int courier_tid, notifier_tid, train_count = 0;
-    int train_info[MAX_TRAIN_COUNT][7];
+    int stopping_sensor = -1, stopping_sensor_dist = -1, stop_delay = 0;
+    char sensor_route[20] = {0};    // the sensors the train's gonna
+
+    int train_info[MAX_TRAIN_COUNT][TRAIN_INFO_SIZE];
     int train_speed[MAX_TRAIN_COUNT][80];
     // each tid can only call one delay at a time
     int i, j;
@@ -84,11 +109,13 @@ void CommandCenterServer() {
         train_info[i][TRAIN_INFO_TASK] = -1;
         train_info[i][TRAIN_INFO_COURIER] = -1;
         train_info[i][TRAIN_INFO_TIME_PREDICTION] = 0;
+        train_info[i][TRAIN_INFO_STOPPING_NOTIFIER] = -1;
     }
     RegisterAs(COMMAND_CENTER_SERVER_NAME);
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch(msg_struct.type) {
+
             case COMMAND_CENTER_NOTIFIER:
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i][TRAIN_INFO_COURIER] == sender_tid) {
@@ -122,6 +149,18 @@ void CommandCenterServer() {
                 reply_struct.value[0] = train_info[i][TRAIN_INFO_NEXT_SENSOR];
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
+
+            case COMMAND_CENTER_STOPPING_NOTIFIER:
+                for (i = 0; i < MAX_TRAIN_COUNT; i++) {
+                    if (train_info[i][TRAIN_INFO_STOPPING_NOTIFIER] == sender_tid) {
+                        setTrainSpeed (train_info[i][TRAIN_INFO_ID], 0);
+                        train_info[i][TRAIN_INFO_STOPPING_NOTIFIER] = -1;
+                        break;
+                    }
+                }
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
+
             case INIT_TRAIN_REQUEST:
                 train_info[train_count][TRAIN_INFO_SENSOR] = msg_struct.iValue;
                 train_info[train_count][TRAIN_INFO_ID] = (int) msg_struct.value[0];
@@ -143,6 +182,31 @@ void CommandCenterServer() {
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 // reply what the time is
                 break;
+
+            case TRAIN_DESTINATION_REQUEST:
+                for (i = 0; i < MAX_TRAIN_COUNT; i++) {
+                    if (msg_struct.value[0] == train_info[i][TRAIN_INFO_ID]) {
+                        notifier_tid = Create(1, (&CommandCenterStoppingNotifier));
+                        train_info[i][TRAIN_INFO_STOPPING_NOTIFIER] = notifier_tid;
+                        pathFind(
+                            train_info[i][TRAIN_INFO_SENSOR],          // current node
+                            msg_struct.iValue,          // where it wants to go
+                            730,                     // stoping distance
+                            &stopping_sensor,       // returning node
+                            &stopping_sensor_dist,  // returning distance
+                            sensor_route           // the sensors the train's gonna pass
+                        );
+                        stop_delay = distanceToDelay( stopping_sensor, stopping_sensor_dist, train_speed[i]);
+                        msg_struct.value[0] = stopping_sensor;
+                        msg_struct.value[1] = stop_delay;
+                        Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+                        setTrainSpeed (train_info[i][TRAIN_INFO_ID], 12);
+                    }
+                }
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                // reply what the time is
+                break;
+
             case GET_TRAIN_INFO_REQUEST:
                 requests[sender_tid] = msg_struct.iValue;
                 break;
@@ -151,6 +215,12 @@ void CommandCenterServer() {
                 break;
         }
     }
+}
+
+int distanceToDelay( int sensor, int distance, int *train_speed ) {
+    float velocity = train_speed[sensor] / 100; // velocity is in mm/tick;
+    int delta_time = (int) distance / velocity;
+    return delta_time;
 }
 
 int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed) {
@@ -185,6 +255,36 @@ int initTrainLocation( int train_id, int sensor ) {
     msg_struct.iValue = sensor;
     msg_struct.value[0] = (char) train_id;
     msg_struct.value[1] = (char) train_task_id;
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+    if (strcmp(msg_struct.value, "FAIL") != 0) {
+        // if succeded
+        return 0;
+    }
+    return -1;
+}
+
+int setTrainDestination( int train_id, int sensor ) {
+    char msg[10] = {0};
+    char reply[10] = {0};
+    int msglen = 10, rpllen = 10;
+    int receiver_tid, train_task_id;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.type = TRAIN_DESTINATION_REQUEST;
+    reply_struct.value = reply;
+
+    receiver_tid = WhoIs(COMMAND_CENTER_SERVER_NAME);
+    genTrainName(train_id, msg);
+    train_task_id = WhoIs(msg);
+
+    if (train_task_id == -1) {
+        train_task_id = Create(3, (&TrainTask));
+        msg_struct.iValue = train_id;
+        Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    }
+    msg_struct.iValue = sensor;
+    msg_struct.value[0] = (char) train_id;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     if (strcmp(msg_struct.value, "FAIL") != 0) {

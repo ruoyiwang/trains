@@ -37,6 +37,8 @@
 #define CMD_PREDICT_SENSOR  7
 #define CMD_FIND_DISTANCE   8
 #define CMD_PATH_FIND       9
+#define CMD_INIT_TRAIN   	10
+#define CMD_TRAIN_DEST      11
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);

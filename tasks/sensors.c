@@ -161,3 +161,7 @@ int getLatestSensors ( char current_sensor_state[10]) {
     }
     return -1;
 }
+
+int sensorToInt (char module, int num) {
+    return (module - 'A') * 16 + num - 1;
+}
