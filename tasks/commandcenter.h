@@ -10,6 +10,7 @@
 #define TRAIN_INFO_TIME 3
 #define TRAIN_INFO_TASK 4
 #define TRAIN_INFO_COURIER 5
+#define TRAIN_INFO_TIME_PREDICTION 6
 
 #define COMMAND_CENTER_NOTIFIER 0
 #define INIT_TRAIN_REQUEST 1
@@ -20,6 +21,6 @@ void CommandCenterNotifier();
 void CommandCenterCourier();
 void CommandCenterServer();
 int initTrainLocation( int train_id, int sensor );
-int waitTrainInfo ( int train_id, char *train_info);
+int waitTrainInfo ( int train_id, int *train_info);
 
 #endif

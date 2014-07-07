@@ -25,6 +25,9 @@
 #define NEXT_POSITION_X 23
 #define PREV_POSITION_X 22
 
+#define EXPECTED_POSITION_X 25
+#define ACTUAL_POSITION_X 26
+
 #define CMD_TRAIN           1
 #define CMD_REVERSE         2
 #define CMD_SWITCH          3

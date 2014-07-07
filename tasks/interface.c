@@ -281,6 +281,10 @@ void initInterface() {
     outputPutStr ( "NEXT SENSOR:", &row, &col , buffer, &index );
     row = PREV_POSITION_X; col = 1;
     outputPutStr ( "PREV SENSOR:", &row, &col , buffer, &index );
+    row = EXPECTED_POSITION_X; col = 1;
+    outputPutStr ( "EXPECTED ARRIVAL:", &row, &col , buffer, &index );
+    row = ACTUAL_POSITION_X; col = 1;
+    outputPutStr ( "ACTUAL ARRVAL:", &row, &col , buffer, &index );
 
     buffer[(index)++] = 0;
     putstr(COM2, buffer);
@@ -339,7 +343,6 @@ void IdleDisplayTask() {
     char buffer[128] = {0};
     int index = 0;
 
-    char clockstr[10];
     int currentTime = Time()+10;
     FOREVER {
         index = 0;
@@ -485,13 +488,13 @@ void SensorsDisplayTask() {
 }
 
 void LocationDisplayTask() {
-    char buffer[100] = {0};
+    char buffer[200] = {0};
     int index = 0;
 
     char c;
     int i,j, row, col;
-    char train_info[10] = {-1};
-    char sensor_str[5] = {0};
+    int train_info[10] = {-1};
+    char sensor_str[20] = {0};
 
     FOREVER {
         // Delay(30);
@@ -506,6 +509,14 @@ void LocationDisplayTask() {
         sensor_str[0] = 'A' + (train_info[1] / 16);
         bwi2a( (train_info[1] % 16) + 1, sensor_str + 1);
         row = NEXT_POSITION_X; col = 15;
+        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
+
+        bwi2a( train_info[2], sensor_str);
+        row = EXPECTED_POSITION_X; col = 20;
+        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
+
+        bwi2a( train_info[3], sensor_str);
+        row = ACTUAL_POSITION_X; col = 20;
         outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
 
         buffer[(index)++] = 0;

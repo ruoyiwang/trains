@@ -332,8 +332,8 @@ int findDistanceBetweenLandmarksTrackTask(
 int findDistanceBetweenLandmarks(
     int landmark1, int landmark2, int lookup_limit
 ) {
-    unsigned char msg[2] = {0};
-    int msglen = 10;
+    unsigned char msg[10] = {0}, rpl[10] = {0};
+    int msglen = 10, rpllen = 10;
     static int receiver_tid = -1;
     if (receiver_tid < 0) {
         receiver_tid = WhoIs(TRACK_TASK);
@@ -344,8 +344,9 @@ int findDistanceBetweenLandmarks(
     msg[1] = landmark2;
     msg_struct.iValue = lookup_limit;
     msg_struct.type = FIND_DISTANCE_BETWEEN_TWO_LANDMARKS;
+    reply_struct.value = rpl;
 
-    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     if (strcmp(reply_struct.value, "FAIL") != 0) {
         // if succeded
