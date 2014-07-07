@@ -110,6 +110,7 @@ debug.s: kernel/debug.c kernel/debug.h
 debug.o: debug.s
 	$(AS) $(ASFLAGS) -o debug.o debug.s
 
+
 track_data.s: track/track_data.c track/track_data.h track/track_node.h
 	$(XCC) -S $(CFLAGS) track/track_data.c
 
@@ -117,8 +118,15 @@ track_data.o: track_data.s
 	$(AS) $(ASFLAGS) -o track_data.o track_data.s
 
 
-kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o -lgcc
+trainspeed.s: track/trainspeed.c track/trainspeed.h
+	$(XCC) -S $(CFLAGS) track/trainspeed.c
+
+trainspeed.o: trainspeed.s
+	$(AS) $(ASFLAGS) -o trainspeed.o trainspeed.s
+
+
+kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o trainspeed.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o trainspeed.o -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map
