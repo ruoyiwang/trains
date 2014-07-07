@@ -162,6 +162,47 @@ void drawSwitchesTable ( int *row, int *col , char* buffer, int* index ) {
     outputPutStr ( "|    |    |    |    |    |    |    |    |    |    |    |", row, col, buffer, index );
 }
 
+void drawTrack ( int *row, int *col ) {
+    char buffer[500];
+    int index = 0;
+    cursorCommand ( "[33m" , buffer, &index ); // set color to yellow
+    outputPutStr ( " ................o.....s..s...o....s...o.........o.", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( "                    .       .         .            ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( "       o.....o....s..o......o..s.o...   .s..o....o.", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( "     .                                .    .       ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( "    s...o.....o..s...o......o...s...o...s    s.o.o.", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( "  .                o         o            .   .    ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( " .                   o  .  o               o   o   ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( ".                      . .                   .  .  ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( ".                      s.s                    .  . ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( ".                      ...                    .  . ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( ".                      s.s                    .  . ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( ".                     . . .                  .  .  ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( " .                   o     o               o   o   ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( "  .                o         o           .   .     ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( "   s...o......o..s..o.......o..s....o..s   s..o....", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( "     .                              .    .         ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+    outputPutStr ( "       o.......o...............o..s....s...o.......", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    cursorCommand ( "[37m" , buffer, &index );// set color to white
+    buffer[index++] = 0; putstr(COM2, buffer); index = 0;
+}
+
 unsigned int atoi ( unsigned char *str ) {
     unsigned int value = 0, i = 0;
     while ( str[i] != '\0' ) {
@@ -300,6 +341,9 @@ void initInterface() {
 
     buffer[(index)++] = 0;
     putstr(COM2, buffer);
+
+    row = TRACK_POSITION_X; col = TRACK_POSITION_Y;
+    drawTrack ( &row, &col );
 
     // Create(2, (&clockServer));
     Create(5, (&clockDisplayTask));
@@ -518,8 +562,7 @@ void LocationDisplayTask() {
     char sensor_str[20] = {0};
 
     FOREVER {
-        // Delay(30);
-        waitTrainInfo(50, train_info);
+        waitTrainInfo(49, train_info);
         int index = 0;
 
         sensor_str[0] = 'A' + (train_info[0] / 16);

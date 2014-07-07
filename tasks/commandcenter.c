@@ -9,6 +9,7 @@
 #include <ts7200.h>
 #include <sensors.h>
 #include <commandcenter.h>
+#include "track_data.h"
 #include <trainspeed.h>
 
 void CommandCenterNotifier() {
@@ -29,7 +30,7 @@ void CommandCenterNotifier() {
 
     FOREVER {
         Receive( &courier_tid, (char*)&msg_struct, msglen );
-        waitForSensor((int) msg_struct.value[0]);
+        reply_struct.iValue = waitForSensors( msg_struct.value, 4);
         Reply (courier_tid, (char *)&reply_struct, rpllen);
     }
 }
@@ -47,12 +48,9 @@ void CommandCenterCourier() {
 
     Receive( &server_tid, (char*)&msg_struct, msglen );
     notifier_tid = msg_struct.iValue;
-    sensor = msg_struct.value[0];
     Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
-    // bwprintf(COM2, "%d", server_tid);
     Reply (server_tid, (char *)&reply_struct, rpllen);
-                // Assert();
-    msg_struct.value[0] = sensor;
+
     FOREVER {
         Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
         Send (server_tid, (char *)&reply_struct, rpllen, (char *)&msg_struct, msglen);
@@ -75,8 +73,10 @@ void CommandCenterStoppingNotifier() {
     Receive( &server_tid, (char*)&msg_struct, msglen );
     Reply (server_tid, (char *)&reply_struct, rpllen);
 
-    waitForSensor((int) msg_struct.value[0]);
-    Delay((int) msg_struct.value[1]);
+    if (msg_struct.value[0] >= 0 && msg_struct.value[0] < 80) {
+        waitForSensors(msg_struct.value, 1);
+    }
+    Delay((int) msg_struct.iValue);
     Send (server_tid, (char *)&reply_struct, rpllen, (char *)&msg_struct, msglen);
     Exit();
 }
@@ -86,14 +86,15 @@ void CommandCenterServer() {
     // msg shits
     char msg[11] = {0};
     char reply[30] = {0};
-    int sender_tid, msglen = 10, rpllen = 10, expected_time, actual_time;
+    int sender_tid, msglen = 10, rpllen = 10, expected_time;
+    int actual_time, location, total_distance;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
 
     int requests[64] = {-1};
     char sensors_ahead[5] = {-1};
-    int courier_tid, notifier_tid, train_count = 0;
+    int courier_tid, notifier_tid, train_count = 0, sensor = -1;
     int stopping_sensor = -1, stopping_sensor_dist = -1, stop_delay = 0;
     char sensor_route[20] = {0};    // the sensors the train's gonna
 
@@ -119,7 +120,7 @@ void CommandCenterServer() {
             case COMMAND_CENTER_NOTIFIER:
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i][TRAIN_INFO_COURIER] == sender_tid) {
-                        train_info[i][TRAIN_INFO_SENSOR] = train_info[i][TRAIN_INFO_NEXT_SENSOR];
+                        train_info[i][TRAIN_INFO_SENSOR] = msg_struct.iValue;
                         predictSensor(train_info[i][TRAIN_INFO_SENSOR], 2, sensors_ahead);
                         train_info[i][TRAIN_INFO_NEXT_SENSOR] = sensors_ahead[0];
                         actual_time = Time();
@@ -141,12 +142,12 @@ void CommandCenterServer() {
                                                                      train_info[i][TRAIN_INFO_TIME],
                                                                      train_speed[i]);
                         train_info[i][TRAIN_INFO_TIME_PREDICTION] = expected_time;
-                        // bwprintf(COM2, "%d", train_info[i][TRAIN_INFO_TIME_PREDICTION]);
-                        // Assert();
                         break;
                     }
                 }
                 reply_struct.value[0] = train_info[i][TRAIN_INFO_NEXT_SENSOR];
+                reply_struct.value[0] = sensors_ahead[1];
+                reply_struct.value[0] = getSensorComplement(train_info[i][TRAIN_INFO_SENSOR]);
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
 
@@ -174,6 +175,10 @@ void CommandCenterServer() {
                 predictSensor(train_info[train_count][TRAIN_INFO_SENSOR], 2, sensors_ahead);
                 train_info[train_count][TRAIN_INFO_NEXT_SENSOR] = sensors_ahead[0];
                 msg_struct.value[0] = train_info[train_count][TRAIN_INFO_NEXT_SENSOR];
+                msg_struct.value[1] = sensors_ahead[1];
+                msg_struct.value[2] = getSensorComplement(train_info[train_count][TRAIN_INFO_SENSOR]);
+                predictSensor(msg_struct.value[2], 2, sensors_ahead);
+                msg_struct.value[3] = sensors_ahead[0];
                 Send (courier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
                 // Assert();
                 init_train_speed(train_info[train_count][TRAIN_INFO_ID], train_speed[train_count]);
@@ -186,6 +191,15 @@ void CommandCenterServer() {
             case TRAIN_DESTINATION_REQUEST:
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (msg_struct.value[0] == train_info[i][TRAIN_INFO_ID]) {
+                        actual_time = Time();
+                        if (train_info[i][TRAIN_INFO_TIME] == 0 || (actual_time - train_info[i][TRAIN_INFO_TIME]) > 50){
+                            location = 0;
+                        }
+                        else {
+                            location = timeToDistance( train_info[i][TRAIN_INFO_SENSOR],
+                                                    actual_time - train_info[i][TRAIN_INFO_TIME], train_speed[i] );
+                        }
+
                         notifier_tid = Create(1, (&CommandCenterStoppingNotifier));
                         train_info[i][TRAIN_INFO_STOPPING_NOTIFIER] = notifier_tid;
                         pathFind(
@@ -196,9 +210,18 @@ void CommandCenterServer() {
                             &stopping_sensor_dist,  // returning distance
                             sensor_route           // the sensors the train's gonna pass
                         );
-                        stop_delay = distanceToDelay( stopping_sensor, stopping_sensor_dist, train_speed[i]);
+                        total_distance = findDistanceBetweenLandmarks( train_info[i][TRAIN_INFO_SENSOR], msg_struct.iValue, TRACK_MAX) - location;
+                        if ( total_distance < 2000 ) { //short move
+                            stop_delay = shortMoveDistanceToDelay((double)total_distance);
+                            // bwprintf(COM2, "\n%d ", stop_delay);
+                            stopping_sensor = -1;
+                        }
+                        else {
+                            stop_delay = distanceToDelay( stopping_sensor, stopping_sensor_dist, train_speed[i]);
+                        }
+
                         msg_struct.value[0] = stopping_sensor;
-                        msg_struct.value[1] = stop_delay;
+                        msg_struct.iValue = stop_delay;
                         Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
                         setTrainSpeed (train_info[i][TRAIN_INFO_ID], 12);
                     }
@@ -217,10 +240,25 @@ void CommandCenterServer() {
     }
 }
 
+int timeToDistance( int sensor, int delta_time, int *train_speed ) {
+    float velocity = train_speed[sensor] / 100; // velocity is in mm/tick;
+    int distance = delta_time * velocity;
+    return distance;
+}
+
 int distanceToDelay( int sensor, int distance, int *train_speed ) {
     float velocity = train_speed[sensor] / 100; // velocity is in mm/tick;
     int delta_time = (int) distance / velocity;
     return delta_time;
+}
+
+int shortMoveDistanceToDelay( double distance ) {
+    double cubic = 1.5E-7 * distance * distance * distance;
+    double square = 0.000489658 * distance * distance;
+    double linear = 0.611907 * distance;
+    double constant = 62.3535;
+
+    return (int) (cubic - square + linear + constant);
 }
 
 int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed) {
@@ -232,6 +270,7 @@ int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_s
     // bwprintf(COM2, "%d", ret);
     return ret;
 }
+
 
 int initTrainLocation( int train_id, int sensor ) {
     char msg[10] = {0};
@@ -293,6 +332,35 @@ int setTrainDestination( int train_id, int sensor ) {
     }
     return -1;
 }
+
+// int reverseTrainDirection( int num ) {
+//     char msg[10] = {0};
+//     char reply[10] = {0};
+//     int msglen = 10, rpllen = 10;
+//     int receiver_tid, train_task_id;
+//     message msg_struct, reply_struct;
+//     msg_struct.value = msg;
+//     msg_struct.type = TRAIN_REVERSE_REQUEST;
+//     reply_struct.value = reply;
+
+//     receiver_tid = WhoIs(COMMAND_CENTER_SERVER_NAME);
+//     genTrainName(train_id, msg);
+//     train_task_id = WhoIs(msg);
+
+//     if (train_task_id == -1) {
+//         train_task_id = Create(3, (&TrainTask));
+//         msg_struct.iValue = train_id;
+//         Send (train_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+//     }
+//     msg_struct.iValue = num;
+//     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+//     if (strcmp(msg_struct.value, "FAIL") != 0) {
+//         // if succeded
+//         return 0;
+//     }
+//     return -1;
+// }
 
 int waitTrainInfo ( int train_id, int *train_info) {
     char msg[10] = {0};

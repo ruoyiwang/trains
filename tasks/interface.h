@@ -13,6 +13,9 @@
 #define SW_POSITION_X 3
 #define SW_POSITION_Y 1
 
+#define TRACK_POSITION_X 28
+#define TRACK_POSITION_Y 1
+
 #define SW_STRAIGHT 33
 #define SW_CURVE 34
 
