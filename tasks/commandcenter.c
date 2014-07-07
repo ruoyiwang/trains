@@ -256,14 +256,24 @@ int distanceToDelay( int sensor, int distance, int *train_speed ) {
 }
 
 int shortMoveDistanceToDelay( double distance, int train_num ) {
-    double cubic = 1.5E-7 * distance * distance * distance;
-    double square = 0.000489658 * distance * distance;
-    double linear = 0.611907 * distance;
-    double constant = 62.3535;
-    double result;
-    result = (cubic - square + linear + constant);
+    double cubic;
+    double square;
+    double linear;
+    double constant;
+    double result = -1;
     if (train_num == 49) {
-        result = result * 0.9416;
+        cubic = 2.9053E-7 * distance * distance * distance;
+        square = 0.000753205 * distance * distance;
+        linear = 0.737617 * distance;
+        constant = 46.55;
+        result = (cubic - square + linear + constant);
+    }
+    else {
+        cubic = 1.5E-7 * distance * distance * distance;
+        square = 0.000489658 * distance * distance;
+        linear = 0.611907 * distance;
+        constant = 62.3535;
+        result = (cubic - square + linear + constant);
     }
     return (int) result;
 }

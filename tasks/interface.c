@@ -647,6 +647,7 @@ void handleCommandTask() {
 
     Create(3, (&CommandCenterServer));
     Create(5, (&LocationDisplayTask));
+    initTrainLocation(49, 0 );
 
     FOREVER {
     	c = getc(COM2);
