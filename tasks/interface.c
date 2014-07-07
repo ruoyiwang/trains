@@ -747,7 +747,7 @@ void handleCommandTask() {
                         outputPutStr ( " ahead of ", &row, &col, buffer, &index );
                         outputPutStr ( argv[1], &row, &col, buffer, &index );
                         outputPutStr ( argv[2], &row, &col, buffer, &index );
-                        setTrainDestination(atoi(argv[0]), result, argv[3] );
+                        setTrainDestination(atoi(argv[0]), result, atoi(argv[3]) );
                     }
                     break;
                 case CMD_PATH_FIND:
@@ -756,7 +756,7 @@ void handleCommandTask() {
                     result = pathFind(
                         atoi(argv[0]),          // current node
                         atoi(argv[1]),          // where it wants to go
-                        730,                     // stoping distance
+                        1090,                     // stoping distance
                         &stopping_sensor,       // returning node
                         &stoppong_sensor_dist,  // returning distance
                         sensor_route           // the sensors the train's gonna pass

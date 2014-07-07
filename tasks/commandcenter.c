@@ -213,12 +213,14 @@ void CommandCenterServer() {
                         );
                         total_distance = findDistanceBetweenLandmarks( train_info[i][TRAIN_INFO_SENSOR], msg_struct.iValue, TRACK_MAX) - location;
                         if ( total_distance < 2000 ) { //short move
-                            stop_delay = shortMoveDistanceToDelay((double)total_distance, train_info[i][TRAIN_INFO_ID]);
+                            stop_delay = shortMoveDistanceToDelay((double)total_distance + (int) msg_struct.value[1]*10, train_info[i][TRAIN_INFO_ID]);
                             // bwprintf(COM2, "\n%d ", stop_delay);
                             stopping_sensor = -1;
                         }
                         else {
-                            stop_delay = distanceToDelay( stopping_sensor, stopping_sensor_dist + msg_struct.value[1], train_speed[i]);
+                            stop_delay = distanceToDelay( stopping_sensor, stopping_sensor_dist + (int) msg_struct.value[1]*10, train_speed[i]);
+                            // bwprintf(COM2, "\n%d", msg_struct.value[1]*10);
+                            // Assert();
                         }
 
                         msg_struct.value[0] = stopping_sensor;
@@ -272,7 +274,6 @@ int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_s
 
     int delta_time = (int) delta_distance / velocity;
     int ret =  init_time + delta_time;
-    // bwprintf(COM2, "%d", ret);
     return ret;
 }
 
