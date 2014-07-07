@@ -73,11 +73,14 @@ void SensorServer() {
 
     char current_sensor_state[10] = {0};
     // the array that takes in requests
-    int requests[64];   // 64 of them
+    char requests[64][4];   // 64 of them
     // each tid can only call one delay at a time
-    int i;
+    int i, j;
     for (i = 0; i < 64; i++) {
-        requests[i] = -1;
+        requests[i][0] = -1;
+        requests[i][1] = -1;
+        requests[i][2] = -1;
+        requests[i][3] = -1;
     }
     int notifier_tid = Create(1, (&SensorNotifier));
     int courier_tid = Create(2, (&SensorCourier));
@@ -92,9 +95,15 @@ void SensorServer() {
                 memcpy(current_sensor_state, msg_struct.value, msglen);
                 for (i = 0; i < 64; i++) {
                     //if element exists
-                    if (requests[i] != -1 && (current_sensor_state[requests[i]/8] & (1 << (7 - (requests[i] % 8))))) {
-                        requests[i] = -1;
-                        Reply (i, (char *)&reply_struct, msglen);
+                    for (j=0 ; j< 4; j ++){
+                        if (requests[i][j] != -1 && (current_sensor_state[requests[i][j]/8] & (1 << (7 - (requests[i][j] % 8))))) {
+                            reply_struct.iValue = requests[i][j];
+                            requests[i][0] = -1;
+                            requests[i][1] = -1;
+                            requests[i][2] = -1;
+                            requests[i][3] = -1;
+                            Reply (i, (char *)&reply_struct, msglen);
+                        }
                     }
                 }
                 Reply (sender_tid, (char *)&reply_struct, msglen);
@@ -106,7 +115,7 @@ void SensorServer() {
                 break;
             case WAIT_REQUEST:
                 // add request to list of suspended tasks
-                requests[sender_tid] = msg_struct.iValue;
+                memcpy(requests[sender_tid], msg_struct.value, msg_struct.iValue);
                 break;
             default:
                 // wtf
@@ -115,7 +124,7 @@ void SensorServer() {
     }
 }
 
-int waitForSensor( int sensor ) {
+int waitForSensors( char *sensors, int len ) {
     char msg[10] = {0};
     char reply[10] = {0};
     int msglen = 10;
@@ -125,15 +134,18 @@ int waitForSensor( int sensor ) {
     }
     message msg_struct, reply_struct;
     msg_struct.value = msg;
-    msg_struct.iValue = sensor;
     msg_struct.type = WAIT_REQUEST;
     reply_struct.value = reply;
 
+    msg_struct.iValue = len;
+    memcpy(msg, sensors, len);
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
     if (strcmp(msg_struct.value, "FAIL") != 0) {
         // if succeded
-        return 0;
+        // bwprintf(COM2,"%d", reply_struct.iValue);
+        // Assert();
+        return reply_struct.iValue;
     }
     return -1;
 }
@@ -164,4 +176,13 @@ int getLatestSensors ( char current_sensor_state[10]) {
 
 int sensorToInt (char module, int num) {
     return (module - 'A') * 16 + num - 1;
+}
+
+int getSensorComplement (int num) {
+    if (num % 2 == 1){
+        return num - 1;
+    }
+    else{
+        return num + 1;
+    }
 }

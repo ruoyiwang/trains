@@ -208,8 +208,8 @@ void TracksTask () {
                 reply[0] = stop_command_sensor;
                 reply[1] = path_len;
                 reply_struct.iValue = stop_command_sensor_dist;
-                memcpy(reply+2, path, path_len);
-                Reply (sender_tid, (char *)&reply_struct, path_len+2);
+                // memcpy(reply+2, path, path_len);
+                Reply (sender_tid, (char *)&reply_struct, 2);
                 break;
             default:
                 break;

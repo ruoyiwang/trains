@@ -19,6 +19,7 @@
 #define TRAIN_DESTINATION_REQUEST 2
 #define GET_TRAIN_INFO_REQUEST 3
 #define COMMAND_CENTER_STOPPING_NOTIFIER 4
+#define TRAIN_REVERSE_REQUEST 5
 
 #define COMMAND_CENTER_SERVER_NAME "Command Center Server"
 
@@ -30,5 +31,6 @@ int initTrainLocation( int train_id, int sensor );
 int waitTrainInfo ( int train_id, int *train_info);
 int distanceToDelay( int sensor, int distance, int *train_speed );
 int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed);
+int shortMoveDistanceToDelay( double distance );
 
 #endif
