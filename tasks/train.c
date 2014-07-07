@@ -147,6 +147,7 @@ void TracksTask () {
     int stop_command_sensor, stop_command_sensor_dist;
 
     FOREVER {
+        rpllen = 10;
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch (msg_struct.type) {
             case SET_SWITCH:
