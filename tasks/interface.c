@@ -231,6 +231,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_TRAIN_DEST;
         return;
     }
+    else if ( strcmp (cmdstr, "sm") == 0 && *argc == 2 ){
+        *command = CMD_SHORT_MOVE_TIME;
+        return;
+    }
     else if ( cmdstr[0] == 'q' ){
         *command = CMD_QUIT;
         return;
@@ -667,7 +671,7 @@ void handleCommandTask() {
                     }
                     break;
                 case CMD_FIND_DISTANCE:
-                    result = findDistanceBetweenLandmarks(atoi(argv[0]), atoi(argv[1]), 10);
+                    result = findDistanceBetweenLandmarks(atoi(argv[0]), atoi(argv[1]), TRACK_MAX);
 
                     bwi2a(result, tempstr);
                     outputPutStrLn (tempstr, &row, &col, buffer, &index );
@@ -701,8 +705,8 @@ void handleCommandTask() {
                     }
                     break;
                 case CMD_PATH_FIND:
-                     stopping_sensor = -1;
-                     stoppong_sensor_dist = -1;
+                    stopping_sensor = -1;
+                    stoppong_sensor_dist = -1;
                     result = pathFind(
                         atoi(argv[0]),          // current node
                         atoi(argv[1]),          // where it wants to go
@@ -730,6 +734,12 @@ void handleCommandTask() {
                     //     row = 18; col = 1;
                     //     outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     // }
+                    break;
+                case CMD_SHORT_MOVE_TIME:
+                    // sm <train num> <time>
+                    setTrainSpeed( atoi(argv[0]), 12);
+                    Delay(atoi(argv[1]));
+                    setTrainSpeed( atoi(argv[0]), 0);
                     break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;

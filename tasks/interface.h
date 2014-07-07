@@ -39,6 +39,7 @@
 #define CMD_PATH_FIND       9
 #define CMD_INIT_TRAIN   	10
 #define CMD_TRAIN_DEST      11
+#define CMD_SHORT_MOVE_TIME	12
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);
