@@ -1,0 +1,5 @@
+1. A description of how to access, make and operate your program.
+
+2. Adescription of the algorithms and data structures used to calibrate the train and the track, to maintain knowledge of the train position, and to recover from errors. Remember to tell us how they work and why you chose them.
+
+3. Files and MD5s
