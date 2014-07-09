@@ -147,8 +147,10 @@ void CommandCenterServer() {
                     }
                 }
                 reply_struct.value[0] = train_info[i][TRAIN_INFO_NEXT_SENSOR];
-                reply_struct.value[0] = sensors_ahead[1];
-                reply_struct.value[0] = getSensorComplement(train_info[i][TRAIN_INFO_SENSOR]);
+                reply_struct.value[1] = sensors_ahead[1];
+                reply_struct.value[2] = getSensorComplement(train_info[i][TRAIN_INFO_SENSOR]);
+                predictSensor(reply_struct.value[2], 2, sensors_ahead);
+                reply_struct.value[3] = sensors_ahead[0];
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
 
