@@ -61,6 +61,8 @@ void PutServer() {
     msg_struct.value = msg;
     reply_struct.value = reply;
 
+    char *copystr;
+
     // current task blocked
     int blocked_notifier = -1;
 
@@ -117,6 +119,26 @@ void PutServer() {
                 }
                 break;
             case PUTSTR_REQUEST:
+                i=0;
+                // copy_len = msg_struct.iValue;
+                copystr = msg_struct.iValue;
+                while ( char_from_request = copystr[i++]) {
+                    insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
+                    string_buffer[insetion_point] = char_from_request;
+                    buf_len++;
+                }
+                // if a task wanted something and is blocked, we return it to it
+                if (blocked_notifier != -1) {
+                    reply[0] = string_buffer[buf_start];
+                    buf_start = (buf_start+1) % BUFFER_SIZE;
+                    buf_len--;
+                    Reply (blocked_notifier, (char *)&reply_struct, rpllen);
+                    blocked_notifier = -1;
+                }
+                // don't really care what we reply
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
+            case PUTSTR_LEN_REQUEST:
                 i=0;
                 copy_len = msg_struct.iValue;
                 while ( copy_len-- > 0) {
@@ -328,18 +350,18 @@ void putc(int COM, char c) {
 }
 
 void putstr(int COM, char* str ) {
-    char msg[1010] = {0};
+    char msg[0] = {0};
     char reply[4] = {0};
-    int msglen , rpllen = 4;
+    int msglen = 0 , rpllen = 4;
     static int com1_receiver_tid = -1, com2_receiver_tid = -1;
     int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
-    reply_struct.iValue = 0;
-    msglen = strlen(str);
-    memcpy(msg, str, msglen);
-    msg_struct.iValue = msglen;
+    // reply_struct.iValue = 0;
+    // msglen = strlen(str);
+    // memcpy(msg, str, msglen);
+    msg_struct.iValue = str;
     msg_struct.type = PUTSTR_REQUEST;
 
     switch (COM){
@@ -370,12 +392,12 @@ void putstr_len(int COM, char* str, int msglen ) {
     static int com1_receiver_tid = -1, com2_receiver_tid = -1;
     int receiver_tid;
     message msg_struct, reply_struct;
-    msg_struct.value = msg;
+    msg_struct.value = str;
     msg_struct.iValue = msglen;
     reply_struct.value = reply;
     reply_struct.iValue = 0;
     memcpy(msg, str, msglen);
-    msg_struct.type = PUTSTR_REQUEST;
+    msg_struct.type = PUTSTR_LEN_REQUEST;
 
     switch (COM){
         case COM1:
