@@ -1,4 +1,26 @@
 1. A description of how to access, make and operate your program.
+DOWNLOADING THE SOURCE CODE
+Download the zip file
+    goo.gl/u1c8ov
+    click File->Download
+    this will download the m1_submission.zip file
+
+Unzip the zipfile will result in a m1_submission folder
+
+REBUILD
+compile the program in m1_submission folder
+	make clean && make
+copy the compiled elf file onto tftp
+	cp kernel.elf /u/cs452/tftp/ARM/ur_user_name/
+change the permission of the copied file
+	chmod 744 /u/cs452/tftp/ARM/ur_user_name/kernel.elf
+load the program onto the board
+	load -b 0x00218000 -h 10.15.167.4 "ARM/ur_user_name/kernel.elf
+type go
+	go
+
+LOADING AND RUNNING THE PRE-COMPILED VERSION
+load -b 0x00218000 -h 10.15.167.4 "ARM/z23he/m1.elf;go
 
 2. Adescription of the algorithms and data structures used to calibrate the train and the track, to maintain knowledge of the train position, and to recover from errors. Remember to tell us how they work and why you chose them.
 
@@ -48,3 +70,50 @@ Train position and stopping
 		This is a request for the information of a train. It will return the trains previous and next sensor.
 
 3. Files and MD5s
+
+e63ad8bf4a7a1bf48c274eb4ffe81ad2  ./include/ts7200.h
+
+5f801609c2ee3af70a7bc962f4a74494  ./kernel/ker_ent_exit.asm
+e2954b851b40c8c4e3b76c28f39b5071  ./kernel/kernel.c
+63c88d650a2a57dc902976fab873073c  ./kernel/kernel.h
+605a1438ac7738c0c486430e52b165e5  ./kernel/queue.h
+0c954df6f2664adecbfe0a6cd994e4b6  ./kernel/debug.c
+57d7ecc932e069e6f3c8f5044ea66a6f  ./kernel/queue.c
+fe178ee05cba742a7b79153dbb1e4edf  ./kernel/nameserver.c
+b9b7470560031946dab7f959b1bace6d  ./kernel/int_ker_ent_exit.asm
+4c7903df0ada55219827ec269eba5185  ./kernel/nameserver.h
+480ac30b62493a9d2346b956dacdf350  ./kernel/debug.h
+
+705d2e36b1b9281289480d95c647d372  ./lib/libbwio.a
+1bb0bc970ef579c94d89f187060a1406  ./lib/bwio.c
+3fb593b9f5f7c393fd4e34fbf8b8d940  ./lib/bwio.h
+099eb61a5ee6c949b237b29fc44b05f6  ./lib/libutil.a
+a22badbdb79426bdbe6feca347286b4b  ./lib/util.c
+b6eee62abf5a4d2a81d09cf5d1061bcc  ./lib/util.h
+b6c5125ddef0fd675ce94cdec50f05be  ./lib/a.out
+
+d06ccb8138dabc4f74db4b7a00a1de6e  ./orex.ld
+3bc27c207ef23ce6b28f87dca9a6d628  ./track/trainspeed.c
+f5458f5fca06a8c9502f34a1d9fbe741  ./track/track_data.c
+57648ac7519921743c912d61da28bcf2  ./track/track_node.h
+15e0112dc091029d65a447facaf8eaec  ./track/track_data.h
+017fcbf35e1a1ff8261bcbb54248fbe6  ./track/trainspeed.h
+
+a00bf7f767939dd2245f777865bda780  ./tasks/Tasks.c
+acfd9a58c040faf90fbc782c937f4883  ./tasks/Tasks.h
+556c534a45ec488baaf5c336608d4fd0  ./tasks/clockserver.c
+f0da0dd5b3ebffb8597c305dead61152  ./tasks/clockserver.h
+1dda09b8a58f5b2284d5bf58a85d3b8a  ./tasks/rps.c
+4ada5de8073ec8c6fab66719f12c8f66  ./tasks/rps.h
+16b8cc4b0c5a9595daae77e6c77fcac9  ./tasks/comservers.h
+b9995e378d01540d3cb80bf4466930b3  ./tasks/comservers.c
+0d85ccbaca0fcb48d56f5096a880732e  ./tasks/interface.c
+295932c5338e6f732183ebcdbcf94988  ./tasks/interface.h
+1087cce0b8d3c00f7700d8de4085ea72  ./tasks/sensors.c
+92d5ff702ef2cb59c13beeea5a0143ca  ./tasks/train.c
+3626d473b41ccde18a2ff0ec9019cde9  ./tasks/train.h
+465b3299aa349f2c3251cfea0c4eefcd  ./tasks/sensors.h
+8e968b8a65e44cf1bb447241337986ee  ./tasks/commandcenter.c
+832bdf46c9c1cec90574de35572bc089  ./tasks/commandcenter.h
+
+5396b32d5d9ae2e7d20ae3749b5bb1a3  makefile
