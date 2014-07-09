@@ -17,4 +17,34 @@ PATHFIMD - MILESTONE 1
 The path find algorithm uses the path track data on the course webpage, and performs BFS on it. The path find algorithm once finds a path will path the switches to the correct direction. This is a simple path finding algorithm and will not be feasible for milestone 2.
 The path find algorithm also takes in a train's stopping distance. Based on the path found, it finds the the last sensor it will trigger before the stopping distance and how far will it travel after that sensor to before a stop command needs to be issued. This information will be returned to the caller to time the stop command
 
+Sensors Server
+
+	Sensors requests are done using a server courier and notifier. The notifer will query for all the sensors and send the result back to the server when all the queries come back. The servers will than parse the information to handle requests acoordingly.
+
+	The Sensor server can handle the following requests:
+
+		Sensors dump request:
+		Use this to get the latest raw bytes that were returned from COM1. This is typically called by the sensor display task to get the sensors that were last triggered.
+
+		Wait request:
+		This is a blocking request which is used to block the client untill the specified sensors are triggered. The client can speicify more than one sensor to wait on.
+
+
+Train position and stopping
+
+	The train position and speed is controlled by the command center tasks which consist of a server that generates a notifier for each train as well as stop request
+
+	The command center knows where the trains are at all time in term of the sensor it last triggered and when it was triggered. It also has the velocity of the train that was measured. these information is sufficent for it to calculate an estimated location of the train.
+
+	The server handles 3 types of client requests:
+
+	Init train request:
+		use this to set up the trains initial location as well as initialize its paramenters. It creates a a notifier and courier for the train which notifies the server when the train triggers the next sensor.
+
+	Set train destination:
+		use this set up a destination for the train. the server will ask the track server for when to stop the train. The server will convert this information in terms of the sensor and time after sensor trigger. The server will than create a stopping notifier that will fire when the train needs to stop.
+
+	Get train info:
+		This is a request for the information of a train. It will return the trains previous and next sensor.
+
 3. Files and MD5s
