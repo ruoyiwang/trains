@@ -2,4 +2,19 @@
 
 2. Adescription of the algorithms and data structures used to calibrate the train and the track, to maintain knowledge of the train position, and to recover from errors. Remember to tell us how they work and why you chose them.
 
+TRAIN SPEED CALIBRATION - CONSTANT
+The real speed for a train's constant speed is calculated by mapping a speed with each and every sensor. A path was designed for the train to run, the path covers every sensor on the track that is not an entry or exit, time data is recorded across each sensor and a table was created to calculate the velocity at each sensor.
+For each sensor a speed, an array initilization function was written that takes in an array and fills it in with the speed.
+
+TRAIN SPEED CALIBRATION - SHORT MOVE
+The short move is calculated by first timing stops. The train starts stationary, a train speed is then sent to the train, after a timed delay, a speed 0 is sent tot he train. From this we can adjust the timed delay to find out how long the trains would run given the delay. A series of time from 500ms to 4000ms was sent, and the distance was measure for each. From these data we can plot the distance vs delay time needed. A best-fit subic function was generated from these points. The program uses this function to time the go and stop commands to the trains for short moves across a specific distance.
+
+TRACK SERVER
+The track server is the task that knows the condition of the tracks, and the task that performs path finding. More specifically, the track server knows about all the switch statuses. The track task is also task which performs the switch setting. Any commands given to switch the switch status is performed by this task. 
+The switch status is stored in a single unsigned integer. switch 1 to 18 is represented by bit 1 to 18, where switch 0x99 to 0x9C is stored on bit 19 to 22. with 0 representing curved and 1 representing straight. 
+
+PATHFIMD - MILESTONE 1
+The path find algorithm uses the path track data on the course webpage, and performs BFS on it. The path find algorithm once finds a path will path the switches to the correct direction. This is a simple path finding algorithm and will not be feasible for milestone 2.
+The path find algorithm also takes in a train's stopping distance. Based on the path found, it finds the the last sensor it will trigger before the stopping distance and how far will it travel after that sensor to before a stop command needs to be issued. This information will be returned to the caller to time the stop command
+
 3. Files and MD5s
