@@ -2,6 +2,7 @@
 #include <nameserver.h>
 #include <interface.h>
 #include <clockserver.h>
+#include <track.h>
 #include <train.h>
 #include <kernel.h>
 #include <bwio.h>
