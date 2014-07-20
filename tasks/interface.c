@@ -420,7 +420,12 @@ void IdleDisplayTask() {
         int usage = IdleUsage();
 
         bwi2a(usage, buffer+index);
-        index+=2;
+        if (usage < 10) {
+            index++;
+        }
+        else {
+            index+=2;
+        }
         restoreCursorPosition(buffer, &index);
 
         buffer[(index)++] = 0;
@@ -641,7 +646,7 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
-    Delay(600);
+    // Delay(600);
     Create(3, (&SensorServer));
     Create(5, (&SensorsDisplayTask));
 
