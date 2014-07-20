@@ -18,6 +18,8 @@
 #define COM1_PUT_DELAY  5
 #define COMMAND_DELAY   15
 
+#define REVERSING_WEIGHT    200
+
 void genTrainName( int train_id, char* bf);
 void TrainTask ();
 int setTrainSpeed( int num, int speed );

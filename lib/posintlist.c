@@ -14,9 +14,6 @@ int posintlistInit(int list[], int array_len) {
 int posintlistIsInList(int needle, int haystack[], int array_len) {
     int i = 0;
     for (i = 0; i < array_len; i++) {
-        if (haystack[i] == -1) {
-            return false;
-        }
         if (needle == haystack[i]) {
             return true;
         }
@@ -46,7 +43,7 @@ int posintlistErase(int value, int list[], int array_len) {
         }
     }
 
-    // insersion failed
+    // erase failed
     return false;
 }
 

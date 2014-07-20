@@ -126,13 +126,14 @@ void TracksTask () {
     // msg shits
     char msg[10] = {0};
     char predict_result[10] = {0};
-    char reply[82] = {0};
+    char reply[182] = {0};
     char path[80] = {0};
     int sender_tid, msglen = 10, rpllen = 10, path_len = 0;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
     char commandstr[10] = {0};
+    int i = 0;
 
     // switch status, bitwise 32-0,
     // think we only 22-1?
@@ -204,7 +205,7 @@ void TracksTask () {
                     msg_struct.iValue,      // stopping distance
                     &stop_command_sensor,   // the triggers to be triggered
                     &stop_command_sensor_dist,   // returning distance
-                    path                    // this is the route
+                    &path                    // this is the route
                 );
                 reply[0] = stop_command_sensor;
                 reply[1] = path_len;
@@ -221,13 +222,19 @@ void TracksTask () {
                     landmark1,         // 0 based
                     landmark2,
                     msg_struct.iValue,      // stopping distance
-                    path
+                    &path
                 );
-                reply[0] = 1;
-                reply[1] = path_len;
-                reply_struct.iValue = stop_command_sensor_dist;
-                memcpy(reply+2, path, path_len);
-                Reply (sender_tid, (char *)&reply_struct, path_len+2);
+                reply_struct.value[0] = 1;
+                reply_struct.value[1] = path_len;
+                reply_struct.iValue = 1;
+                memcpy(reply_struct.value+2, path, path_len);
+                // debug line
+                // for (i = 0; i < path_len+2; i++) {
+                //     bwprintf(COM2, "\n%d|%d\n", path_len, reply_struct.value[i]);
+                // }
+                // end of debugline
+                rpllen = path_len + 2;
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             default:
                 break;
@@ -478,7 +485,7 @@ int pathFindDijkstraTrackTask(
     distances[cur_sensor] = 0;
     for (i = 0; i < TRACK_MAX; i++) {
         if (i != cur_sensor) {
-            distances[i] = 10000000;    // infinity
+            distances[i] = 1000000000;    // infinity
             previous[i] = -1;           // undefined
         }
         Q[i] = i;   // adding the item to Q
@@ -487,9 +494,8 @@ int pathFindDijkstraTrackTask(
     int u, alt, min_dist, min_u, v;
     // main loop
     while (!posintlistIsEmpty(Q, TRACK_MAX)) {
-
         // u := vertex in Q with min dist[u]
-        min_dist = 10000000;
+        min_dist = 1000000000;
         for (i = 0; i < TRACK_MAX; i++) {
             u = Q[i];
             if (u != -1) {
@@ -502,57 +508,68 @@ int pathFindDijkstraTrackTask(
         u = min_u;
 
     // bwprintf(COM2, "\nhitttttttttttttttttttttt0!  %d|%d\n", u, distances[u]);
+    // bwgetc(COM2);
         // remove u from Q
         posintlistErase(u, Q, TRACK_MAX);
+        if (u == stopping_node) {
+            break;
+        }
 
-        // for each neighbor v of u:
+        // for each neighbor v of u that's not in Q
         // find shortest path
         if (tracks[u].type == NODE_ENTER || tracks[u].type == NODE_EXIT) {
             continue;
         }
         else if (tracks[u].type == NODE_BRANCH) {
             // here we can do straight, curve, reverse
-            alt = distances[u] + tracks[u].edge[DIR_STRAIGHT].dist;
             v = tracks[u].edge[DIR_STRAIGHT].dest->index;
-            if (alt < distances[v]) {
-                distances[v] = alt;
-                previous[v] = u;
+            if (posintlistIsInList(v, Q, TRACK_MAX)) {
+                alt = distances[u] + tracks[u].edge[DIR_STRAIGHT].dist;
+                if (alt < distances[v]) {
+                    distances[v] = alt;
+                    previous[v] = u;
+                }
             }
-            alt = distances[u] + tracks[u].edge[DIR_CURVED].dist;
             v = tracks[u].edge[DIR_CURVED].dest->index;
-            if (alt < distances[v]) {
-                distances[v] = alt;
-                previous[v] = u;
+            if (posintlistIsInList(v, Q, TRACK_MAX)) {
+                alt = distances[u] + tracks[u].edge[DIR_CURVED].dist;
+                if (alt < distances[v]) {
+                    distances[v] = alt;
+                    previous[v] = u;
+                }
             }
-            alt = 0;
             v = tracks[u].reverse->index;
-            if (alt < distances[v]) {
-                distances[v] = alt;
-                previous[v] = u;
+            if (posintlistIsInList(v, Q, TRACK_MAX)) {
+                alt = REVERSING_WEIGHT;
+                if (alt < distances[v]) {
+                    distances[v] = alt;
+                    previous[v] = u;
+                }
             }
         }
         else {
             // this is either sensor or merge
             // here we can only do ahead or reverse
-    bwprintf(COM2, "\nhitttttttttttttttttttttt0!  %d\n", u);
-            alt = distances[u] + tracks[u].edge[DIR_AHEAD].dist;
-    bwprintf(COM2, "\nhitttttttttttttttttttttt1!  %d\n", alt);
             v = tracks[u].edge[DIR_AHEAD].dest->index;
-    bwprintf(COM2, "\nhitttttttttttttttttttttt2!  %d\n", v);
-            if (alt < distances[v]) {
-                distances[v] = alt;
-                previous[v] = u;
+            if (posintlistIsInList(v, Q, TRACK_MAX)) {
+                alt = distances[u] + tracks[u].edge[DIR_AHEAD].dist;
+                if (alt < distances[v]) {
+                    distances[v] = alt;
+                    previous[v] = u;
+                }
             }
-            alt = 0;
             v = tracks[u].reverse->index;
-            if (alt < distances[v]) {
-                distances[v] = alt;
-                previous[v] = u;
+            if (posintlistIsInList(v, Q, TRACK_MAX)) {
+                alt = REVERSING_WEIGHT;
+                if (alt < distances[v]) {
+                    distances[v] = alt;
+                    previous[v] = u;
+                }
             }
         }
     }
 
-    bwprintf(COM2, "\nhitttttttttttttttttttttt!\n");
+    // bwprintf(COM2, "\nhitttttttttttttttttttttt!\n");
 
     // make Dijkstra Path
     // we should able to back trace (stopping node)
@@ -569,10 +586,11 @@ int pathFindDijkstraTrackTask(
     for (i = path_length; temp_node != cur_sensor; i--) {
         route[i] = temp_node;
         temp_node = previous[temp_node];
+        // bwprintf(COM2, "\n%d nodes: %d    \n", path_length, route[i]);
     }
     route[0] = cur_sensor;
 
-    return path_length;
+    return path_length+1;
 }
 
 int bfsPathFind(        // pretty shit path find lol
@@ -713,9 +731,9 @@ int pathFindDijkstra(
 
     // msg shits
     char msg[10] = {0};
-    char reply[83] = {0};
+    char reply[182] = {0};
     int msglen = 10;
-    int rpllen = 83;
+    int rpllen = 182;
     static int receiver_tid = -1;
     if (receiver_tid < 0) {
         receiver_tid = WhoIs(TRACK_TASK);
@@ -732,13 +750,22 @@ int pathFindDijkstra(
 
 
     *stoppong_sensor_dist = reply_struct.iValue;
-    *stopping_sensor = reply[0];
-    sensor_path_len = reply[1];
-    memcpy(sensor_route, reply+2, sensor_path_len);
-    if (reply_struct.iValue < 0) {
-        return -1;
-    }
-    return 1;
+    *stopping_sensor = reply_struct.value[0];
+    sensor_path_len = reply_struct.value[1];
+    memcpy(sensor_route, reply_struct.value+2, sensor_path_len);
+    // debug line
+    // bwprintf(COM2, "\nstoppong_sensor_dist: %d    \n", *stoppong_sensor_dist);
+    // bwprintf(COM2, "\nstopping_sensor: %d    \n", *stopping_sensor);
+    // bwprintf(COM2, "\nsensor_path_len: %d    \n", sensor_path_len);
+    // int i;
+    // for (i = 0; i < 3; i++) {
+    //     bwprintf(COM2, "\n%d\n", sensor_route[i]);
+    // }
+    // end of debugline
+    // if (reply_struct.iValue < 0) {
+    //     return -1;
+    // }
+    return sensor_path_len;
 
 }
 

@@ -632,7 +632,7 @@ void handleCommandTask() {
     // paht finding shits
     int stopping_sensor;            // returning node
     int stoppong_sensor_dist;       // returning distance
-    char sensor_route[20] = {0};    // the sensors the train's gonna
+    char sensor_route[180] = {0};    // the sensors the train's gonna
 
     setAllTrainSpeedToOne();
     // set all train speed to 1 before we do anything
@@ -769,7 +769,7 @@ void handleCommandTask() {
                         1090,                     // stoping distance
                         &stopping_sensor,       // returning node
                         &stoppong_sensor_dist,  // returning distance
-                        sensor_route           // the sensors the train's gonna pass
+                        &sensor_route           // the sensors the train's gonna pass
                     );
 
                     // if (result >= 0) {
@@ -800,16 +800,16 @@ void handleCommandTask() {
                         1090,                     // stoping distance
                         &stopping_sensor,       // returning node
                         &stoppong_sensor_dist,  // returning distance
-                        sensor_route           // the sensors the train's gonna pass
+                        &sensor_route           // the sensors the train's gonna pass
                     );
 
                     // if (result >= 0) {
-                        bwi2a(stopping_sensor, tempstr);
-                        row = 18; col = 1;
-                        outputPutStrLn (tempstr, &row, &col, buffer, &index );
-                        bwi2a(stoppong_sensor_dist, tempstr);
-                        row = 18; col = 1;
-                        outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                        // bwi2a(stopping_sensor, tempstr);
+                        // row = 18; col = 1;
+                        // outputPutStrLn (tempstr, &row, &col, buffer, &index );
+                        // bwi2a(stoppong_sensor_dist, tempstr);
+                        // row = 18; col = 1;
+                        // outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     // }
                     // else {
                     //     bwi2a(123456, tempstr);
