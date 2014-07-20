@@ -28,6 +28,7 @@ struct track_node {
   const char *name;
   node_type type;
   int num;              /* sensor or switch number */
+  int index;
   track_node *reverse;  /* same location, but opposite direction */
   track_node *parent;
   int visisted;

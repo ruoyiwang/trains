@@ -104,6 +104,13 @@ util.o: util.s
 	$(AS) $(ASFLAGS) -o $@ util.s
 
 
+posintlist.s: lib/posintlist.c lib/posintlist.h
+	$(XCC) -S $(CFLAGS) -O2 lib/posintlist.c
+
+posintlist.o: posintlist.s
+	$(AS) $(ASFLAGS) -o $@ posintlist.s
+
+
 debug.s: kernel/debug.c kernel/debug.h
 	$(XCC) -S $(CFLAGS) kernel/debug.c
 
@@ -125,8 +132,8 @@ trainspeed.o: trainspeed.s
 	$(AS) $(ASFLAGS) -o trainspeed.o trainspeed.s
 
 
-kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o trainspeed.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o track_data.o trainspeed.o -lgcc
+kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o posintlist.o debug.o track_data.o trainspeed.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o bwio.o util.o debug.o posintlist.o track_data.o trainspeed.o -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map

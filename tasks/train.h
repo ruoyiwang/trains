@@ -6,16 +6,17 @@
 
 #define PREDICT_SENSOR      0x51
 #define PATH_FIND           0x52
-#define FIND_DISTANCE_BETWEEN_TWO_LANDMARKS	0x53
+#define FIND_DISTANCE_BETWEEN_TWO_LANDMARKS 0x53
+#define PATH_FIND_DIJKSTRA  0x54
 
-#define TRAIN_SET_SPEED 	4
-#define TRAIN_REVERSE   	3
-#define SET_SWITCH			2
+#define TRAIN_SET_SPEED     4
+#define TRAIN_REVERSE       3
+#define SET_SWITCH          2
 
-#define TRACK_TASK 		"track task"
+#define TRACK_TASK      "track task"
 
-#define COM1_PUT_DELAY 	5
-#define COMMAND_DELAY 	15
+#define COM1_PUT_DELAY  5
+#define COMMAND_DELAY   15
 
 void genTrainName( int train_id, char* bf);
 void TrainTask ();
@@ -32,7 +33,7 @@ void predictSensorTrackTask(
     unsigned int switch_status,
     int cur_sensor,         // 0 based
     int prediction_len,     // amount of predictions wanted
-    char* paths              // the triggers to be triggered
+    char* paths             // the triggers to be triggered
 );
 
 int findDistanceBetweenLandmarksTrackTask(
@@ -74,6 +75,23 @@ int pathFind(
     int* stopping_sensor,       // returning node
     int* stoppong_sensor_dist,  // returning distance
     char* sensor_route          // the sensors the train's gonna pass
+);
+
+int pathFindDijkstra(
+    int cur_sensor,             // current node
+    int dest_node,              // where it wants to go
+    int stopping_dist,          // stoping distance
+    int* stopping_sensor,       // returning node
+    int* stoppong_sensor_dist,  // returning distance
+    char* sensor_route          // the sensors the train's gonna pass
+);
+
+int pathFindDijkstraTrackTask(
+    track_node *tracks,     // the initialized array of tracks
+    int cur_sensor,         // 0 based
+    int stopping_node,
+    int stopping_dist,
+    char* route
 );
 
 void makePath(track_node* node, track_node* init_node, track_node** path);

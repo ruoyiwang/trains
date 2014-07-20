@@ -43,6 +43,7 @@
 #define CMD_INIT_TRAIN   	10
 #define CMD_TRAIN_DEST      11
 #define CMD_SHORT_MOVE_TIME	12
+#define CMD_PF_DIJKSTRA		13	// path find dijkstra
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);
