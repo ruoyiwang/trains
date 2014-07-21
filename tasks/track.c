@@ -42,6 +42,7 @@ void TracksTask () {
 
     FOREVER {
         rpllen = 10;
+        reply_struct.value = reply;
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch (msg_struct.type) {
             case SET_SWITCH:
@@ -109,24 +110,45 @@ void TracksTask () {
                 // path find
                 landmark1 = msg[0];
                 landmark2 = msg[1];
-                path_len = pathFindDijkstraTrackTask(
+                move_data md = pathFindDijkstraTrackTask(
                     tracks,     // the initialized array of tracks
+                    &switch_status,
                     landmark1,         // 0 based
                     landmark2,
                     msg_struct.iValue,      // stopping distance
                     &path
                 );
-                reply_struct.value[0] = 1;
-                reply_struct.value[1] = path_len;
-                reply_struct.iValue = 1;
-                memcpy(reply_struct.value+2, path, path_len);
                 // debug line
-                // for (i = 0; i < path_len+2; i++) {
-                //     bwprintf(COM2, "\n%d|%d\n", path_len, reply_struct.value[i]);
+                // for (i = 0; i < md.list_len; i++) {
+                //     if (md.type == SAFE_REVERSE) {
+                //         bwprintf(COM2, "SAFE REVERSE    ");
+                //         bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[0].num);
+                //         bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
+                //         break;
+                //     }
+                //     else if (md.type == UNSAFE_REVERSE) {
+                //         bwprintf(COM2, "UNSAFE REVERSE  ");
+                //         bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[0].num);
+                //         bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
+                //         break;
+                //     }
+                //     bwprintf(COM2, "\n");
+                //     if (md.node_list[i].type == NODE_SENSOR) {
+                //         bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[i].num);
+                //     }
+                //     else if (md.node_list[i].type == NODE_BRANCH) {
+                //         bwprintf(COM2, "%d|Branch: %d   ", md.list_len, md.node_list[i].num);
+                //     }
+                //     else if (md.node_list[i].type == NODE_MERGE) {
+                //         bwprintf(COM2, "%d|Merge: %d    ", md.list_len, md.node_list[i].num);
+                //     }
+                //     bwprintf(COM2, "\n");
                 // }
                 // end of debugline
-                rpllen = path_len + 2;
-                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                reply_struct.iValue = 1;
+                // memcpy(reply_struct.value, md, sizeof(move_data));
+                reply_struct.value = &md;
+                Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
                 break;
             default:
                 break;
@@ -362,14 +384,27 @@ int pathFindTrackTask(
 }
 
 // return succss:path len, fail:-1
-int pathFindDijkstraTrackTask(
+move_data pathFindDijkstraTrackTask(
     track_node *tracks,     // the initialized array of tracks
+    unsigned int* switch_status,
     int cur_sensor,         // 0 based
     int stopping_node,
     int stopping_dist,
     char* route
 ) {
-    int i = 0;
+    int i = 0, unsafe_reverses_list_size = 10;
+    int unsafe_reverses[10];
+    unsafe_reverses[i++] = 3;     // A4
+    unsafe_reverses[i++] = 30;    // B15
+    unsafe_reverses[i++] = 37;     // C6
+    unsafe_reverses[i++] = 38;     // C7
+    unsafe_reverses[i++] = 40;     // C9
+    unsafe_reverses[i++] = 42;     // C11
+    unsafe_reverses[i++] = 44;     // C13
+    unsafe_reverses[i++] = 67;     // E4
+    unsafe_reverses[i++] = 68;     // E5
+    unsafe_reverses[i++] = 74;     // E11
+
     int distances[TRACK_MAX] = {0};
     int previous[TRACK_MAX];
     int Q[TRACK_MAX];
@@ -399,8 +434,6 @@ int pathFindDijkstraTrackTask(
         }
         u = min_u;
 
-    // bwprintf(COM2, "\nhitttttttttttttttttttttt0!  %d|%d\n", u, distances[u]);
-    // bwgetc(COM2);
         // remove u from Q
         posintlistErase(u, Q, TRACK_MAX);
         if (u == stopping_node) {
@@ -461,8 +494,6 @@ int pathFindDijkstraTrackTask(
         }
     }
 
-    // bwprintf(COM2, "\nhitttttttttttttttttttttt!\n");
-
     // make Dijkstra Path
     // we should able to back trace (stopping node)
     // first find pathlength
@@ -482,7 +513,112 @@ int pathFindDijkstraTrackTask(
     }
     route[0] = cur_sensor;
 
-    return path_length+1;
+    // including the ending node
+    path_length = path_length+1;
+
+    move_data md;       // this is the first move the train needs to perform
+    // go through the list of nodes, identify shits and return them.
+    // first identify if the first move is a reverse
+    track_node first_node = tracks[(int)route[0]];
+    track_node second_node = tracks[(int)route[1]];
+    // int cur_branch_status;
+    if (first_node.reverse->index == second_node.index) {
+        // bwprintf(COM2, "\nswag %d|", first_node.reverse->index);
+        // bwprintf(COM2, "%d\n", second_node.index);
+        // need to reverse first
+        // check if not safe
+
+        md.node_list[0].type = first_node.type;
+        md.node_list[0].id = first_node.index;
+        md.node_list[0].num = first_node.num;
+        md.node_list[1].type = second_node.type;
+        md.node_list[1].id = second_node.index;
+        md.node_list[1].num = second_node.num;
+        md.list_len = 2;
+
+        if (posintlistIsInList(first_node.index, unsafe_reverses, unsafe_reverses_list_size)) {
+            // if unsafe, command center needs to handle it by shifting it train's len
+            md.type = UNSAFE_REVERSE;
+        }
+        else {
+            // if safe, cmd center just send the reverse command
+            md.type = SAFE_REVERSE;
+        }
+        return md;
+    }
+
+    // second, construct the mode up to the reverse
+    int move_path_len = 0, j = 0, cur_node_num, next_node_num;
+    md.type = SHORT_MOVE;
+    for (i = 0; i < path_length; i++, j++) {
+        cur_node_num = route[i];
+        next_node_num = route[i+1];
+        md.node_list[j].type = tracks[cur_node_num].type;
+        md.node_list[j].id = tracks[cur_node_num].index;
+        md.node_list[j].num = tracks[cur_node_num].num;
+        md.list_len = j+1;
+
+        // if stopping node, return
+        if (cur_node_num == stopping_node) {
+            return md;
+        }
+        // if sensor reverse, return
+        else if (tracks[cur_node_num].type == NODE_SENSOR &&
+            tracks[cur_node_num].reverse->index == tracks[next_node_num].index) {
+            return md;
+        }
+        // else if merge reverse, goto next sensor
+        else if (tracks[cur_node_num].type == NODE_MERGE &&
+            tracks[cur_node_num].reverse->index == tracks[next_node_num].index) {
+            // just greedy find the closest sensor
+            cur_node_num = tracks[cur_node_num].edge[DIR_AHEAD].dest->index;
+            while (true) {   // can only be max chain 4 though
+                j++;
+                md.list_len = j+1;
+                md.node_list[j].type = tracks[cur_node_num].type;
+                md.node_list[j].id = tracks[cur_node_num].index;
+                md.node_list[j].num = tracks[cur_node_num].num;
+                if (tracks[cur_node_num].type == NODE_MERGE) {
+                    // the one to look at next
+                    cur_node_num = tracks[cur_node_num].edge[DIR_AHEAD].dest->index;
+                }
+                else if (tracks[cur_node_num].type == NODE_SENSOR) {
+                    return md;
+                }
+                else if (tracks[cur_node_num].type == NODE_BRANCH) {                    // if straight is a sensor, then go straight
+                    if (tracks[cur_node_num].edge[DIR_STRAIGHT].dest->type == NODE_SENSOR) {
+                        md.node_list[j].branch_state = SW_STRAIGHT;
+                        cur_node_num = tracks[cur_node_num].edge[DIR_STRAIGHT].dest->index;
+                    }
+                    else {
+                        md.node_list[j].branch_state = SW_CURVE;
+                        cur_node_num = tracks[cur_node_num].edge[DIR_CURVED].dest->index;
+                    }
+                }
+            }
+            return md;
+        }
+
+        // else if branch + reverse, set br dir, goto next closest sensor, return
+        // actually this is not logically possible =____= just tehcnically possible
+
+        // else if normal branch, find branch dir and set it
+        else if (tracks[cur_node_num].type == NODE_BRANCH) {
+            // find the correct branch
+            if (tracks[cur_node_num].edge[DIR_STRAIGHT].dest->index == tracks[next_node_num].index) {
+                md.node_list[j].branch_state = SW_STRAIGHT;
+            }
+            else {
+                md.node_list[j].branch_state = SW_CURVE;
+            }
+        }
+        else {
+            move_path_len += tracks[cur_node_num].edge[DIR_AHEAD].dist;
+        }
+
+    }
+
+    return md;
 }
 
 int bfsPathFind(        // pretty shit path find lol
@@ -611,7 +747,7 @@ int pathFind(
 }
 
 // expecte sensor_route to be as long as 80 char
-int pathFindDijkstra(
+move_data pathFindDijkstra(
     int cur_sensor,             // current node
     int dest_node,              // where it wants to go
     int stopping_dist,          // stoping distance
@@ -619,13 +755,16 @@ int pathFindDijkstra(
     int* stoppong_sensor_dist,  // returning distance
     char* sensor_route          // the sensors the train's gonna pass
 ) {
+    int i = 0;
     int sensor_path_len = 0;
 
     // msg shits
     char msg[10] = {0};
     char reply[182] = {0};
     int msglen = 10;
-    int rpllen = 182;
+    int rpllen = sizeof(move_data);
+    move_data md;       // this is the reply
+
     static int receiver_tid = -1;
     if (receiver_tid < 0) {
         receiver_tid = WhoIs(TRACK_TASK);
@@ -636,28 +775,43 @@ int pathFindDijkstra(
     msg[1] = dest_node;
     msg_struct.iValue = stopping_dist;
     msg_struct.type = PATH_FIND_DIJKSTRA;
-    reply_struct.value = reply;
+    reply_struct.value = &md;
 
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
 
-    *stoppong_sensor_dist = reply_struct.iValue;
-    *stopping_sensor = reply_struct.value[0];
-    sensor_path_len = reply_struct.value[1];
-    memcpy(sensor_route, reply_struct.value+2, sensor_path_len);
+    // *stoppong_sensor_dist = reply_struct.iValue;
+    // *stopping_sensor = reply_struct.value[0];
+    // sensor_path_len = reply_struct.value[1];
+    // memcpy(sensor_route, reply_struct.value+2, sensor_path_len);
     // debug line
-    // bwprintf(COM2, "\nstoppong_sensor_dist: %d    \n", *stoppong_sensor_dist);
-    // bwprintf(COM2, "\nstopping_sensor: %d    \n", *stopping_sensor);
-    // bwprintf(COM2, "\nsensor_path_len: %d    \n", sensor_path_len);
-    // int i;
-    // for (i = 0; i < 3; i++) {
-    //     bwprintf(COM2, "\n%d\n", sensor_route[i]);
+    // for (i = 0; i < md.list_len; i++) {
+    //     if (md.type == SAFE_REVERSE) {
+    //         bwprintf(COM2, "SAFE REVERSE    \n");
+    //         bwprintf(COM2, "%d|%d           \n", md.list_len, md.node_list[0].num);
+    //         bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
+    //         break;
+    //     }
+    //     else if (md.type == UNSAFE_REVERSE) {
+    //         bwprintf(COM2, "UNSAFE REVERSE  \n");
+    //         bwprintf(COM2, "%d|%d           \n", md.list_len, md.node_list[0].num);
+    //         bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
+    //         break;
+    //     }
+    //     bwprintf(COM2, "\n");
+    //     if (md.node_list[i].type == NODE_SENSOR) {
+    //         bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[i].num);
+    //     }
+    //     else if (md.node_list[i].type == NODE_BRANCH) {
+    //         bwprintf(COM2, "%d|Branch: %d   ", md.list_len, md.node_list[i].num);
+    //     }
+    //     else if (md.node_list[i].type == NODE_MERGE) {
+    //         bwprintf(COM2, "%d|Merge: %d    ", md.list_len, md.node_list[i].num);
+    //     }
+    //     bwprintf(COM2, "\n");
     // }
     // end of debugline
-    // if (reply_struct.iValue < 0) {
-    //     return -1;
-    // }
-    return sensor_path_len;
+    return md;
 
 }
 

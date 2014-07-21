@@ -14,6 +14,26 @@
 
 #define REVERSING_WEIGHT    200
 
+typedef enum {
+    LONG_MOVE,
+    SHORT_MOVE,
+    SAFE_REVERSE,
+    UNSAFE_REVERSE  // have to shift the train a bit
+} move_type;
+
+typedef struct move_node_t {
+    node_type type; // sensor, branch, or merge
+    int id;         // 0 to 144
+    int num;        // the actual num after the sw/A/B/C/D/E prefix
+    int branch_state;
+} move_node;
+
+typedef struct move_data_t {
+    move_type type;
+    int list_len;
+    move_node node_list[144];
+} move_data;
+
 void TracksTask ();
 
 void setSwitchStatus(unsigned int* switch_status, int sw, int dir);
@@ -68,7 +88,7 @@ int pathFind(
     char* sensor_route          // the sensors the train's gonna pass
 );
 
-int pathFindDijkstra(
+move_data pathFindDijkstra(
     int cur_sensor,             // current node
     int dest_node,              // where it wants to go
     int stopping_dist,          // stoping distance
@@ -77,8 +97,9 @@ int pathFindDijkstra(
     char* sensor_route          // the sensors the train's gonna pass
 );
 
-int pathFindDijkstraTrackTask(
+move_data pathFindDijkstraTrackTask(
     track_node *tracks,     // the initialized array of tracks
+    unsigned int* switch_status,
     int cur_sensor,         // 0 based
     int stopping_node,
     int stopping_dist,
