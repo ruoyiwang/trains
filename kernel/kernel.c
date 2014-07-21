@@ -327,6 +327,7 @@ void handle (td *active, int req, int args[5],
             if ( tds[args[0]].state == STATE_SND_BLK ) {    //if receive first
                 *(tds[args[0]].sendQ->sender_tid) = active->tid;
                 if (tds[args[0]].sendQ->msg_len < ((mailbox *)args[1])->msg_len) {
+                     // bwprintf(COM2, "%c[2JRECEIVE %d %d %d\n", 0x1b,active->tid,tds[args[0]].sendQ->msg_len, ((mailbox *)args[1])->msg_len);
                     assert_ker(tds, td_pq);
                 }
                 memcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value, (unsigned int)((mailbox *)args[1])->msg_len);
@@ -359,6 +360,7 @@ void handle (td *active, int req, int args[5],
             if ( active->sendQ ) {    //if send first
                 // bwprintf(COM2, "CRYING3\n");
                 if (((mailbox*)args[0])->msg_len < active->sendQ->msg_len) {
+                     // bwprintf(COM2, "%c[2JSEND %d %d %d\n", 0x1b,active->tid,((mailbox*)args[0])->msg_len, active->sendQ->msg_len);
                     assert_ker(tds, td_pq);
                 }
                 *((mailbox*)args[0])->sender_tid = *(active->sendQ->sender_tid);
@@ -378,6 +380,7 @@ void handle (td *active, int req, int args[5],
             if ( tds[args[0]].state == STATE_RPL_BLK ) {
                 // bwprintf(COM2, "CRYING5\n");
                 if (((mailbox *)(tds[args[0]].args[1]))->rpl_len < (unsigned int)args[2]) {
+                     // bwprintf(COM2, "%c[2JREPLY %d %d %d\n", 0x1b,active->tid,((mailbox *)(tds[args[0]].args[1]))->rpl_len, (unsigned int)args[2]);
                     assert_ker(tds, td_pq);
                 }
                 memcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value, (unsigned int)args[2]);

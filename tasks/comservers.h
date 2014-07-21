@@ -1,7 +1,7 @@
 #ifndef __COM_SERVER__
 #define __COM_SERVER__
 
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 3048
 
 
 #define GETC_NOTIFIER  0x30

@@ -91,7 +91,8 @@ void outputPutStr ( char* str, int *row, int *col, char* buffer, int* index ) {
 void DebugPutStr ( char* fmt, ... ) {
     va_list va;
     char c;
-    char buffer[500] = {0}, temp[10] = {0};
+    char buffer[700] = {0};
+    char temp[20] = {0};
     int index = 0;
     char* str;
     int i;
@@ -106,20 +107,22 @@ void DebugPutStr ( char* fmt, ... ) {
                 str = va_arg( va, char* );
                 i = 0;
                 while ( str[i] != '\0' ) {
-                    *(buffer+((index)++)) = str[i++];
+                    *(buffer+(index++)) = str[i++];
                 }
                 break;
             case 'c':
                 c = va_arg( va, char );
-                *(buffer+((index)++)) = c;
+                *(buffer+(index++)) = c;
                 break;
             case 'd':
                 i = va_arg( va, int );
                 bwi2a(i, temp);
                 i = 0;
                 while ( temp[i] != '\0' ) {
-                    *(buffer+((index)++)) = temp[i++];
+                    *(buffer+(index++)) = temp[i++];
                 }
+                break;
+            default:
                 break;
         }
     }
@@ -572,22 +575,20 @@ void LocationOffsetDisplayTask() {
     int train_id = msg_struct.iValue;
     int row_offset = msg_struct.value[0];
 
-    Exit();
+    FOREVER {
+        index = 0;
+        Delay(20);
+        getTrainLocation(train_id, &sensor, &offset);
 
-    // FOREVER {
-    //     index = 0;
-    //     Delay(5);
-    //     getTrainLocation(train_id, &sensor, &offset);
+        bwi2a( (int)(offset/10), sensor_str);
+        row = TRAIN_TABLE_X + row_offset; col = OFFSET_POSITION_Y;
+        outputPutStr ( "         ", &row, &col , buffer, &index );
+        row = TRAIN_TABLE_X + row_offset; col = OFFSET_POSITION_Y;
+        outputPutStr ( sensor_str, &row, &col , buffer, &index );
 
-    //     bwi2a( (int)(offset/10), sensor_str);
-    //     row = TRAIN_TABLE_X + row_offset; col = OFFSET_POSITION_Y;
-    //     outputPutStr ( "         ", &row, &col , buffer, &index );
-    //     row = TRAIN_TABLE_X + row_offset; col = OFFSET_POSITION_Y;
-    //     outputPutStr ( sensor_str, &row, &col , buffer, &index );
-
-    //     buffer[(index)++] = 0;
-    //     putstr(COM2, buffer);
-    // }
+        buffer[(index)++] = 0;
+        putstr(COM2, buffer);
+    }
 }
 
 void LocationDisplayTask() {
@@ -789,7 +790,7 @@ void handleCommandTask() {
 
                     for (tempi = 0; tempi < prediction_len; tempi++) {
                         bwi2a(predict_result[tempi], tempstr);
-                        row = 18; col = 1;
+                        row = 39; col = 1;
                         outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     }
                     break;
@@ -846,10 +847,10 @@ void handleCommandTask() {
 
                     // if (result >= 0) {
                         bwi2a(stopping_sensor, tempstr);
-                        row = 18; col = 1;
+                        row = 39; col = 1;
                         outputPutStrLn (tempstr, &row, &col, buffer, &index );
                         bwi2a(stoppong_sensor_dist, tempstr);
-                        row = 18; col = 1;
+                        row = 39; col = 1;
                         outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     // }
                     // else {
@@ -933,7 +934,6 @@ void handleCommandTask() {
                             // outputPutStrLn (tempstr, &row, &col, buffer, &index );
                             DebugPutStr("sd", "merge: ", md.node_list[i].num);
                         }
-                        // bwprintf(COM2, "\n");
                     }
                     // for (tempi = 0; tempi < result; tempi++) {
                     //     bwi2a(sensor_route[tempi], tempstr);

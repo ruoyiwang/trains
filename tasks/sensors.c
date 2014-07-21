@@ -29,7 +29,7 @@ void SensorNotifier() {
 
     FOREVER {
         Receive( &courier_tid, (char*)&msg_struct, msglen );
-        Delay(10);
+        Delay(20);
         putc(COM1, DUMP_ALL_SENSORS);
         for ( i=0; i < 10; i++) {
             c = getc(COM1);
@@ -67,14 +67,14 @@ void SensorServer() {
     // msg shits
     char msg[10] = {0};
     char reply[10] = {0};
-    int sender_tid, msglen = 10, rpllen = 10;
+    int sender_tid, msglen = 10, rpllen = 10, cur_time;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
 
     char current_sensor_state[10] = {0};
     // the array that takes in requests
-    char requests[64][4];   // 64 of them
+    int requests[64][6];   // 64 of them
     // each tid can only call one delay at a time
     int i, j;
     for (i = 0; i < 64; i++) {
@@ -82,6 +82,8 @@ void SensorServer() {
         requests[i][1] = -1;
         requests[i][2] = -1;
         requests[i][3] = -1;
+        requests[i][4] = -1;
+        requests[i][5] = -1;
     }
     int notifier_tid = Create(1, (&SensorNotifier));
     int courier_tid = Create(2, (&SensorCourier));
@@ -96,18 +98,35 @@ void SensorServer() {
                 memcpy(current_sensor_state, msg_struct.value, msglen);
                 for (i = 0; i < 64; i++) {
                     //if element exists
-                    for (j=0 ; j< 4; j ++){
+                    // if ( requests[i][0] != -1) {
+                    //     cur_time = Time();
+                    //     if (requests[i][0] > cur_time) { // sensor timeout occured
+                    //         reply_struct.iValue = -1;
+                    //         requests[i][0] = -1;
+                    //         requests[i][1] = -1;
+                    //         requests[i][2] = -1;
+                    //         requests[i][3] = -1;
+                    //         requests[i][4] = -1;
+                    //         requests[i][5] = -1;
+                    //         Reply (i, (char *)&reply_struct, rpllen);
+                    //         continue;
+                    //     }
+                    // }
+                    for (j=1 ; j< 6; j ++){
                         if (requests[i][j] != -1 && (current_sensor_state[requests[i][j]/8] & (1 << (7 - (requests[i][j] % 8))))) {
                             reply_struct.iValue = requests[i][j];
                             requests[i][0] = -1;
                             requests[i][1] = -1;
                             requests[i][2] = -1;
                             requests[i][3] = -1;
-                            Reply (i, (char *)&reply_struct, msglen);
+                            requests[i][4] = -1;
+                            requests[i][5] = -1;
+                            Reply (i, (char *)&reply_struct, rpllen);
+                            break;
                         }
                     }
                 }
-                Reply (sender_tid, (char *)&reply_struct, msglen);
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             case SENSORS_DUMP_REQUEST:
                 memcpy(reply_struct.value, current_sensor_state, rpllen);
@@ -116,7 +135,11 @@ void SensorServer() {
                 break;
             case WAIT_REQUEST:
                 // add request to list of suspended tasks
-                memcpy(requests[sender_tid], msg_struct.value, msg_struct.iValue);
+                requests[sender_tid][0] = msg_struct.iValue;
+                for (i= 0; i < (int)msg_struct.value[0]; i ++) {
+                    requests[sender_tid][1+i] = msg_struct.value[i+1];
+                }
+                // memcpy(requests[sender_tid]+1, msg_struct.value, msg_struct.value[0]);
                 break;
             default:
                 // wtf
@@ -125,7 +148,7 @@ void SensorServer() {
     }
 }
 
-int waitForSensors( char *sensors, int len ) {
+int waitForSensors( char *sensors, int len, int timeOut ) {
     char msg[10] = {0};
     char reply[10] = {0};
     int msglen = 10;
@@ -138,14 +161,18 @@ int waitForSensors( char *sensors, int len ) {
     msg_struct.type = WAIT_REQUEST;
     reply_struct.value = reply;
 
-    msg_struct.iValue = len;
-    memcpy(msg, sensors, len);
+    msg_struct.iValue = timeOut;
+    msg[0] = (char)len;
+
+    // int i;
+    // for (i = 0; i < len; i++) {
+    //     msg[1+i] = sensors[i];
+    // }
+    memcpy(msg+1, sensors, len);
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
     if (strcmp(msg_struct.value, "FAIL") != 0) {
         // if succeded
-        // bwprintf(COM2,"%d", reply_struct.iValue);
-        // Assert();
         return reply_struct.iValue;
     }
     return -1;

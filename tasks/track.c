@@ -740,10 +740,10 @@ int pathFind(
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
 
-    // *stoppong_sensor_dist = reply_struct.iValue;
+    *stoppong_sensor_dist = reply_struct.iValue;
     *stopping_sensor = reply[0];
     sensor_path_len = reply[1];
-    memcpy(sensor_route, reply+2, sensor_path_len);
+    // memcpy(sensor_route, reply+2, sensor_path_len);
     // if (reply_struct.iValue < 0) {
     //     return -1;
     // }
