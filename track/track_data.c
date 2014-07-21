@@ -5,6 +5,11 @@
 
 void init_tracka(track_node *track) {
   memset(track, 0, TRACK_MAX*sizeof(track_node));
+  int i = 0;
+  for (i = 0; i < TRACK_MAX; i++) {
+    track[i].parent = 0;
+    track[i].index = i;
+  }
   track[0].name = "A1";
   track[0].type = NODE_SENSOR;
   track[0].num = 0;
@@ -1192,6 +1197,7 @@ void init_trackb(track_node *track) {
   int i = 0;
   for (i = 0; i < TRACK_MAX; i++) {
     track[i].parent = 0;
+    track[i].index = i;
   }
   track[0].name = "A1";
   track[0].type = NODE_SENSOR;
