@@ -87,6 +87,47 @@ void outputPutStr ( char* str, int *row, int *col, char* buffer, int* index ) {
     restoreCursorPosition(buffer, index);
 }
 
+void DebugPutStr ( char* fmt, ... ) {
+    va_list va;
+    char c;
+    char buffer[500] = {0}, temp[10] = {0};
+    int index = 0;
+    char* str;
+    int i;
+    saveCursorPosition(buffer, &index);
+    setCursor( 39, 1, buffer, &index );
+    cursorCommand ("D", buffer, &index);
+    flushLine (buffer, &index);
+    va_start(va,fmt);
+    while (c = *(fmt++)){
+        switch(c){
+            case 's':
+                str = va_arg( va, char* );
+                i = 0;
+                while ( str[i] != '\0' ) {
+                    *(buffer+((index)++)) = str[i++];
+                }
+                break;
+            case 'c':
+                c = va_arg( va, char );
+                *(buffer+((index)++)) = c;
+                break;
+            case 'd':
+                i = va_arg( va, int );
+                bwi2a(i, temp);
+                i = 0;
+                while ( temp[i] != '\0' ) {
+                    *(buffer+((index)++)) = temp[i++];
+                }
+                break;
+        }
+    }
+    va_end(va);
+    restoreCursorPosition(buffer, &index);
+    buffer[(index)++] = 0;
+    putstr(COM2, buffer);
+}
+
 int getSwCursor ( int sw, int *row, int *col ) {
     if( sw > 18 ) {
         sw -= 134;
@@ -108,11 +149,10 @@ int getSwCursor ( int sw, int *row, int *col ) {
 void setAllTrainSpeedToOne() {
     char commandstr[3];
     int i = 45;
-    for (i = 45; i < 51; i++) {
-        commandstr[0] = 1;
+    for (i = 45; i < 53; i++) {
+        commandstr[0] = 0;
         commandstr[1] = (char)i;
-        commandstr[2] = 0;
-        putstr(COM1, commandstr);
+        putstr_len(COM1, commandstr, 2);
     }
 }
 
@@ -318,9 +358,9 @@ void initInterface() {
 
     // bwprintf(COM2, "WEREWREWREW\n\n");
     flushScreen(buffer, &index);
-    int row = 12, col = 1, i=0;
+    int row = 24, col = 1, i=0;
     outputPutStr ( "OUTPUT: ", &row, &col , buffer, &index );
-    cursorCommand( "[13;18r" , buffer, &index );			//scroll section
+    cursorCommand( "[25;39r" , buffer, &index );			//scroll section
 
     row = SW_POSITION_X-1; col = 1;
     outputPutStr ( "SWITCHES: ", &row, &col , buffer, &index );
@@ -330,14 +370,18 @@ void initInterface() {
     drawSwitchesTable ( &row, &col, buffer, &index );
     row = CMD_POSITION_X; col = 1;
     outputPutStr ( "cmd>", &row, &col , buffer, &index );
-    row = NEXT_POSITION_X; col = 1;
-    outputPutStr ( "NEXT SENSOR:", &row, &col , buffer, &index );
-    row = PREV_POSITION_X; col = 1;
-    outputPutStr ( "PREV SENSOR:", &row, &col , buffer, &index );
-    row = EXPECTED_POSITION_X; col = 1;
-    outputPutStr ( "EXPECTED ARRIVAL:", &row, &col , buffer, &index );
-    row = ACTUAL_POSITION_X; col = 1;
-    outputPutStr ( "ACTUAL ARRVAL:", &row, &col , buffer, &index );
+    row = TRAIN_TABLE_X; col = 1;
+    cursorCommand ( "[33m" , buffer, &index ); // set color to yellow
+    outputPutStr ( "ID | NEXT | PREV | LOCATION | EXPECTED ARRIVAL | ACTUAL ARRIVAL ", &row, &col , buffer, &index );
+    cursorCommand ( "[37m" , buffer, &index ); // set color to yellow
+
+    // outputPutStr ( "NEXT SENSOR:", &row, &col , buffer, &index );
+    // row = PREV_POSITION_X; col = 1;
+    // outputPutStr ( "PREV SENSOR:", &row, &col , buffer, &index );
+    // row = EXPECTED_POSITION_X; col = 1;
+    // outputPutStr ( "EXPECTED ARRIVAL:", &row, &col , buffer, &index );
+    // row = ACTUAL_POSITION_X; col = 1;
+    // outputPutStr ( "ACTUAL ARRVAL:", &row, &col , buffer, &index );
 
     buffer[(index)++] = 0;
     putstr(COM2, buffer);
@@ -378,22 +422,22 @@ void clockDisplayTask() {
     int index = 0;
 
     char clockstr[10] = {0};
-    int clockMinute = 0, clockTenth = 0, clockSecond = 0, sechi, seclo;
+    // int clockMinute = 0, clockTenth = 0, clockSecond = 0, sechi, seclo;
     int currentTime = Time()+10;
     FOREVER {
         index = 0;
 
         int row = CLOCK_POSITION_X, col = CLOCK_POSITION_Y;
         DelayUntil(currentTime);
-        clockTenth++;
-        if ( clockTenth > 9 ) {
-            clockTenth = 0;
-            clockSecond++;
-        }
-        if ( clockSecond > 59 ) {
-            clockSecond = 0;
-            clockMinute++;
-        }
+        // clockTenth++;
+        // if ( clockTenth > 9 ) {
+        //     clockTenth = 0;
+        //     clockSecond++;
+        // }
+        // if ( clockSecond > 59 ) {
+        //     clockSecond = 0;
+        //     clockMinute++;
+        // }
         formClockStr(currentTime, clockstr);
         outputPutStrClear ( clockstr, &row, &col , buffer, &index );
 
@@ -458,11 +502,8 @@ void SensorsDisplayTask() {
     commandstr[0] = 0;
     commandstr[1] = 50;
 
-    // volatile unsigned int * timer_4_low;
-    // timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
-
     FOREVER {
-        Delay(10);
+        Delay(30);
         memcpy(prev_sensors_bytes, sensors_bytes, 10);
         getLatestSensors(sensors_bytes);
         for (i = 0; i<10 ; i ++){
@@ -486,64 +527,12 @@ void SensorsDisplayTask() {
                             outputPutStr ( "0", &row, &col, buffer, &index  );
                         bwi2a ( sensorNum, sensorStr );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
-
-                        // time_index = (i / 2) * 16 + sensorNum - 1;
-                        // cur_time = Time();
-                        // times[time_index] = cur_time;
-                        // if ((sensorNum == 13 || sensorNum == 14)&& ('A' + (i / 2)) == 'C') {
-                        //     putstr_len(COM1, commandstr, 2 );
-                        //     commandstr[1] = 49;
-                        //     putstr_len(COM1, commandstr, 2 );
-                        //     commandstr[1] = 50;
-                        //     bwprintf(COM2, "%d \n", Time());
-                        // }
-                        // if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
-                        //     setSwitch ( SW_CURVE, 0x8);
-                        // }
-                        // if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
-                        //     setSwitch ( SW_STRAIGHT, 17);
-                        //     setSwitch ( SW_CURVE, 13);
-                        // }
-                        // if (sensorNum == 9 && ('A' + (i / 2)) == 'B') {
-                        //     bwprintf(COM2, "%c[2J", 0x1B);
-                        //     bwprintf(COM2, "%d \n", Time());
-                        //     for (k = 0; k < 80; k++) {
-                        //         bwprintf(COM2, "%c | %d | %u\n", 'A' + k/16, 1 + k%16, times[k]);
-                        //     }
-                        //     Assert();
-                        // }
                     }
                     if ( !(i % 2) ) {
                         sensorNum = 8 - j;
                         bwi2a ( sensorNum, sensorStr );
                         outputPutStr ( "0", &row, &col, buffer, &index  );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
-
-                        // time_index = (i / 2) * 16 + sensorNum - 1;
-                        // cur_time = Time();
-                        // times[time_index] = cur_time;
-                        // if ((sensorNum == 13 || sensorNum == 14)&& ('A' + (i / 2)) == 'C') {
-                        //     putstr_len(COM1, commandstr, 2 );
-                        //     commandstr[1] = 49;
-                        //     putstr_len(COM1, commandstr, 2 );
-                        //     commandstr[1] = 50;
-                        //     bwprintf(COM2, "%d \n", Time());
-                        // }
-                        // if (sensorNum == 3 && ('A' + (i / 2)) == 'D') {
-                        //     setSwitch ( SW_CURVE, 0x8);
-                        // }
-                        // if ((sensorNum == 1 || sensorNum == 2) &&('A' + (i / 2)) == 'D') {
-                        //     setSwitch ( SW_STRAIGHT, 17);
-                        //     setSwitch ( SW_CURVE, 13);
-                        // }
-                        // if (sensorNum == 9 && ('A' + (i / 2)) == 'B') {
-                        //     bwprintf(COM2, "%c[2J", 0x1B);
-                        //     bwprintf(COM2, "%d \n", Time());
-                        //     for (k = 0; k < 80; k++) {
-                        //         bwprintf(COM2, "%c | %d | %u\n", 'A' + k/16, 1 + k%16, times[k]);
-                        //     }
-                        //     Assert();
-                        // }
                     }
                     outputPutStr ( " ", &row, &col, buffer, &index  );
                     sensorDisplayPosition = (sensorDisplayPosition + 1) % SENSORS_DISPLAY_WIDTH;
@@ -557,6 +546,43 @@ void SensorsDisplayTask() {
     }
 }
 
+void LocationOffsetDisplayTask() {
+    char buffer[200] = {0};
+    int index = 0;
+
+    char c;
+    int i,j, row, col, offset, sensor;
+    char sensor_str[20] = {0};
+
+    char msg[10] = {0}, rpl[10] = {0};
+    int msglen = 10, rpllen = 10;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = rpl;
+
+    int sender_tid;
+    Receive( &sender_tid, (char*)&msg_struct, msglen );
+    Reply (sender_tid, (char *)&reply_struct, rpllen);
+
+    int train_id = msg_struct.iValue;
+    int row_offset = msg_struct.value[0];
+
+    FOREVER {
+        index = 0;
+        Delay(5);
+        getTrainLocation(train_id, &sensor, &offset);
+
+        bwi2a( (int)(offset/10), sensor_str);
+        row = TRAIN_TABLE_X + row_offset; col = OFFSET_POSITION_Y;
+        outputPutStr ( "         ", &row, &col , buffer, &index );
+        row = TRAIN_TABLE_X + row_offset; col = OFFSET_POSITION_Y;
+        outputPutStr ( sensor_str, &row, &col , buffer, &index );
+
+        buffer[(index)++] = 0;
+        putstr(COM2, buffer);
+    }
+}
+
 void LocationDisplayTask() {
     char buffer[200] = {0};
     int index = 0;
@@ -565,32 +591,67 @@ void LocationDisplayTask() {
     int i,j, row, col;
     int train_info[10] = {-1};
     char sensor_str[20] = {0};
+    int sender_tid, offset_tid;
+
+    char msg[10] = {0}, rpl[10] = {0};
+    int msglen = 10, rpllen = 10;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = rpl;
+
+    Receive( &sender_tid, (char*)&msg_struct, msglen );
+    Reply (sender_tid, (char *)&reply_struct, rpllen);
+
+    offset_tid = Create(5, &LocationOffsetDisplayTask);
+    Send (offset_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+    int train_id = msg_struct.iValue;
+    int row_offset = msg_struct.value[0];
+
+    bwi2a( train_id, sensor_str);
+    row = TRAIN_TABLE_X + row_offset; col = 2;
+    outputPutStr ( sensor_str, &row, &col , buffer, &index );
+    buffer[(index)++] = 0;
+    putstr(COM2, buffer);
 
     FOREVER {
-        waitTrainInfo(49, train_info);
+        waitTrainInfo(train_id, train_info);
         int index = 0;
-
-        sensor_str[0] = 'A' + (train_info[0] / 16);
-        bwi2a( (train_info[0] % 16) + 1, sensor_str + 1);
-        row = PREV_POSITION_X; col = 15;
-        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
 
         sensor_str[0] = 'A' + (train_info[1] / 16);
         bwi2a( (train_info[1] % 16) + 1, sensor_str + 1);
-        row = NEXT_POSITION_X; col = 15;
+        row = TRAIN_TABLE_X + row_offset; col = NEXT_POSITION_Y;
         outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
 
-        row = EXPECTED_POSITION_X; col = 20;
+        sensor_str[0] = 'A' + (train_info[0] / 16);
+        bwi2a( (train_info[0] % 16) + 1, sensor_str + 1);
+        row = TRAIN_TABLE_X + row_offset; col = PREV_POSITION_Y;
+        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
+
+        row = TRAIN_TABLE_X + row_offset; col = EXPECTED_POSITION_Y;
         formClockStr(train_info[2], sensor_str);
         outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
 
-        row = ACTUAL_POSITION_X; col = 20;
+        row = TRAIN_TABLE_X + row_offset; col = ACTUAL_POSITION_Y;
         formClockStr(train_info[3], sensor_str);
         outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
 
         buffer[(index)++] = 0;
         putstr(COM2, buffer);
     }
+}
+
+void initTrainDisplay(int train_id, int offset) {
+    char msg[10] = {0}, rpl[10] = {0};
+    int msglen = 10, rpllen = 10;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = rpl;
+
+    int display_tid = Create (5, &LocationDisplayTask);
+    msg_struct.iValue = train_id;
+    msg_struct.value[0] = (char)offset;
+    Send (display_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 }
 
 void handleCommandTask() {
@@ -617,7 +678,6 @@ void handleCommandTask() {
     int prediction_len, result;
     char tempstr[20] = {0};
 
-    setCursor( CMD_POSITION_X, CMD_POSITION_Y, buffer, &index);
     buffer[index++] = 0;
     putstr(COM2, buffer);
 
@@ -630,6 +690,7 @@ void handleCommandTask() {
     int stoppong_sensor_dist;       // returning distance
     char sensor_route[20] = {0};    // the sensors the train's gonna
 
+    int train_display_offset = 1;
     setAllTrainSpeedToOne();
     // set all train speed to 1 before we do anything
 
@@ -646,13 +707,18 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
-    // Delay(600);
+    Delay(600);
     Create(3, (&SensorServer));
     Create(5, (&SensorsDisplayTask));
 
     Create(3, (&CommandCenterServer));
-    Create(5, (&LocationDisplayTask));
-    initTrainLocation(49, 0 );
+    // Create(5, (&LocationDisplayTask));
+    // Create(5, (&LocationOffsetDisplayTask));
+    // initTrainLocation(49, 0 );
+    index = 0;
+    setCursor( CMD_POSITION_X, CMD_POSITION_Y, buffer, &index);
+    buffer[(index)++] = 0;
+    putstr(COM2, buffer);
 
     FOREVER {
     	c = getc(COM2);
@@ -664,7 +730,7 @@ void handleCommandTask() {
             char argv[10][10];
             int argc;
             parseCommand( commandStr, &argc , argv, &command );
-            row = 18; col = 1;
+            row = 39; col = 1;
             index = 0;
 
             switch (command) {
@@ -737,6 +803,8 @@ void handleCommandTask() {
                         outputPutStr ( argv[1], &row, &col, buffer, &index );
                         outputPutStr ( argv[2], &row, &col, buffer, &index );
                         initTrainLocation(atoi(argv[0]), result );
+                        initTrainDisplay(atoi(argv[0]), train_display_offset);
+                        train_display_offset++;
                     }
                     break;
                 case CMD_TRAIN_DEST:

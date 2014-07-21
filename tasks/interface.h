@@ -7,14 +7,14 @@
 #define CLOCK_POSITION_X 1
 #define CLOCK_POSITION_Y 1
 
-#define CMD_POSITION_X 19
+#define CMD_POSITION_X 40
 #define CMD_POSITION_Y 6
 
 #define SW_POSITION_X 3
 #define SW_POSITION_Y 1
 
-#define TRACK_POSITION_X 28
-#define TRACK_POSITION_Y 1
+#define TRACK_POSITION_X 5
+#define TRACK_POSITION_Y 70
 
 #define SW_STRAIGHT 33
 #define SW_CURVE 34
@@ -25,11 +25,13 @@
 #define IDLE_POSITION_X 2
 #define IDLE_POSITION_Y 20
 
-#define NEXT_POSITION_X 23
-#define PREV_POSITION_X 22
+#define TRAIN_TABLE_X	13
+#define NEXT_POSITION_Y 6
+#define PREV_POSITION_Y 13
+#define OFFSET_POSITION_Y 20
 
-#define EXPECTED_POSITION_X 25
-#define ACTUAL_POSITION_X 26
+#define EXPECTED_POSITION_Y 31
+#define ACTUAL_POSITION_Y 50
 
 #define CMD_TRAIN           1
 #define CMD_REVERSE         2
@@ -49,6 +51,7 @@ void saveCursorPosition (char* buffer, int* index);
 void setCursor ( int row, int col, char* buffer, int* index );
 void flushLine (char* buffer, int* index);
 void flushScreen (char* buffer, int* index);
+void DebugPutStr ( char* fmt, ... );
 void cursorCommand( char * cmd, char* buffer, int* index );
 void clockDisplayTask();
 void initInterface();
