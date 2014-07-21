@@ -557,6 +557,9 @@ move_data pathFindDijkstraTrackTask(
         md.node_list[j].id = tracks[cur_node_num].index;
         md.node_list[j].num = tracks[cur_node_num].num;
         md.list_len = j+1;
+        if (move_path_len > stopping_dist * 2.5) {
+
+        }
 
         // if stopping node, return
         if (cur_node_num == stopping_node) {
@@ -607,9 +610,11 @@ move_data pathFindDijkstraTrackTask(
             // find the correct branch
             if (tracks[cur_node_num].edge[DIR_STRAIGHT].dest->index == tracks[next_node_num].index) {
                 md.node_list[j].branch_state = SW_STRAIGHT;
+                move_path_len += tracks[cur_node_num].edge[DIR_STRAIGHT].dist;
             }
             else {
                 md.node_list[j].branch_state = SW_CURVE;
+                move_path_len += tracks[cur_node_num].edge[DIR_CURVED].dist;
             }
         }
         else {
