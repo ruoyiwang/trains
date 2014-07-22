@@ -147,7 +147,7 @@ void TracksTask () {
                 // end of debugline
                 reply_struct.iValue = 1;
                 // memcpy(reply_struct.value, md, sizeof(move_data));
-                reply_struct.value = &md;
+                reply_struct.value = (char*)&md;
                 Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
                 break;
             default:
@@ -465,7 +465,7 @@ move_data pathFindDijkstraTrackTask(
             }
             v = tracks[u].reverse->index;
             if (posintlistIsInList(v, Q, TRACK_MAX)) {
-                alt = REVERSING_WEIGHT;
+                alt = distances[u] + REVERSING_WEIGHT;
                 if (alt < distances[v]) {
                     distances[v] = alt;
                     previous[v] = u;
@@ -485,7 +485,7 @@ move_data pathFindDijkstraTrackTask(
             }
             v = tracks[u].reverse->index;
             if (posintlistIsInList(v, Q, TRACK_MAX)) {
-                alt = REVERSING_WEIGHT;
+                alt = distances[u] + REVERSING_WEIGHT;
                 if (alt < distances[v]) {
                     distances[v] = alt;
                     previous[v] = u;
@@ -548,8 +548,9 @@ move_data pathFindDijkstraTrackTask(
     }
 
     // second, construct the mode up to the reverse
-    int move_path_len = 0, j = 0, cur_node_num, next_node_num;
+    int j = 0, cur_node_num, next_node_num;
     md.type = SHORT_MOVE;
+    md.total_distance = 0;
     for (i = 0; i < path_length; i++, j++) {
         cur_node_num = route[i];
         next_node_num = route[i+1];
@@ -557,18 +558,18 @@ move_data pathFindDijkstraTrackTask(
         md.node_list[j].id = tracks[cur_node_num].index;
         md.node_list[j].num = tracks[cur_node_num].num;
         md.list_len = j+1;
-        if (move_path_len > stopping_dist * 2.5) {
-
+        if (md.total_distance > stopping_dist * 2.5) {
+            md.type = LONG_MOVE;
         }
 
         // if stopping node, return
         if (cur_node_num == stopping_node) {
-            return md;
+            break;
         }
         // if sensor reverse, return
         else if (tracks[cur_node_num].type == NODE_SENSOR &&
             tracks[cur_node_num].reverse->index == tracks[next_node_num].index) {
-            return md;
+            break;
         }
         // else if merge reverse, goto next sensor
         else if (tracks[cur_node_num].type == NODE_MERGE &&
@@ -584,22 +585,26 @@ move_data pathFindDijkstraTrackTask(
                 if (tracks[cur_node_num].type == NODE_MERGE) {
                     // the one to look at next
                     cur_node_num = tracks[cur_node_num].edge[DIR_AHEAD].dest->index;
+                    md.total_distance += tracks[cur_node_num].edge[DIR_AHEAD].dist;
                 }
                 else if (tracks[cur_node_num].type == NODE_SENSOR) {
-                    return md;
+                    // break_outer_loop = 1;
+                    break;
                 }
                 else if (tracks[cur_node_num].type == NODE_BRANCH) {                    // if straight is a sensor, then go straight
                     if (tracks[cur_node_num].edge[DIR_STRAIGHT].dest->type == NODE_SENSOR) {
                         md.node_list[j].branch_state = SW_STRAIGHT;
                         cur_node_num = tracks[cur_node_num].edge[DIR_STRAIGHT].dest->index;
+                        md.total_distance += tracks[cur_node_num].edge[DIR_STRAIGHT].dist;
                     }
                     else {
                         md.node_list[j].branch_state = SW_CURVE;
                         cur_node_num = tracks[cur_node_num].edge[DIR_CURVED].dest->index;
+                        md.total_distance += tracks[cur_node_num].edge[DIR_CURVED].dist;
                     }
                 }
             }
-            return md;
+            break;
         }
 
         // else if branch + reverse, set br dir, goto next closest sensor, return
@@ -610,17 +615,54 @@ move_data pathFindDijkstraTrackTask(
             // find the correct branch
             if (tracks[cur_node_num].edge[DIR_STRAIGHT].dest->index == tracks[next_node_num].index) {
                 md.node_list[j].branch_state = SW_STRAIGHT;
-                move_path_len += tracks[cur_node_num].edge[DIR_STRAIGHT].dist;
+                md.total_distance += tracks[cur_node_num].edge[DIR_STRAIGHT].dist;
             }
             else {
                 md.node_list[j].branch_state = SW_CURVE;
-                move_path_len += tracks[cur_node_num].edge[DIR_CURVED].dist;
+                md.total_distance += tracks[cur_node_num].edge[DIR_CURVED].dist;
             }
         }
         else {
-            move_path_len += tracks[cur_node_num].edge[DIR_AHEAD].dist;
+            md.total_distance += tracks[cur_node_num].edge[DIR_AHEAD].dist;
         }
 
+        // if (break_outer_loop) {
+        //     break;
+        // }
+    }
+
+
+    if (md.type != LONG_MOVE) {
+        // just return on short move or reverse
+        return md;
+    }
+
+    // have to tell the caller where to stop
+    int cur_dist = 0;
+    // if the ending node is in unsafe_reverses, we need to make the train go train leng more
+    if (posintlistIsInList(md.node_list[md.list_len-1].id, unsafe_reverses, unsafe_reverses_list_size)) {
+        cur_dist -= TRAIN_LENGTH;
+    }
+    for (i = md.list_len-2; i > 0; i--) {   // start with the second last one
+        if (md.node_list[i].type == NODE_BRANCH) {
+            if (md.node_list[i].branch_state == SW_STRAIGHT) {
+                cur_dist += tracks[md.node_list[i].id].edge[DIR_STRAIGHT].dist;
+            }
+            else {
+                cur_dist += tracks[md.node_list[i].id].edge[DIR_CURVED].dist;
+            }
+        }
+        else {
+            // straight or merge
+            cur_dist += tracks[md.node_list[i].id].edge[DIR_AHEAD].dist;
+        }
+
+        // found
+        if (cur_dist > stopping_dist && md.node_list[i].type == NODE_SENSOR) {
+            md.stopping_sensor = md.node_list[i].num;
+            md.stopping_dist = cur_dist - stopping_dist;
+            break;
+        }
     }
 
     return md;
@@ -760,12 +802,12 @@ move_data pathFindDijkstra(
     int* stoppong_sensor_dist,  // returning distance
     char* sensor_route          // the sensors the train's gonna pass
 ) {
-    int i = 0;
-    int sensor_path_len = 0;
+    // int i = 0;
+    // int sensor_path_len = 0;
 
     // msg shits
     char msg[10] = {0};
-    char reply[182] = {0};
+    // char reply[182] = {0};
     int msglen = 10;
     int rpllen = sizeof(move_data);
     move_data md;       // this is the reply
@@ -780,7 +822,7 @@ move_data pathFindDijkstra(
     msg[1] = dest_node;
     msg_struct.iValue = stopping_dist;
     msg_struct.type = PATH_FIND_DIJKSTRA;
-    reply_struct.value = &md;
+    reply_struct.value = (char*)&md;
 
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 

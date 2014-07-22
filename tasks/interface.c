@@ -870,7 +870,7 @@ void handleCommandTask() {
                     md = pathFindDijkstra(
                         atoi(argv[0]),          // current node
                         atoi(argv[1]),          // where it wants to go
-                        1090,                     // stoping distance
+                        790,                   // stoping distance
                         &stopping_sensor,       // returning node
                         &stoppong_sensor_dist,  // returning distance
                         &sensor_route           // the sensors the train's gonna pass
@@ -889,23 +889,29 @@ void handleCommandTask() {
                     //     row = 18; col = 1;
                     //     outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     // }
+                    if (md.type == SAFE_REVERSE) {
+                        col = 1;
+                        DebugPutStr("sdsd", "SAFE_REVERSE", md.node_list[0].num, " | ", md.node_list[1].num);
+                        // outputPutStrLn ("SAFE_REVERSE", &row, &col, buffer, &index );
+                        // bwprintf(COM2, "%d|%d           \n", md.list_len, md.node_list[0].num);
+                        // bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
+                        break;
+                    }
+                    else if (md.type == UNSAFE_REVERSE) {
+                        col = 1;
+                        // outputPutStrLn ("UNSAFE_REVERSE", &row, &col, buffer, &index );
+                        DebugPutStr("sdsd", "UNSAFE_REVERSE", md.node_list[0].num, " | ", md.node_list[1].num);
+                        // bwprintf(COM2, "%d|%d           \n", md.list_len, md.node_list[0].num);
+                        // bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
+                        break;
+                    }
+                    else if (md.type == SHORT_MOVE) {
+                        DebugPutStr("sd", "SHORT_MOVE", md.total_distance);
+                    }
+                    else if (md.type == LONG_MOVE) {
+                        DebugPutStr("sdsd", "LONG_MOVE", md.stopping_sensor, " | ", md.stopping_dist);
+                    }
                     for (i = 0; i < md.list_len; i++) {
-                        if (md.type == SAFE_REVERSE) {
-                            col = 1;
-                            DebugPutStr("sdsd", "SAFE_REVERSE", md.node_list[0].num, " | ", md.node_list[1].num);
-                            // outputPutStrLn ("SAFE_REVERSE", &row, &col, buffer, &index );
-                            // bwprintf(COM2, "%d|%d           \n", md.list_len, md.node_list[0].num);
-                            // bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
-                            break;
-                        }
-                        else if (md.type == UNSAFE_REVERSE) {
-                            col = 1;
-                            // outputPutStrLn ("UNSAFE_REVERSE", &row, &col, buffer, &index );
-                            DebugPutStr("sdsd", "UNSAFE_REVERSE", md.node_list[0].num, " | ", md.node_list[1].num);
-                            // bwprintf(COM2, "%d|%d           \n", md.list_len, md.node_list[0].num);
-                            // bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
-                            break;
-                        }
                         bwprintf(COM2, "\n");
                         if (md.node_list[i].type == NODE_SENSOR) {
                             // bwi2a(md.node_list[i].num, tempstr);

@@ -12,7 +12,8 @@
 
 #define TRACK_TASK      "track task"
 
-#define REVERSING_WEIGHT    200
+#define REVERSING_WEIGHT    400
+#define TRAIN_LENGTH        300
 
 typedef enum {
     LONG_MOVE,
@@ -32,6 +33,9 @@ typedef struct move_data_t {
     move_type type;
     int list_len;
     move_node node_list[144];
+    int stopping_sensor;
+    int stopping_dist;
+    int total_distance;
 } move_data;
 
 void TracksTask ();
