@@ -45,8 +45,8 @@ void TracksTask () {
     // init the tracks
     track_node tracks[TRACK_MAX];
     // and we are using track b
-    init_tracka(tracks);
-    // init_trackb(tracks);
+    // init_tracka(tracks);
+    init_trackb(tracks);
     int cur_sensor, prediction_len = 8, landmark1, landmark2, lookup_limit;
     int stop_command_sensor, stop_command_sensor_dist;
 
@@ -101,9 +101,11 @@ void TracksTask () {
             case INIT_TRACK:
                 if (msg_struct.value[0] == 'a') {
                     init_tracka(tracks);
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
                 else {
                     init_trackb(tracks);
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
                 break;
             case PATH_FIND:

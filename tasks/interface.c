@@ -322,8 +322,8 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_SHORT_MOVE_TIME;
         return;
     }
-    else if ( strcmp (cmdstr, "ia") == 0 ){
-        *command = CMD_INIT_TRACK_A;
+    else if ( strcmp (cmdstr, "it") == 0 && *argc == 1 ){
+        *command = CMD_INIT_TRACK;
         return;
     }
     else if ( strcmp (cmdstr, "cn") == 0 ){
@@ -884,8 +884,8 @@ void handleCommandTask() {
                     stoppong_sensor_dist = -1;
 
                     memset(&md, 0, sizeof(move_data));
-                    blocked_nodes[0] = 70;
-                    int blocked_nodes_len =1;
+                    blocked_nodes[0] = 0;
+                    int blocked_nodes_len =0;
                     result = pathFindDijkstra(
                         &md,
                         atoi(argv[0]),          // current node
@@ -936,8 +936,14 @@ void handleCommandTask() {
                     Delay(atoi(argv[1]));
                     setTrainSpeed( atoi(argv[0]), 0);
                     break;
-                case CMD_INIT_TRACK_A:
-                    initTrack('a');
+                case CMD_INIT_TRACK:
+                    if (argv[0][0] == 'a') {
+                        DebugPutStr("s", "Init Track to A");
+                    }
+                    else {
+                        DebugPutStr("s", "Init Track to B");
+                    }
+                    initTrack(argv[0][0]);
                     break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;
