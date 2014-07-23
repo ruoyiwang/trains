@@ -15,14 +15,23 @@
 void TracksTask () {
     RegisterAs(TRACK_TASK);
 
-    // msg shits
-    char msg[10] = {0};
+    // pathfind shits
+    volatile path_find_requirements pfr;
+
+    char* msg;
+    msg = &pfr;
+    // so msg and pft share the same address space
+    // holy shit this is ugly =__=
+
+    // more msg shits
     char predict_result[10] = {0};
     char reply[182] = {0};
     char path[80] = {0};
-    int sender_tid, msglen = 10, rpllen = 10, path_len = 0;
+    int sender_tid, rpllen = 10, path_len = 0;
+    int msglen = sizeof(path_find_requirements);
+
     message msg_struct, reply_struct;
-    msg_struct.value = msg;
+    msg_struct.value = (char*)&pfr;
     reply_struct.value = reply;
     char commandstr[10] = {0};
     int i = 0;
@@ -40,6 +49,8 @@ void TracksTask () {
     init_trackb(tracks);
     int cur_sensor, prediction_len = 8, landmark1, landmark2, lookup_limit;
     int stop_command_sensor, stop_command_sensor_dist;
+
+    // move data from path find
 
     FOREVER {
         rpllen = 10;
@@ -114,10 +125,12 @@ void TracksTask () {
                 move_data md = pathFindDijkstraTrackTask(
                     tracks,     // the initialized array of tracks
                     &switch_status,
-                    landmark1,         // 0 based
-                    landmark2,
-                    msg_struct.iValue,      // stopping distance
-                    &path
+                    pfr.src,         // 0 based
+                    pfr.src_node_offfset,
+                    pfr.dest,
+                    pfr.stopping_dist,      // stopping distance
+                    pfr.blocked_nodes,
+                    pfr.blocked_nodes_len
                 );
                 // debug line
                 // for (i = 0; i < md.list_len; i++) {
@@ -385,13 +398,15 @@ int pathFindTrackTask(
 }
 
 // return succss:path len, fail:-1
-move_data pathFindDijkstraTrackTask(
+struct move_data_t pathFindDijkstraTrackTask(
     track_node *tracks,     // the initialized array of tracks
     unsigned int* switch_status,
     int cur_sensor,         // 0 based
+    int src_node_offfset,
     int stopping_node,
     int stopping_dist,
-    char* route
+    int blocked_nodes[],         // the landmarks the train cannot use
+    int blocked_nodes_len
 ) {
     int i = 0, unsafe_reverses_list_size = 10;
     int unsafe_reverses[10];
@@ -407,6 +422,8 @@ move_data pathFindDijkstraTrackTask(
     unsafe_reverses[i++] = 74;     // E11
 
     int distances[TRACK_MAX] = {0};
+    int route[TRACK_MAX] = {0};
+
     int previous[TRACK_MAX];
     int Q[TRACK_MAX];
     posintlistInit(Q, TRACK_MAX);
@@ -419,7 +436,7 @@ move_data pathFindDijkstraTrackTask(
         Q[i] = i;   // adding the item to Q
     }
 
-    int u, alt, min_dist, min_u, v;
+    int u, alt, min_dist, min_u, v, found_path = 0;
     // main loop
     while (!posintlistIsEmpty(Q, TRACK_MAX)) {
         // u := vertex in Q with min dist[u]
@@ -437,7 +454,17 @@ move_data pathFindDijkstraTrackTask(
 
         // remove u from Q
         posintlistErase(u, Q, TRACK_MAX);
-        if (u == stopping_node) {
+
+        if (posintlistIsInList(u, blocked_nodes, blocked_nodes_len) &&
+            u == stopping_node) {
+            break;
+        }
+        else if (posintlistIsInList(u, blocked_nodes, blocked_nodes_len)) {
+            // we avoid the items that are not available
+            continue;
+        }
+        else if (u == stopping_node) {
+            found_path = 1;
             break;
         }
 
@@ -495,6 +522,15 @@ move_data pathFindDijkstraTrackTask(
         }
     }
 
+    move_data md;
+    md.total_distance = 0;
+
+    if (!found_path) {
+        md.type = PATH_NOT_FOUND;
+        return md;
+    }
+
+
     // make Dijkstra Path
     // we should able to back trace (stopping node)
     // first find pathlength
@@ -517,7 +553,7 @@ move_data pathFindDijkstraTrackTask(
     // including the ending node
     path_length = path_length+1;
 
-    move_data md;       // this is the first move the train needs to perform
+    // this is the first move the train needs to perform
     // go through the list of nodes, identify shits and return them.
     // first identify if the first move is a reverse
     track_node first_node = tracks[(int)route[0]];
@@ -536,6 +572,7 @@ move_data pathFindDijkstraTrackTask(
         md.node_list[1].id = second_node.index;
         md.node_list[1].num = second_node.num;
         md.list_len = 2;
+        md.total_distance = 2;
 
         if (posintlistIsInList(first_node.index, unsafe_reverses, unsafe_reverses_list_size)) {
             // if unsafe, command center needs to handle it by shifting it train's len
@@ -550,8 +587,8 @@ move_data pathFindDijkstraTrackTask(
 
     // second, construct the mode up to the reverse
     int j = 0, cur_node_num, next_node_num;
+    md.total_distance = 0 - src_node_offfset;
     md.type = SHORT_MOVE;
-    md.total_distance = 0;
     for (i = 0; i < path_length; i++, j++) {
         cur_node_num = route[i];
         next_node_num = route[i+1];
@@ -627,9 +664,6 @@ move_data pathFindDijkstraTrackTask(
             md.total_distance += tracks[cur_node_num].edge[DIR_AHEAD].dist;
         }
 
-        // if (break_outer_loop) {
-        //     break;
-        // }
     }
 
 
@@ -639,7 +673,7 @@ move_data pathFindDijkstraTrackTask(
     }
 
     // have to tell the caller where to stop
-    int cur_dist = 0;
+    int cur_dist = src_node_offfset;
     // if the ending node is in unsafe_reverses, we need to make the train go train leng more
     if (posintlistIsInList(md.node_list[md.list_len-1].id, unsafe_reverses, unsafe_reverses_list_size)) {
         cur_dist -= TRAIN_LENGTH;
@@ -795,38 +829,50 @@ int pathFind(
 }
 
 // expecte sensor_route to be as long as 80 char
-move_data pathFindDijkstra(
+int pathFindDijkstra(
+    move_data* md,
     int cur_sensor,             // current node
+    int src_node_offfset,
     int dest_node,              // where it wants to go
     int stopping_dist,          // stoping distance
-    int* stopping_sensor,       // returning node
-    int* stoppong_sensor_dist,  // returning distance
-    char* sensor_route          // the sensors the train's gonna pass
+    int blocked_nodes[TRACK_MAX],         // the landmarks the train cannot use
+    int blocked_nodes_len
 ) {
-    // int i = 0;
+    int i = 0;
     // int sensor_path_len = 0;
 
-    // msg shits
-    char msg[10] = {0};
     // char reply[182] = {0};
-    int msglen = 10;
+    int msglen = sizeof(path_find_requirements);
     int rpllen = sizeof(move_data);
-    move_data md;       // this is the reply
 
     static int receiver_tid = -1;
     if (receiver_tid < 0) {
         receiver_tid = WhoIs(TRACK_TASK);
     }
     message msg_struct, reply_struct;
-    msg_struct.value = msg;
-    msg[0] = cur_sensor;
-    msg[1] = dest_node;
+
+    path_find_requirements pfr;
+    pfr.src = cur_sensor;
+    pfr.dest = dest_node;
+    pfr.stopping_dist = stopping_dist;
+    pfr.src_node_offfset = src_node_offfset;
+    pfr.blocked_nodes_len = blocked_nodes_len;
+    // apparently I can't assign an int array to an int array, so deep cpy it is
+    for (i = 0; i < blocked_nodes_len; i++) {
+        pfr.blocked_nodes[i] = blocked_nodes[i];
+    }
+    for (i = blocked_nodes_len; i < TRACK_MAX; i++) {
+        pfr.blocked_nodes[i] = -1;
+    }
+
+    msg_struct.value = (char*)&pfr;
+
     msg_struct.iValue = stopping_dist;
     msg_struct.type = PATH_FIND_DIJKSTRA;
-    reply_struct.value = (char*)&md;
+    reply_struct.value = (char*)md;
 
+    // // bwprintf(COM2, "\nHITTTTTTTTTTTTTTTTTTTTT\n");
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
-
 
     // *stoppong_sensor_dist = reply_struct.iValue;
     // *stopping_sensor = reply_struct.value[0];
@@ -847,6 +893,7 @@ move_data pathFindDijkstra(
     //         break;
     //     }
     //     bwprintf(COM2, "\n");
+    //     bwprintf(COM2, "%d\n", md.type);
     //     if (md.node_list[i].type == NODE_SENSOR) {
     //         bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[i].num);
     //     }
@@ -859,7 +906,10 @@ move_data pathFindDijkstra(
     //     bwprintf(COM2, "\n");
     // }
     // end of debugline
-    return md;
+    if (md->type == PATH_NOT_FOUND) {
+        return -1;
+    }
+    return 1;
 
 }
 

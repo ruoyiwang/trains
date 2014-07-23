@@ -304,7 +304,7 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_FIND_DISTANCE;
         return;
     }
-    else if ( strcmp (cmdstr, "di") == 0 && *argc == 2 ){
+    else if ( strcmp (cmdstr, "di") == 0 && *argc == 3 ){
         *command = CMD_PF_DIJKSTRA;
         return;
     }
@@ -698,6 +698,7 @@ void handleCommandTask() {
     int stopping_sensor;            // returning node
     int stoppong_sensor_dist;       // returning distance
     char sensor_route[180] = {0};    // the sensors the train's gonna
+    int blocked_nodes[TRACK_MAX] = {0};
 
     int train_display_offset = 1;
     setAllTrainSpeedToOne();
@@ -729,16 +730,17 @@ void handleCommandTask() {
     // Create(5, (&LocationOffsetDisplayTask));
     // initTrainLocation(49, 0 );
 
+    move_data md;
+
     FOREVER {
-    	c = getc(COM2);
-    	if (c == '\r') {
-    		commandStr[command_str_index++] = 0;
-    		command_str_index = 0;
+        c = getc(COM2);
+        if (c == '\r') {
+            commandStr[command_str_index++] = 0;
+            command_str_index = 0;
 
             int command = -1;
             char argv[10][10];
             int argc;
-            move_data md;
             parseCommand( commandStr, &argc , argv, &command );
             row = 39; col = 1;
             index = 0;
@@ -868,50 +870,41 @@ void handleCommandTask() {
                 case CMD_PF_DIJKSTRA:
                     stopping_sensor = -1;
                     stoppong_sensor_dist = -1;
-                    md = pathFindDijkstra(
+
+                    memset(&md, 0, sizeof(move_data));
+                    blocked_nodes[0] = 70;
+                    int blocked_nodes_len =1;
+                    result = pathFindDijkstra(
+                        &md,
                         atoi(argv[0]),          // current node
+                        atoi(argv[2]),          // offset
                         atoi(argv[1]),          // where it wants to go
                         790,                   // stoping distance
-                        &stopping_sensor,       // returning node
-                        &stoppong_sensor_dist,  // returning distance
-                        &sensor_route           // the sensors the train's gonna pass
+                        blocked_nodes,          // the sensors the train's gonna pass
+                        blocked_nodes_len
                     );
 
-                    // if (result >= 0) {
-                        // bwi2a(stopping_sensor, tempstr);
-                        // row = 18; col = 1;
-                        // outputPutStrLn (tempstr, &row, &col, buffer, &index );
-                        // bwi2a(stoppong_sensor_dist, tempstr);
-                        // row = 18; col = 1;
-                        // outputPutStrLn (tempstr, &row, &col, buffer, &index );
-                    // }
-                    // else {
-                    //     bwi2a(123456, tempstr);
-                    //     row = 18; col = 1;
-                    //     outputPutStrLn (tempstr, &row, &col, buffer, &index );
-                    // }
                     if (md.type == SAFE_REVERSE) {
                         col = 1;
-                        DebugPutStr("sdsd", "SAFE_REVERSE", md.node_list[0].num, " | ", md.node_list[1].num);
-                        // outputPutStrLn ("SAFE_REVERSE", &row, &col, buffer, &index );
-                        // bwprintf(COM2, "%d|%d           \n", md.list_len, md.node_list[0].num);
-                        // bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
+                        DebugPutStr("sdsd", "SAFE_REVERSE ", md.node_list[0].num, " | ", md.node_list[1].num);
                         break;
                     }
                     else if (md.type == UNSAFE_REVERSE) {
                         col = 1;
-                        // outputPutStrLn ("UNSAFE_REVERSE", &row, &col, buffer, &index );
-                        DebugPutStr("sdsd", "UNSAFE_REVERSE", md.node_list[0].num, " | ", md.node_list[1].num);
-                        // bwprintf(COM2, "%d|%d           \n", md.list_len, md.node_list[0].num);
-                        // bwprintf(COM2, "%d|%d           ", md.list_len, md.node_list[1].num);
+                        DebugPutStr("sdsd", "UNSAFE_REVERSE ", md.node_list[0].num, " | ", md.node_list[1].num);
                         break;
                     }
                     else if (md.type == SHORT_MOVE) {
-                        DebugPutStr("sd", "SHORT_MOVE", md.total_distance);
+                        DebugPutStr("sd", "SHORT_MOVE ", md.total_distance);
                     }
                     else if (md.type == LONG_MOVE) {
-                        DebugPutStr("sdsd", "LONG_MOVE", md.stopping_sensor, " | ", md.stopping_dist);
+                        DebugPutStr("sdsd", "LONG_MOVE ", md.stopping_sensor, " | ", md.stopping_dist);
                     }
+                    else if (md.type == PATH_NOT_FOUND) {
+                        DebugPutStr("s", "PATH_NOT_FOUND");
+                        break;
+                    }
+
                     for (i = 0; i < md.list_len; i++) {
                         if (md.node_list[i].type == NODE_SENSOR) {
                             DebugPutStr("sd", "sensor: ", md.node_list[i].num);
@@ -923,11 +916,7 @@ void handleCommandTask() {
                             DebugPutStr("sd", "merge: ", md.node_list[i].num);
                         }
                     }
-                    // for (tempi = 0; tempi < result; tempi++) {
-                    //     bwi2a(sensor_route[tempi], tempstr);
-                    //     row = 18; col = 1;
-                    //     outputPutStrLn (tempstr, &row, &col, buffer, &index );
-                    // }
+                    DebugPutStr("sd", "list_len: ", md.list_len);
                     break;
                 case CMD_SHORT_MOVE_TIME:
                     // sm <train num> <time>
