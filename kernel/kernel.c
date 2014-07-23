@@ -248,7 +248,7 @@ void handle (td *active, int req, int args[5],
                     event_blocked_tds[EVENT_CLOCK] = 0;
                 }
                 else {
-                    interrupt_queue[EVENT_CLOCK] = 1;
+                    interrupt_queue[EVENT_CLOCK]=1;
                 }
             }
             if (*VIC2Status & (1 << 20)) {
@@ -272,6 +272,7 @@ void handle (td *active, int req, int args[5],
                     if (event_blocked_tds[EVENT_COM1_TRANSMIT]) {
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM1_TRANSMIT])->tid);
                         event_blocked_tds[EVENT_COM1_TRANSMIT] = 0;
+                        interrupt_queue[EVENT_COM1_TRANSMIT] = 0;
                     }
                     else {
                         interrupt_queue[EVENT_COM1_TRANSMIT] = 1;
@@ -283,9 +284,10 @@ void handle (td *active, int req, int args[5],
                         ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->ret = *uart1_data;
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->tid);
                         event_blocked_tds[EVENT_COM1_RECEIVE] = 0;
+                        interrupt_queue[EVENT_COM1_RECEIVE] = 0;
                     }
                     else {
-                        interrupt_queue[EVENT_COM1_TRANSMIT] = *uart1_data;
+                        interrupt_queue[EVENT_COM1_RECEIVE]++;
                     }
                 }
             }
@@ -296,9 +298,10 @@ void handle (td *active, int req, int args[5],
                         *uart2_ctrl = * uart2_ctrl & ~TIEN_MASK;
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM2_TRANSMIT])->tid);
                         event_blocked_tds[EVENT_COM2_TRANSMIT] = 0;
+                        interrupt_queue[EVENT_COM2_TRANSMIT] = 0;
                     }
                     else {
-                        interrupt_queue[EVENT_COM2_TRANSMIT] = 1;
+                        interrupt_queue[EVENT_COM2_TRANSMIT]=1;
                     }
                 }
                 if (*uart2_intr & RIS_MASK ){
@@ -306,9 +309,10 @@ void handle (td *active, int req, int args[5],
                         ((td *) event_blocked_tds[EVENT_COM2_RECEIVE])->ret = *uart2_data;
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM2_RECEIVE])->tid);
                         event_blocked_tds[EVENT_COM2_RECEIVE] = 0;
+                        interrupt_queue[EVENT_COM2_RECEIVE] = 0;
                     }
                     else {
-                        interrupt_queue[EVENT_COM2_RECEIVE] = *uart2_data;
+                        interrupt_queue[EVENT_COM2_RECEIVE]++;
                     }
                 }
             }
@@ -328,21 +332,21 @@ void handle (td *active, int req, int args[5],
             active->state = STATE_ZOMBIE;
             break;
         case 9:     // wait
-            if (args[0] == EVENT_CLOCK && interrupt_queue[EVENT_CLOCK]) {
+            if (args[0] == EVENT_CLOCK && interrupt_queue[EVENT_CLOCK] > 0) {
                 interrupt_queue[EVENT_CLOCK] = 0;
             }
-            else if (args[0] == EVENT_COM2_RECEIVE && interrupt_queue[EVENT_COM2_RECEIVE]) {
-                active->ret = interrupt_queue[EVENT_COM2_RECEIVE];
-                interrupt_queue[EVENT_COM2_RECEIVE] = 0;
+            else if (args[0] == EVENT_COM2_RECEIVE && interrupt_queue[EVENT_COM2_RECEIVE] > 0) {
+                active->ret = 0;
+                interrupt_queue[EVENT_COM2_RECEIVE]--;
             }
-            else if (args[0] == EVENT_COM2_TRANSMIT && interrupt_queue[EVENT_COM2_TRANSMIT]) {
+            else if (args[0] == EVENT_COM2_TRANSMIT && interrupt_queue[EVENT_COM2_TRANSMIT] > 0) {
                 interrupt_queue[EVENT_COM2_TRANSMIT] = 0;
             }
-            else if (args[0] == EVENT_COM1_RECEIVE && interrupt_queue[EVENT_COM1_RECEIVE]) {
-                active->ret = interrupt_queue[EVENT_COM1_RECEIVE];
-                interrupt_queue[EVENT_COM1_RECEIVE] = 0;
+            else if (args[0] == EVENT_COM1_RECEIVE && interrupt_queue[EVENT_COM1_RECEIVE] > 0) {
+                active->ret = 0;
+                interrupt_queue[EVENT_COM1_RECEIVE]--;
             }
-            else if (args[0] == EVENT_COM1_TRANSMIT && interrupt_queue[EVENT_COM1_TRANSMIT]) {
+            else if (args[0] == EVENT_COM1_TRANSMIT && interrupt_queue[EVENT_COM1_TRANSMIT] > 0) {
                 interrupt_queue[EVENT_COM1_TRANSMIT] = 0;
             }
             else {

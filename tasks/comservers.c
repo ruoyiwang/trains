@@ -19,6 +19,7 @@ void Com2PutServerNotifier() {
     int * uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
 
     FOREVER {
+        msglen = 2;
         AwaitEvent( EVENT_COM2_TRANSMIT );
         msg[0] = (char) data;
         // send evt to data
@@ -42,6 +43,7 @@ void Com1PutServerNotifier() {
     int * uart1_data = (int *)( UART1_BASE + UART_DATA_OFFSET );
 
     FOREVER {
+        msglen = 2;
         AwaitEvent( EVENT_COM1_TRANSMIT );
         msg[0] = (char) data;
         // send evt to data
@@ -99,6 +101,7 @@ void PutServer() {
     }
 
     FOREVER {
+        msglen = 1010, rpllen = 2;
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch(msg_struct.type) {
             case PUTC_REQUEST:
@@ -288,6 +291,7 @@ void GetServer() {
     timeout_notifier_tid = Create(1, (&GetTimeoutNotifier));
 
     FOREVER {
+        msglen = 2, rpllen = 2;
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch(msg_struct.type) {
             case GETC_NOTIFIER:
@@ -368,23 +372,22 @@ void putc(int COM, char c) {
     reply_struct.iValue = 0;
     msg[0] = c;
 
-    switch (COM){
-        case COM1:
-            if (com1_receiver_tid < 0) {
-                com1_receiver_tid = WhoIs(COM1_PUT_SERVER);
-            }
-            receiver_tid = com1_receiver_tid;
-            break;
-        case COM2:
-            if (com2_receiver_tid < 0) {
-                com2_receiver_tid = WhoIs(COM2_PUT_SERVER);
-            }
-            receiver_tid = com2_receiver_tid;
-            break;
-        default:
-            bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putc %d", COM);
-            Assert();
-            return;
+    if (COM == COM1) {
+        if (com1_receiver_tid < 0) {
+            com1_receiver_tid = WhoIs(COM1_PUT_SERVER);
+        }
+        receiver_tid = com1_receiver_tid;
+    }
+    else if (COM == COM2) {
+        if (com2_receiver_tid < 0) {
+            com2_receiver_tid = WhoIs(COM2_PUT_SERVER);
+        }
+        receiver_tid = com2_receiver_tid;
+    }
+    else {
+        bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putc %d", COM);
+        Assert();
+        return;
     }
 
     msg_struct.type = PUTC_REQUEST;
@@ -407,23 +410,22 @@ void putstr(int COM, char* str ) {
     // memcpy(msg, str, msglen);
     msg_struct.iValue = str;
 
-    switch (COM){
-        case COM1:
-            if (com1_receiver_tid < 0) {
-                com1_receiver_tid = WhoIs(COM1_PUT_SERVER);
-            }
-            receiver_tid = com1_receiver_tid;
-            break;
-        case COM2:
-            if (com2_receiver_tid < 0) {
-                com2_receiver_tid = WhoIs(COM2_PUT_SERVER);
-            }
-            receiver_tid = com2_receiver_tid;
-            break;
-        default:
-            bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putstr %d", COM);
-            Assert();
-            return;
+    if (COM == COM1) {
+        if (com1_receiver_tid < 0) {
+            com1_receiver_tid = WhoIs(COM1_PUT_SERVER);
+        }
+        receiver_tid = com1_receiver_tid;
+    }
+    else if (COM == COM2) {
+        if (com2_receiver_tid < 0) {
+            com2_receiver_tid = WhoIs(COM2_PUT_SERVER);
+        }
+        receiver_tid = com2_receiver_tid;
+    }
+    else {
+        bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putstr %d", COM);
+        // Assert();
+        return;
     }
     msg_struct.type = PUTSTR_REQUEST;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
@@ -444,23 +446,22 @@ void putstr_len(int COM, char* str, int msglen ) {
     reply_struct.iValue = 0;
     memcpy(msg, str, msglen);
 
-    switch (COM){
-        case COM1:
-            if (com1_receiver_tid < 0) {
-                com1_receiver_tid = WhoIs(COM1_PUT_SERVER);
-            }
-            receiver_tid = com1_receiver_tid;
-            break;
-        case COM2:
-            if (com2_receiver_tid < 0) {
-                com2_receiver_tid = WhoIs(COM2_PUT_SERVER);
-            }
-            receiver_tid = com2_receiver_tid;
-            break;
-        default:
-            bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putstr_len %d", COM);
-            Assert();
-            return;
+    if (COM == COM1) {
+        if (com1_receiver_tid < 0) {
+            com1_receiver_tid = WhoIs(COM1_PUT_SERVER);
+        }
+        receiver_tid = com1_receiver_tid;
+    }
+    else if (COM == COM2) {
+        if (com2_receiver_tid < 0) {
+            com2_receiver_tid = WhoIs(COM2_PUT_SERVER);
+        }
+        receiver_tid = com2_receiver_tid;
+    }
+    else {
+        bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putstr_len %d", COM);
+        // Assert();
+        return;
     }
     msg_struct.type = PUTSTR_LEN_REQUEST;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
@@ -480,21 +481,22 @@ char getc(int COM) {
     reply_struct.iValue = 0;
     msg_struct.type = GETC_REQUEST;
 
-    switch (COM){
-        case COM1:
-            if (com1_receiver_tid < 0) {
-                com1_receiver_tid = WhoIs(COM1_GET_SERVER);
-            }
-            receiver_tid = com1_receiver_tid;
-            break;
-        case COM2:
-            if (com2_receiver_tid < 0) {
-                com2_receiver_tid = WhoIs(COM2_GET_SERVER);
-            }
-            receiver_tid = com2_receiver_tid;
-            break;
-        default:
-            return 0;
+    if (COM == COM1) {
+        if (com1_receiver_tid < 0) {
+            com1_receiver_tid = WhoIs(COM1_GET_SERVER);
+        }
+        receiver_tid = com1_receiver_tid;
+    }
+    else if (COM == COM2) {
+        if (com2_receiver_tid < 0) {
+            com2_receiver_tid = WhoIs(COM2_GET_SERVER);
+        }
+        receiver_tid = com2_receiver_tid;
+    }
+    else {
+        bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll getc %d", COM);
+        // Assert();
+        return 0;
     }
 
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
@@ -513,22 +515,24 @@ char getc_timeout(int COM, int timeout, int* timedout) {
     reply_struct.iValue = 0;
     msg_struct.type = GETC_TIMEOUT_REQUEST;
 
-    switch (COM){
-        case COM1:
-            if (com1_receiver_tid < 0) {
-                com1_receiver_tid = WhoIs(COM1_GET_SERVER);
-            }
-            receiver_tid = com1_receiver_tid;
-            break;
-        case COM2:
-            if (com2_receiver_tid < 0) {
-                com2_receiver_tid = WhoIs(COM2_GET_SERVER);
-            }
-            receiver_tid = com2_receiver_tid;
-            break;
-        default:
-            return 0;
+    if (COM == COM1) {
+        if (com1_receiver_tid < 0) {
+            com1_receiver_tid = WhoIs(COM1_GET_SERVER);
+        }
+        receiver_tid = com1_receiver_tid;
     }
+    else if (COM == COM2) {
+        if (com2_receiver_tid < 0) {
+            com2_receiver_tid = WhoIs(COM2_GET_SERVER);
+        }
+        receiver_tid = com2_receiver_tid;
+    }
+    else {
+        bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll getc_timeout %d", COM);
+        // Assert();
+        return 0;
+    }
+
     msg_struct.iValue = timeout;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 

@@ -23,6 +23,7 @@ void CommandCenterNotifier() {
     int receiver_tid, msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
+    reply_struct.type = COMMAND_CENTER_NOTIFIER;
     reply_struct.value = reply;
 
     Receive( &courier_tid, (char*)&msg_struct, msglen );
@@ -31,7 +32,6 @@ void CommandCenterNotifier() {
     FOREVER {
         Receive( &courier_tid, (char*)&msg_struct, 10 );
         reply_struct.iValue = waitForSensors( msg_struct.value, 4, msg_struct.iValue);
-        reply_struct.type = COMMAND_CENTER_NOTIFIER;
         Reply (courier_tid, (char *)&reply_struct, rpllen);
     }
 }
@@ -241,7 +241,10 @@ void CommandCenterServer() {
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i][TRAIN_INFO_STOPPING_NOTIFIER] == sender_tid) {
                         DebugPutStr("s", "DEBUG: Train Stopped!");
-                        train_info[i][TRAIN_INFO_SENSOR_OFFSET] = train_info[i][TRAIN_INFO_STOPPING_OFFSET];
+                        if (train_info[i][TRAIN_INFO_SENSOR] == train_info[i][TRAIN_INFO_STOPPING_SENSOR]){
+                            train_info[i][TRAIN_INFO_SENSOR_OFFSET] = train_info[i][TRAIN_INFO_STOPPING_OFFSET];
+                        }
+
                         train_info[i][TRAIN_INFO_STOPPED] = 1;
                         train_info[i][TRAIN_INFO_STOPPING_SENSOR] = -1;
                         train_info[i][TRAIN_INFO_STOPPING_OFFSET] = 0;
@@ -279,6 +282,10 @@ void CommandCenterServer() {
                                 train_info[i][TRAIN_INFO_SENSOR_OFFSET] = train_info[i][TRAIN_INFO_STOPPING_OFFSET];
                                 break;
                             }
+                        }
+                        // train was just initialized
+                        else if (train_info[i][TRAIN_INFO_STOPPED]){
+                            train_info[i][TRAIN_INFO_SENSOR_OFFSET] = 0;
                         }
                         else {
                             // if the train is moving, calculate the offset based on speed and time
@@ -347,7 +354,6 @@ void CommandCenterServer() {
                 break;
             default:
                 // bwprintf(COM2, "wtf %d\n", msg_struct.type);
-                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMMANDCENTER %d", msg_struct.type);
                 Assert();
                 break;
         }
@@ -372,17 +378,14 @@ void serverSetStopping (int* train_info, int* train_speed, int sensor, int offse
     int blocked_nodes[20];
     // update the train info
     train_info[TRAIN_INFO_STOPPING_NOTIFIER] = notifier_tid;
-    train_info[TRAIN_INFO_STOPPING_SENSOR] = sensor;
-    train_info[TRAIN_INFO_STOPPING_OFFSET] = offset;
-    train_info[TRAIN_INFO_STOPPED] = 0;
     train_info[TRAIN_INFO_TIMEOUT] = 300;
 
-    DebugPutStr("s", "DEBUG: routing to ", sensor);
+    DebugPutStr("sdsdsd", "DEBUG: routing from ", train_info[TRAIN_INFO_SENSOR], ":", train_info[TRAIN_INFO_SENSOR_OFFSET], " to ", sensor);
     // find path which will also set the switches
     pathFindDijkstra(
         &md,
         train_info[TRAIN_INFO_SENSOR],          // current node
-        0,                      // offset
+        train_info[TRAIN_INFO_SENSOR_OFFSET],                      // offset
         sensor,                 // where it wants to go
         790,                    // stoping distance
         blocked_nodes,          // the nodes the trains can't use
@@ -392,7 +395,13 @@ void serverSetStopping (int* train_info, int* train_speed, int sensor, int offse
     stopping_sensor_dist = md.stopping_dist;
 
     int i;
+    train_info[TRAIN_INFO_STOPPED] = 0;
+    train_info[TRAIN_INFO_STOPPING_SENSOR] = sensor;
+    train_info[TRAIN_INFO_STOPPING_OFFSET] = offset;
     train_info[TRAIN_INFO_STOPPING_SENSOR] = md.node_list[md.list_len-1].num;
+    if (md.type == UNSAFE_REVERSE) {
+        train_info[TRAIN_INFO_STOPPING_OFFSET] = 30;
+    }
     for (i = 0; i < md.list_len; i++) {
         if (md.node_list[i].type == NODE_BRANCH) {
             setSwitch(md.node_list[i].branch_state, md.node_list[i].num);

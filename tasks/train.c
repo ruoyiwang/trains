@@ -39,6 +39,7 @@ void TrainTask () {
     train_id = msg_struct.iValue;
 
     FOREVER {
+        rpllen = 2;
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch (msg_struct.type) {
             case TRAIN_REVERSE:

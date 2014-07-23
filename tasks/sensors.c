@@ -29,10 +29,8 @@ void SensorNotifier() {
 
     FOREVER {
         Receive( &courier_tid, (char*)&msg_struct, msglen );
-        Delay(5);
         putc(COM1, DUMP_ALL_SENSORS);
         for ( i=0; i < 10; i++) {
-            Delay(2);
             c = getc(COM1);
             sensors_bytes[i] = c;
         }
