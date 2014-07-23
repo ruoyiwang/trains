@@ -12,7 +12,6 @@ void Com2PutServerNotifier() {
     int receiver_tid, msglen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
-    msg_struct.type = PUTC_NOTIFIER;
     reply_struct.value = reply;
     receiver_tid = WhoIs(COM2_PUT_SERVER);
     int data;
@@ -23,6 +22,7 @@ void Com2PutServerNotifier() {
         AwaitEvent( EVENT_COM2_TRANSMIT );
         msg[0] = (char) data;
         // send evt to data
+        msg_struct.type = PUTC_NOTIFIER;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
         *uart2_data = (char) reply_struct.value[0];
     }
@@ -35,7 +35,6 @@ void Com1PutServerNotifier() {
     int receiver_tid, msglen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
-    msg_struct.type = PUTC_NOTIFIER;
     reply_struct.value = reply;
     receiver_tid = WhoIs(COM1_PUT_SERVER);
     int data;
@@ -46,6 +45,7 @@ void Com1PutServerNotifier() {
         AwaitEvent( EVENT_COM1_TRANSMIT );
         msg[0] = (char) data;
         // send evt to data
+        msg_struct.type = PUTC_NOTIFIER;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
         *uart1_data = (char) reply_struct.value[0];
         // Delay(10);
@@ -93,6 +93,8 @@ void PutServer() {
             Create(1, (&Com2PutServerNotifier));
             break;
         default:
+            bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMSERVEREXIT %d", msg_struct.type);
+            Assert();
             Exit();
     }
 
@@ -174,6 +176,8 @@ void PutServer() {
                 break;
             default:
                 // shit
+                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMPUTSERVER %d", msg_struct.type);
+                Assert();
                 break;
         }
     }
@@ -186,7 +190,6 @@ void Com1GetServerNotifier() {
     int receiver_tid, msglen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
-    msg_struct.type = GETC_NOTIFIER;
     reply_struct.value = reply;
     receiver_tid = WhoIs(COM1_GET_SERVER);
     char data;
@@ -195,6 +198,7 @@ void Com1GetServerNotifier() {
         data =(char) AwaitEvent( EVENT_COM1_RECEIVE );
         msg[0] = (char) data;
         // send evt to data
+        msg_struct.type = GETC_NOTIFIER;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
     }
 }
@@ -206,7 +210,6 @@ void Com2GetServerNotifier() {
     int receiver_tid, msglen = 2;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
-    msg_struct.type = GETC_NOTIFIER;
     reply_struct.value = reply;
     receiver_tid = WhoIs(COM2_GET_SERVER);
     char data;
@@ -215,6 +218,26 @@ void Com2GetServerNotifier() {
         data =(char) AwaitEvent( EVENT_COM2_RECEIVE );
         msg[0] = (char) data;
         // send evt to data
+        msg_struct.type = GETC_NOTIFIER;
+        Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+    }
+}
+
+void GetTimeoutNotifier() {
+    // msg shits
+    char msg[2] = {0};
+    char reply[2] = {0};
+    int receiver_tid, msglen = 2;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = reply;
+    char data;
+
+    FOREVER {
+        Receive( &receiver_tid, (char*)&msg_struct, msglen );
+        Reply (receiver_tid, (char *)&reply_struct, msglen);
+        Delay(msg_struct.iValue);
+        msg_struct.type = GETC_TIMEOUT;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
     }
 }
@@ -228,6 +251,7 @@ void GetServer() {
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
+    int timeout_notifier_tid;
 
     // current task blocked
     int blocked_task = -1;
@@ -245,7 +269,6 @@ void GetServer() {
 
     Receive( &sender_tid, (char*)&msg_struct, msglen );
     Reply (sender_tid, (char *)&reply_struct, rpllen);
-
     switch(msg_struct.iValue) {
         case COM1:
             RegisterAs(COM1_GET_SERVER);
@@ -258,8 +281,11 @@ void GetServer() {
             Create(1, (&Com2GetServerNotifier));
             break;
         default:
+            bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll GETSERVEREXIT %d", msg_struct.type);
+            Assert();
             Exit();
     }
+    timeout_notifier_tid = Create(1, (&GetTimeoutNotifier));
 
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
@@ -296,8 +322,35 @@ void GetServer() {
                     blocked_task = sender_tid;
                 }
                 break;
+            case GETC_TIMEOUT:
+                if (blocked_task != -1) {
+                    reply[0] = -1;
+                    reply_struct.iValue = -1;
+                    Reply (blocked_task, (char *)&reply_struct, rpllen);
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
+                    blocked_task = -1;
+                }
+                break;
+            case GETC_TIMEOUT_REQUEST:
+                // read char from the buffer
+                // if there is char on the buffer, return it
+                if (buf_len > 0) {
+                    reply[0] = string_buffer[buf_start];
+                    buf_start = (buf_start+1) % BUFFER_SIZE;
+                    buf_len--;
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
+                }
+                else {
+                    // task is blocked;
+                    blocked_task = sender_tid;
+                    msg[0] = blocked_task;
+                    Send (timeout_notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+                }
+                break;
             default:
                 // shit
+                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMGETSERVER %d", msg_struct.type);
+                Assert();
                 break;
         }
     }
@@ -314,18 +367,6 @@ void putc(int COM, char c) {
     reply_struct.value = reply;
     reply_struct.iValue = 0;
     msg[0] = c;
-    msg_struct.type = PUTC_REQUEST;
-
-    switch (COM){
-        case COM1:
-            receiver_tid = WhoIs(COM1_PUT_SERVER);
-            break;
-        case COM2:
-            receiver_tid = WhoIs(COM2_PUT_SERVER);
-            break;
-        default:
-            break;
-    }
 
     switch (COM){
         case COM1:
@@ -341,9 +382,12 @@ void putc(int COM, char c) {
             receiver_tid = com2_receiver_tid;
             break;
         default:
-            break;
+            bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putc %d", COM);
+            Assert();
+            return;
     }
 
+    msg_struct.type = PUTC_REQUEST;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
     return ;
@@ -362,7 +406,6 @@ void putstr(int COM, char* str ) {
     // msglen = strlen(str);
     // memcpy(msg, str, msglen);
     msg_struct.iValue = str;
-    msg_struct.type = PUTSTR_REQUEST;
 
     switch (COM){
         case COM1:
@@ -378,8 +421,11 @@ void putstr(int COM, char* str ) {
             receiver_tid = com2_receiver_tid;
             break;
         default:
-            break;
+            bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putstr %d", COM);
+            Assert();
+            return;
     }
+    msg_struct.type = PUTSTR_REQUEST;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     return ;
@@ -397,7 +443,6 @@ void putstr_len(int COM, char* str, int msglen ) {
     reply_struct.value = reply;
     reply_struct.iValue = 0;
     memcpy(msg, str, msglen);
-    msg_struct.type = PUTSTR_LEN_REQUEST;
 
     switch (COM){
         case COM1:
@@ -413,8 +458,11 @@ void putstr_len(int COM, char* str, int msglen ) {
             receiver_tid = com2_receiver_tid;
             break;
         default:
-            break;
+            bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putstr_len %d", COM);
+            Assert();
+            return;
     }
+    msg_struct.type = PUTSTR_LEN_REQUEST;
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     return ;
@@ -446,10 +494,48 @@ char getc(int COM) {
             receiver_tid = com2_receiver_tid;
             break;
         default:
-            break;
+            return 0;
     }
 
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+    return reply_struct.value[0];
+}
+
+char getc_timeout(int COM, int timeout, int* timedout) {
+    char msg[2] = {0};
+    char reply[2] = {0};
+    int msglen = 2;
+    static int com1_receiver_tid = -1, com2_receiver_tid = -1;
+    int receiver_tid;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = reply;
+    reply_struct.iValue = 0;
+    msg_struct.type = GETC_TIMEOUT_REQUEST;
+
+    switch (COM){
+        case COM1:
+            if (com1_receiver_tid < 0) {
+                com1_receiver_tid = WhoIs(COM1_GET_SERVER);
+            }
+            receiver_tid = com1_receiver_tid;
+            break;
+        case COM2:
+            if (com2_receiver_tid < 0) {
+                com2_receiver_tid = WhoIs(COM2_GET_SERVER);
+            }
+            receiver_tid = com2_receiver_tid;
+            break;
+        default:
+            return 0;
+    }
+    msg_struct.iValue = timeout;
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+
+    *timedout = 0;
+    if (reply_struct.iValue < 0){
+        *timedout = 1;
+    }
 
     return reply_struct.value[0];
 }

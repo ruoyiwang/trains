@@ -8,10 +8,10 @@ typedef struct {
 
 
 // clock tower consts
-#define NOTIFIER			0x30
-#define TIME_REQUEST		0x31
-#define DELAY_REQUEST		0x32
-#define DELAY_UNTIL_REQUEST	0x33
+#define CLOCK_NOTIFIER		0
+#define TIME_REQUEST		1
+#define DELAY_REQUEST		2
+#define DELAY_UNTIL_REQUEST	3
 #define CLOCK_SERVER_NAME	"CLOCK SERVER"
 void clockServerNotifier();
 void clockServer();

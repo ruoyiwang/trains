@@ -9,6 +9,7 @@
 #define PATH_FIND           0x52
 #define FIND_DISTANCE_BETWEEN_TWO_LANDMARKS 0x53
 #define PATH_FIND_DIJKSTRA  0x54
+#define INIT_TRACK          0x55
 
 #define TRACK_TASK      "track task"
 
@@ -126,5 +127,7 @@ struct move_data_t pathFindDijkstraTrackTask(
 void makePath(track_node* node, track_node* init_node, track_node** path);
 
 void setSwitchTrackTask(int switch_num, char switch_dir, unsigned int* switch_status);
+
+void initTrack(char track);
 
 #endif

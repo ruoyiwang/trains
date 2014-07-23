@@ -111,8 +111,10 @@ int setspeed( int channel, int speed ) {
         low = (int *)( UART2_BASE + UART_LCRL_OFFSET );
             break;
     default:
-            return -1;
-            break;
+        bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll SETSPEED1 %d", channel);
+        Assert();
+        return -1;
+        break;
     }
     switch( speed ) {
     case 115200:
@@ -124,6 +126,8 @@ int setspeed( int channel, int speed ) {
         *low = 0xbf;
         return 0;
     default:
+        bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll SETSPEED2 %d", channel);
+        Assert();
         return -1;
     }
 }

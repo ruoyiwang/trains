@@ -23,7 +23,6 @@ void CommandCenterNotifier() {
     int receiver_tid, msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
-    reply_struct.type = COMMAND_CENTER_NOTIFIER;
     reply_struct.value = reply;
 
     Receive( &courier_tid, (char*)&msg_struct, msglen );
@@ -32,6 +31,7 @@ void CommandCenterNotifier() {
     FOREVER {
         Receive( &courier_tid, (char*)&msg_struct, 10 );
         reply_struct.iValue = waitForSensors( msg_struct.value, 4, msg_struct.iValue);
+        reply_struct.type = COMMAND_CENTER_NOTIFIER;
         Reply (courier_tid, (char *)&reply_struct, rpllen);
     }
 }
@@ -347,6 +347,7 @@ void CommandCenterServer() {
                 break;
             default:
                 // bwprintf(COM2, "wtf %d\n", msg_struct.type);
+                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMMANDCENTER %d", msg_struct.type);
                 Assert();
                 break;
         }

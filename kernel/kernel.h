@@ -14,7 +14,7 @@
 #define STATE_EVT_BLK       6
 #define STATE_READY_INT     7
 
-#define USER_STACK_SIZE     0x4000      // 0x1000 = 4096
+#define USER_STACK_SIZE     0x8000      // 0x1000 = 4096
 #define USER_STACK_BEGIN    0x1FCD000   // stack grow up, frame grow down
 #define KERNEL_STACK_BEGIN  0x1FDD000
 

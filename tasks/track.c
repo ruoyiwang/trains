@@ -45,8 +45,8 @@ void TracksTask () {
     // init the tracks
     track_node tracks[TRACK_MAX];
     // and we are using track b
-    // init_tracka(tracks);
-    init_trackb(tracks);
+    init_tracka(tracks);
+    // init_trackb(tracks);
     int cur_sensor, prediction_len = 8, landmark1, landmark2, lookup_limit;
     int stop_command_sensor, stop_command_sensor_dist;
 
@@ -97,6 +97,14 @@ void TracksTask () {
                         lookup_limit
                     );
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
+            case INIT_TRACK:
+                if (msg_struct.value[0] == 'a') {
+                    init_tracka(tracks);
+                }
+                else {
+                    init_trackb(tracks);
+                }
                 break;
             case PATH_FIND:
                 // path find
@@ -165,6 +173,8 @@ void TracksTask () {
                 Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
                 break;
             default:
+                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll TRACKSERVER %d", msg_struct.type);
+                Assert();
                 break;
         }
     }
@@ -920,4 +930,29 @@ void setSwitchTrackTask(int switch_num, char switch_dir, unsigned int* switch_st
     commandstr[1] = switch_num;
     commandstr[2] = 32;
     putstr_len(COM1, commandstr, 3);
+}
+
+void initTrack(char track) {
+    // msg shits
+    char msg[10] = {0};
+    char reply[83] = {0};
+    int msglen = 10;
+    int rpllen = 83;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(TRACK_TASK);
+    }
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.type = INIT_TRACK;
+    reply_struct.value = reply;
+
+    if (track == 'a') {
+        msg[0] = 'a';
+    }
+    else {
+        // init track b
+        msg[0] = 'b';
+    }
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 }

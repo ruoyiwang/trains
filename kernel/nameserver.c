@@ -107,6 +107,8 @@ void NameServer() {
             default:
                 // This should never happen
                 // TODO: reply false or some shit
+                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll NAMESEVER %d", msg_struct.type);
+                Assert();
                 break;
         }
     }

@@ -11,7 +11,6 @@ void clockServerNotifier() {
     int receiver_tid, msglen = 8;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
-    msg_struct.type = NOTIFIER;
     reply_struct.value = reply;
     receiver_tid = WhoIs(CLOCK_SERVER_NAME);
     int data;
@@ -20,6 +19,7 @@ void clockServerNotifier() {
         data = AwaitEvent( EVENT_CLOCK );
         msg_struct.iValue = data;
         // send evt to data
+        msg_struct.type = CLOCK_NOTIFIER;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
     }
 }
@@ -76,10 +76,10 @@ void clockServer() {
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch(msg_struct.type) {
-            case NOTIFIER:
+            case CLOCK_NOTIFIER:
                 // reply to notifier I got ur time (don't really care)
-                Reply (sender_tid, (char *)&reply_struct, msglen);
                 clockServerCountDownAndNotify(delays, reply_struct, msglen);
+                Reply (sender_tid, (char *)&reply_struct, msglen);
                 // update time
                 curTime++;
                 break;
@@ -108,6 +108,8 @@ void clockServer() {
                 break;
             default:
                 // wtf
+                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll CLOCKSERVER %d", msg_struct.type);
+                Assert();
                 break;
         }
     }

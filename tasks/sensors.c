@@ -40,6 +40,37 @@ void SensorNotifier() {
     }
 }
 
+void SensorNotifierNoCourier() {
+    int i;
+    char c;
+    char sensors_bytes[10];
+
+    int receiver_tid = WhoIs(SENSOR_SERVER_NAME);
+
+    char rpl[10] = {0};
+    // int receiver_tid;
+    int msglen = 10, rpllen = 10;
+    message msg_struct, reply_struct;
+    reply_struct.value = rpl;
+    msg_struct.type = SENSOR_NOTIFIER;
+    msg_struct.value = sensors_bytes;
+
+    FOREVER {
+        memset(&msg_struct, 0, sizeof(message));
+        msg_struct.type = SENSOR_NOTIFIER;
+        msg_struct.value = sensors_bytes;
+        // Delay(5);
+        putc(COM1, DUMP_ALL_SENSORS);
+        for ( i=0; i < 10; i++) {
+            // Delay(2);
+            c = getc(COM1);
+            sensors_bytes[i] = c;
+        }
+        // sensors_bytes[0] = Time();
+        Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    }
+}
+
 void SensorCourier() {
     int notifier_tid, server_tid;
 
@@ -86,16 +117,19 @@ void SensorServer() {
         requests[i][4] = -1;
         requests[i][5] = -1;
     }
-    int notifier_tid = Create(1, (&SensorNotifier));
-    int courier_tid = Create(2, (&SensorCourier));
-    msg_struct.iValue = notifier_tid;
-    Send (courier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    // int notifier_tid = Create(1, (&SensorNotifier));
+    // int courier_tid = Create(2, (&SensorCourier));
+    // msg_struct.iValue = notifier_tid;
+    // Send (courier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     RegisterAs(SENSOR_SERVER_NAME);
+    int notifier_tid = Create(1, (&SensorNotifierNoCourier));
+
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch(msg_struct.type) {
             case SENSOR_NOTIFIER:
                 // reply to notifier I got ur time (don't really care)
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 memcpy(current_sensor_state, msg_struct.value, 10);
                 for (i = 0; i < 64; i++) {
                     //if element exists
@@ -127,11 +161,15 @@ void SensorServer() {
                         }
                     }
                 }
-                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             case SENSORS_DUMP_REQUEST:
-                memcpy(reply_struct.value, current_sensor_state, rpllen);
-                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                memcpy(reply_struct.value, current_sensor_state, 10);
+                Reply (sender_tid, (char *)&reply_struct, 10);
+                // reply what the time is
+                break;
+            case SENSORS_CREATE_NOTIFIER:
+                Create(1, (&SensorNotifierNoCourier));
+                Reply (sender_tid, (char *)&reply_struct, 10);
                 // reply what the time is
                 break;
             case WAIT_REQUEST:
@@ -144,6 +182,8 @@ void SensorServer() {
                 break;
             default:
                 // wtf
+                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll SENSORSSERVER %d", msg_struct.type);
+                Assert();
                 break;
         }
     }

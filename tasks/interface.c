@@ -123,6 +123,8 @@ void DebugPutStr ( char* fmt, ... ) {
                 }
                 break;
             default:
+                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll DEBUGPUTSTR %d", c);
+                Assert();
                 break;
         }
     }
@@ -292,10 +294,6 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
     else if ( strcmp (cmdstr, "sw") == 0 && *argc == 2 ){
         *command = CMD_SWITCH;
     }
-    else if ( cmdstr[0] == 'a' ){
-        *command = CMD_ASSERT;
-        return;
-    }
     else if ( strcmp (cmdstr, "pd") == 0 && *argc == 2 ){
         *command = CMD_PREDICT_SENSOR;
         return;
@@ -322,6 +320,18 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
     }
     else if ( strcmp (cmdstr, "sm") == 0 && *argc == 2 ){
         *command = CMD_SHORT_MOVE_TIME;
+        return;
+    }
+    else if ( strcmp (cmdstr, "ia") == 0 ){
+        *command = CMD_INIT_TRACK_A;
+        return;
+    }
+    else if ( strcmp (cmdstr, "cn") == 0 ){
+        *command = CMD_CREATE_SENSOR_NOTIFIER;
+        return;
+    }
+    else if ( cmdstr[0] == 'A' ){
+        *command = CMD_ASSERT;
         return;
     }
     else if ( cmdstr[0] == 'q' ){
@@ -465,7 +475,7 @@ void IdleDisplayTask() {
         if (usage < 10) {
             index++;
         }
-        if (usage > 99){
+        else if (usage > 99){
             index += 3;
         }
         else {
@@ -497,7 +507,7 @@ void SensorsDisplayTask() {
     // }
     // int time_index;
     // int cur_time;
-    unsigned char sensorStr[5];
+    unsigned char sensorStr[10] = {0};
 
     char commandstr[2];
     commandstr[0] = 0;
@@ -520,19 +530,21 @@ void SensorsDisplayTask() {
                 if ( c & ( 1 << j ) ){
                     index = 0;
                     sensorStr[0] = 'A' + (i / 2);
-                    sensorStr[1] = 0;
-                    outputPutStr ( sensorStr, &row, &col, buffer, &index );
                     if ( (i % 2) ) {
                         sensorNum = 16 - j;
-                        if (sensorNum < 10)
-                            outputPutStr ( "0", &row, &col, buffer, &index  );
-                        bwi2a ( sensorNum, sensorStr );
+                        if (sensorNum < 10){
+                            sensorStr[1] = '0';
+                            bwi2a ( sensorNum, sensorStr+2 );
+                        }
+                        else {
+                            bwi2a ( sensorNum, sensorStr+1 );
+                        }
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
                     }
                     if ( !(i % 2) ) {
                         sensorNum = 8 - j;
-                        bwi2a ( sensorNum, sensorStr );
-                        outputPutStr ( "0", &row, &col, buffer, &index  );
+                        sensorStr[1] = '0';
+                        bwi2a ( sensorNum, sensorStr+2 );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
                     }
                     outputPutStr ( "     ", &row, &col, buffer, &index  );
@@ -665,7 +677,7 @@ void initTrainDisplay(int train_id, int offset) {
 
 void handleCommandTask() {
 
-    int tempi;
+    int tempi, receiver_tid;
 
     char buffer[1024] = {0};
     int index = 0;
@@ -924,10 +936,19 @@ void handleCommandTask() {
                     Delay(atoi(argv[1]));
                     setTrainSpeed( atoi(argv[0]), 0);
                     break;
+                case CMD_INIT_TRACK_A:
+                    initTrack('a');
+                    break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;
                     // train_rindex++;
                     outputPutStrLn ( "Qutting", &row, &col, buffer, &index );
+                    break;
+                case CMD_CREATE_SENSOR_NOTIFIER:
+                    outputPutStrLn ( "Creating new Notifier for Sensor", &row, &col, buffer, &index );
+                    msg_struct.type = SENSORS_CREATE_NOTIFIER;
+                    receiver_tid = WhoIs(SENSOR_SERVER_NAME);
+                    Send (receiver_tid, (char *)&msg_struct, 0, (char *)&reply_struct, 20);
                     break;
                 default:
                     outputPutStrLn ( "Invalid input", &row, &col, buffer, &index );

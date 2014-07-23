@@ -219,17 +219,17 @@ void handle (td *active, int req, int args[5],
             int idle_usage,
             unsigned int *uart1_tx_flag,
             unsigned int *uart1_cts_flag )   {
-    int i, *timer3clear, *VIC2Status, *VIC1Status;
+    volatile int i, *timer3clear, *VIC2Status, *VIC1Status;
     char c;
     int *uart2_flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
     int *uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
     int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
     int * uart2_intr = (int *)( UART2_BASE + UART_INTR_OFFSET );
 
-    int *uart1_flags = (int *)( UART1_BASE + UART_FLAG_OFFSET );
-    int *uart1_data = (int *)( UART1_BASE + UART_DATA_OFFSET );
-    int * uart1_ctrl = (int *)( UART1_BASE + UART_CTLR_OFFSET );
-    int * uart1_intr = (int *)( UART1_BASE + UART_INTR_OFFSET );
+    volatile int *uart1_flags = (int *)( UART1_BASE + UART_FLAG_OFFSET );
+    volatile int *uart1_data = (int *)( UART1_BASE + UART_DATA_OFFSET );
+    volatile int * uart1_ctrl = (int *)( UART1_BASE + UART_CTLR_OFFSET );
+    volatile int * uart1_intr = (int *)( UART1_BASE + UART_INTR_OFFSET );
 
     for (i = 0; i<5 ; i++) {
         active->args[i] = args[i];
@@ -431,6 +431,8 @@ void handle (td *active, int req, int args[5],
         case 15:
             active->ret = idle_usage;
             break;
+        default:
+            assert_ker(tds, td_pq);
     }
 }
 
