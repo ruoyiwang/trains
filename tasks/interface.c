@@ -153,8 +153,8 @@ int getSwCursor ( int sw, int *row, int *col ) {
 void setAllTrainSpeedToOne() {
     char commandstr[3];
     int i = 45;
-    for (i = 45; i < 53; i++) {
-        commandstr[0] = 0;
+    for (i = 45; i < 54; i++) {
+        commandstr[0] = 16;
         commandstr[1] = (char)i;
         putstr_len(COM1, commandstr, 2);
     }
@@ -398,8 +398,8 @@ void initInterface() {
     drawTrack ( &row, &col );
 
     // Create(2, (&clockServer));
-    Create(5, (&clockDisplayTask));
-    Create(5, (&IdleDisplayTask));
+    Create(4, (&clockDisplayTask));
+    Create(7, (&IdleDisplayTask));
     Create(5, (&handleCommandTask));
 
 }
@@ -430,22 +430,12 @@ void clockDisplayTask() {
     int index = 0;
 
     char clockstr[10] = {0};
-    // int clockMinute = 0, clockTenth = 0, clockSecond = 0, sechi, seclo;
     int currentTime = Time()+10;
     FOREVER {
         index = 0;
 
         int row = CLOCK_POSITION_X, col = CLOCK_POSITION_Y;
         DelayUntil(currentTime);
-        // clockTenth++;
-        // if ( clockTenth > 9 ) {
-        //     clockTenth = 0;
-        //     clockSecond++;
-        // }
-        // if ( clockSecond > 59 ) {
-        //     clockSecond = 0;
-        //     clockMinute++;
-        // }
         formClockStr(currentTime, clockstr);
         outputPutStrClear ( clockstr, &row, &col , buffer, &index );
 
@@ -474,6 +464,9 @@ void IdleDisplayTask() {
         bwi2a(usage, buffer+index);
         if (usage < 10) {
             index++;
+        }
+        if (usage > 99){
+            index += 3;
         }
         else {
             index+=2;
@@ -542,7 +535,7 @@ void SensorsDisplayTask() {
                         outputPutStr ( "0", &row, &col, buffer, &index  );
                         outputPutStr ( sensorStr, &row, &col, buffer, &index  );
                     }
-                    outputPutStr ( " ", &row, &col, buffer, &index  );
+                    outputPutStr ( "     ", &row, &col, buffer, &index  );
                     sensorDisplayPosition = (sensorDisplayPosition + 1) % SENSORS_DISPLAY_WIDTH;
 
                     buffer[(index)++] = 0;
@@ -610,14 +603,14 @@ void LocationDisplayTask() {
     Receive( &sender_tid, (char*)&msg_struct, msglen );
     Reply (sender_tid, (char *)&reply_struct, rpllen);
 
-    offset_tid = Create(5, &LocationOffsetDisplayTask);
+    offset_tid = Create(6, &LocationOffsetDisplayTask);
     Send (offset_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     int train_id = msg_struct.iValue;
     int row_offset = msg_struct.value[0];
 
     bwi2a( train_id, sensor_str);
-    row = TRAIN_TABLE_X + row_offset; col = 2;
+    row = TRAIN_TABLE_X + row_offset; col = 1;
     outputPutStr ( sensor_str, &row, &col , buffer, &index );
     buffer[(index)++] = 0;
     putstr(COM2, buffer);
@@ -629,20 +622,28 @@ void LocationDisplayTask() {
         sensor_str[0] = 'A' + (train_info[1] / 16);
         bwi2a( (train_info[1] % 16) + 1, sensor_str + 1);
         row = TRAIN_TABLE_X + row_offset; col = NEXT_POSITION_Y;
-        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
+        outputPutStr ( "      ", &row, &col , buffer, &index );
+        row = TRAIN_TABLE_X + row_offset; col = NEXT_POSITION_Y;
+        outputPutStr ( sensor_str, &row, &col , buffer, &index );
 
         sensor_str[0] = 'A' + (train_info[0] / 16);
         bwi2a( (train_info[0] % 16) + 1, sensor_str + 1);
         row = TRAIN_TABLE_X + row_offset; col = PREV_POSITION_Y;
-        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
+        outputPutStr ( "      ", &row, &col , buffer, &index );
+        row = TRAIN_TABLE_X + row_offset; col = PREV_POSITION_Y;
+        outputPutStr ( sensor_str, &row, &col , buffer, &index );
 
         row = TRAIN_TABLE_X + row_offset; col = EXPECTED_POSITION_Y;
+        outputPutStr ( "           ", &row, &col , buffer, &index );
+        row = TRAIN_TABLE_X + row_offset; col = EXPECTED_POSITION_Y;
         formClockStr(train_info[2], sensor_str);
-        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
+        outputPutStr ( sensor_str, &row, &col , buffer, &index );
 
         row = TRAIN_TABLE_X + row_offset; col = ACTUAL_POSITION_Y;
+        outputPutStr ( "           ", &row, &col , buffer, &index );
+        row = TRAIN_TABLE_X + row_offset; col = ACTUAL_POSITION_Y;
         formClockStr(train_info[3], sensor_str);
-        outputPutStrClear ( sensor_str, &row, &col , buffer, &index );
+        outputPutStr ( sensor_str, &row, &col , buffer, &index );
 
         buffer[(index)++] = 0;
         putstr(COM2, buffer);
@@ -701,14 +702,18 @@ void handleCommandTask() {
     int train_display_offset = 1;
     setAllTrainSpeedToOne();
     // set all train speed to 1 before we do anything
+    index = 0;
+    setCursor( CMD_POSITION_X, CMD_POSITION_Y, buffer, &index);
+    buffer[(index)++] = 0;
+    putstr(COM2, buffer);
 
     for ( i=1; i <=18 ; i++) {
         setSwitch ( SW_STRAIGHT, i);
     }
-    setSwitch ( SW_CURVE, 3);
-    setSwitch ( SW_CURVE, 7);
-    setSwitch ( SW_CURVE, 14);
-    setSwitch ( SW_CURVE, 18);
+    // setSwitch ( SW_CURVE, 3);
+    // setSwitch ( SW_CURVE, 7);
+    // setSwitch ( SW_CURVE, 14);
+    // setSwitch ( SW_CURVE, 18);
 
     setSwitch ( SW_CURVE, 0x99);
     setSwitch ( SW_STRAIGHT, 0x9A);
@@ -717,16 +722,12 @@ void handleCommandTask() {
 
     Delay(600);
     Create(3, (&SensorServer));
-    Create(5, (&SensorsDisplayTask));
+    Create(6, (&SensorsDisplayTask));
 
     Create(3, (&CommandCenterServer));
     // Create(5, (&LocationDisplayTask));
     // Create(5, (&LocationOffsetDisplayTask));
     // initTrainLocation(49, 0 );
-    index = 0;
-    setCursor( CMD_POSITION_X, CMD_POSITION_Y, buffer, &index);
-    buffer[(index)++] = 0;
-    putstr(COM2, buffer);
 
     FOREVER {
     	c = getc(COM2);
@@ -912,32 +913,13 @@ void handleCommandTask() {
                         DebugPutStr("sdsd", "LONG_MOVE", md.stopping_sensor, " | ", md.stopping_dist);
                     }
                     for (i = 0; i < md.list_len; i++) {
-                        bwprintf(COM2, "\n");
                         if (md.node_list[i].type == NODE_SENSOR) {
-                            // bwi2a(md.node_list[i].num, tempstr);
-                            // col = 1;
-                            // outputPutStrLn ("sensor:", &row, &col, buffer, &index );
-                            // col = 1;
-                            // outputPutStrLn (tempstr, &row, &col, buffer, &index );
                             DebugPutStr("sd", "sensor: ", md.node_list[i].num);
                         }
                         else if (md.node_list[i].type == NODE_BRANCH) {
-                            // bwi2a(md.node_list[i].num, tempstr);
-                            // col = 1;
-                            // outputPutStrLn ("branch:", &row, &col, buffer, &index );
-                            // col = 1;
-                            // outputPutStrLn (tempstr, &row, &col, buffer, &index );
-                            // bwi2a(md.node_list[i].branch_state, tempstr);
-                            // col = 1;
-                            // outputPutStrLn (tempstr, &row, &col, buffer, &index );
                             DebugPutStr("sdsd", "branch: ", md.node_list[i].num, " | ", md.node_list[i].branch_state);
                         }
                         else if (md.node_list[i].type == NODE_MERGE) {
-                            // bwi2a(md.node_list[i].num, tempstr);
-                            // col = 1;
-                            // outputPutStrLn ("merge:", &row, &col, buffer, &index );
-                            // col = 1;
-                            // outputPutStrLn (tempstr, &row, &col, buffer, &index );
                             DebugPutStr("sd", "merge: ", md.node_list[i].num);
                         }
                     }

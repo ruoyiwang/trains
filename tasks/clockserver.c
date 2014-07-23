@@ -33,20 +33,21 @@ void clockServerCountDownAndNotify(delay_element delays[64], message reply_struc
             if (delays[i].delay <= 0) {
                 Reply (delays[i].tid, (char *)&reply_struct, msglen);
                 delays[i].tid = -1;
+                delays[i].delay = -1;
             }
         }
     }
 }
 
 void queueDelay(delay_element delays[64], int tid, int delay) {
-    int i;
-    for (i = 0; i < 64; i++) {
-        if (delays[i].tid == -1) {
-            delays[i].tid = tid;
-            delays[i].delay = delay;
-            return;
-        }
-    }
+    // int i =;
+
+    delays[tid].tid = tid;
+    delays[tid].delay = delay;
+    // if (i>60){
+    //     bwprintf(COM2, "delay queue overflow \n");
+    //     Assert();
+    // }
 }
 
 void clockServer() {
@@ -54,7 +55,7 @@ void clockServer() {
     RegisterAs(CLOCK_SERVER_NAME);
     int curTime = 0;
     // Create Notifier and send any initialization data
-    Create(1, (&clockServerNotifier));
+    Create(0, (&clockServerNotifier));
     // msg shits
     char msg[8] = {0};
     char reply[8] = {0};
@@ -69,6 +70,7 @@ void clockServer() {
     int i;
     for (i = 0; i < 64; i++) {
         delays[i].tid = -1;
+        delays[i].delay = -1;
     }
 
     FOREVER {
@@ -88,7 +90,12 @@ void clockServer() {
                 break;
             case DELAY_REQUEST:
                 // add request to list of suspended tasks
-                queueDelay(delays, sender_tid, msg_struct.iValue);
+                if (msg_struct.iValue > 0) {
+                    queueDelay(delays, sender_tid, msg_struct.iValue);
+                }
+                else {
+                    Reply (sender_tid, (char *)&reply_struct, msglen);
+                }
                 break;
             case DELAY_UNTIL_REQUEST:
                 // add request to list of suspended tasks
@@ -96,7 +103,7 @@ void clockServer() {
                     queueDelay(delays, sender_tid, msg_struct.iValue - curTime);
                 }
                 else {
-                    queueDelay(delays, sender_tid, 0);
+                    Reply (sender_tid, (char *)&reply_struct, msglen);
                 }
                 break;
             default:

@@ -159,9 +159,9 @@ void initialize_interrupts() {
     uart_noops();
     * uart2_ctrl = * uart2_ctrl | UARTEN_MASK;
     uart_noops();
-    * uart1_ctrl = * uart2_ctrl | RIEN_MASK;
+    * uart1_ctrl = * uart1_ctrl | RIEN_MASK;
     uart_noops();
-    * uart1_ctrl = * uart2_ctrl | UARTEN_MASK;
+    * uart1_ctrl = * uart1_ctrl | UARTEN_MASK;
 }
 
 void uninitialize() {
@@ -215,6 +215,7 @@ void handle (td *active, int req, int args[5],
             td tds[64],
             td_queue td_pq[16],
             int event_blocked_tds[5],
+            int interrupt_queue[5],
             int idle_usage,
             unsigned int *uart1_tx_flag,
             unsigned int *uart1_cts_flag )   {
@@ -246,6 +247,9 @@ void handle (td *active, int req, int args[5],
                     pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_CLOCK])->tid);
                     event_blocked_tds[EVENT_CLOCK] = 0;
                 }
+                else {
+                    interrupt_queue[EVENT_CLOCK] = 1;
+                }
             }
             if (*VIC2Status & (1 << 20)) {
                 if (*uart1_intr & TIS_MASK ){
@@ -269,6 +273,9 @@ void handle (td *active, int req, int args[5],
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM1_TRANSMIT])->tid);
                         event_blocked_tds[EVENT_COM1_TRANSMIT] = 0;
                     }
+                    else {
+                        interrupt_queue[EVENT_COM1_TRANSMIT] = 1;
+                    }
                 }
 
                 if (*uart1_intr & RIS_MASK ){
@@ -276,6 +283,9 @@ void handle (td *active, int req, int args[5],
                         ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->ret = *uart1_data;
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->tid);
                         event_blocked_tds[EVENT_COM1_RECEIVE] = 0;
+                    }
+                    else {
+                        interrupt_queue[EVENT_COM1_TRANSMIT] = *uart1_data;
                     }
                 }
             }
@@ -287,12 +297,18 @@ void handle (td *active, int req, int args[5],
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM2_TRANSMIT])->tid);
                         event_blocked_tds[EVENT_COM2_TRANSMIT] = 0;
                     }
+                    else {
+                        interrupt_queue[EVENT_COM2_TRANSMIT] = 1;
+                    }
                 }
                 if (*uart2_intr & RIS_MASK ){
                     if (event_blocked_tds[EVENT_COM2_RECEIVE]) {
                         ((td *) event_blocked_tds[EVENT_COM2_RECEIVE])->ret = *uart2_data;
                         pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM2_RECEIVE])->tid);
                         event_blocked_tds[EVENT_COM2_RECEIVE] = 0;
+                    }
+                    else {
+                        interrupt_queue[EVENT_COM2_RECEIVE] = *uart2_data;
                     }
                 }
             }
@@ -312,16 +328,36 @@ void handle (td *active, int req, int args[5],
             active->state = STATE_ZOMBIE;
             break;
         case 9:     // wait
-            if (args[0] == EVENT_COM2_TRANSMIT) {
-                uart_noops();
-                *uart2_ctrl = * uart2_ctrl | TIEN_MASK;
+            if (args[0] == EVENT_CLOCK && interrupt_queue[EVENT_CLOCK]) {
+                interrupt_queue[EVENT_CLOCK] = 0;
             }
-            if (args[0] == EVENT_COM1_TRANSMIT) {
-                uart_noops();
-                *uart1_ctrl = * uart1_ctrl | TIEN_MASK | MSIEN_MASK;
+            else if (args[0] == EVENT_COM2_RECEIVE && interrupt_queue[EVENT_COM2_RECEIVE]) {
+                active->ret = interrupt_queue[EVENT_COM2_RECEIVE];
+                interrupt_queue[EVENT_COM2_RECEIVE] = 0;
             }
-            active->state = STATE_EVT_BLK;
-            event_blocked_tds[args[0]] = active;
+            else if (args[0] == EVENT_COM2_TRANSMIT && interrupt_queue[EVENT_COM2_TRANSMIT]) {
+                interrupt_queue[EVENT_COM2_TRANSMIT] = 0;
+            }
+            else if (args[0] == EVENT_COM1_RECEIVE && interrupt_queue[EVENT_COM1_RECEIVE]) {
+                active->ret = interrupt_queue[EVENT_COM1_RECEIVE];
+                interrupt_queue[EVENT_COM1_RECEIVE] = 0;
+            }
+            else if (args[0] == EVENT_COM1_TRANSMIT && interrupt_queue[EVENT_COM1_TRANSMIT]) {
+                interrupt_queue[EVENT_COM1_TRANSMIT] = 0;
+            }
+            else {
+                if (args[0] == EVENT_COM2_TRANSMIT) {
+                    uart_noops();
+                    *uart2_ctrl = * uart2_ctrl | TIEN_MASK;
+                }
+                if (args[0] == EVENT_COM1_TRANSMIT) {
+                    uart_noops();
+                    *uart1_ctrl = * uart1_ctrl | TIEN_MASK | MSIEN_MASK;
+                    uart1_cts_flag = *uart1_flags & CTS_MASK;
+                }
+                active->state = STATE_EVT_BLK;
+                event_blocked_tds[args[0]] = active;
+            }
             break;
         case 11:    //Send
             if ( tds[args[0]].state == STATE_SND_BLK ) {    //if receive first
@@ -405,8 +441,9 @@ int main( int argc, char* argv[] ) {
     td_queue td_pq[16];
     int args[5];
     int event_blocked_tds[5];
-
+    int interrupt_queue[5] = {0};
     unsigned int free_list_lo = 0, free_list_hi = 0;
+
 
     initialize(tds, event_blocked_tds);
     initialize_td_pq(td_pq);
@@ -440,7 +477,7 @@ int main( int argc, char* argv[] ) {
         req = req & 0xff;
         handle( active, req, args,
             &free_list_lo, &free_list_hi,
-            tds, td_pq, event_blocked_tds, idle_usage,
+            tds, td_pq, event_blocked_tds, interrupt_queue, idle_usage,
             &uart1_tx_flag, &uart1_cts_flag );
 
         if (active->state == STATE_READY || active->state == STATE_ACTIVE ){

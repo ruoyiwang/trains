@@ -44,10 +44,10 @@ void TrainTask () {
             case TRAIN_REVERSE:
                 commandstr[0] = 15;
                 commandstr[1] = train_id;
-                commandstr[2] = speed;
-                commandstr[3] = train_id;
-                commandstr[4] = 0;
-                putstr_len(COM1, commandstr, 4);
+                // commandstr[2] = speed;
+                // commandstr[3] = train_id;
+                commandstr[2] = 0;
+                putstr_len(COM1, commandstr, 2);
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             case TRAIN_SET_SPEED:

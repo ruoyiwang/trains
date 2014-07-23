@@ -29,9 +29,10 @@ void SensorNotifier() {
 
     FOREVER {
         Receive( &courier_tid, (char*)&msg_struct, msglen );
-        Delay(20);
+        Delay(5);
         putc(COM1, DUMP_ALL_SENSORS);
         for ( i=0; i < 10; i++) {
+            Delay(2);
             c = getc(COM1);
             sensors_bytes[i] = c;
         }
@@ -95,7 +96,7 @@ void SensorServer() {
         switch(msg_struct.type) {
             case SENSOR_NOTIFIER:
                 // reply to notifier I got ur time (don't really care)
-                memcpy(current_sensor_state, msg_struct.value, msglen);
+                memcpy(current_sensor_state, msg_struct.value, 10);
                 for (i = 0; i < 64; i++) {
                     //if element exists
                     // if ( requests[i][0] != -1) {

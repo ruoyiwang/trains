@@ -17,7 +17,10 @@
 #define TRAIN_INFO_STOPPED 10
 #define TRAIN_INFO_TIMEOUT 11
 #define TRAIN_INFO_SENSOR_OFFSET 12
-#define TRAIN_INFO_SIZE 13
+#define TRAIN_INFO_DEST_SENSOR 13
+#define TRAIN_INFO_DEST_OFFSET 14
+#define TRAIN_INFO_REVERSED 15
+#define TRAIN_INFO_SIZE 16
 
 #define COMMAND_CENTER_NOTIFIER 0
 #define INIT_TRAIN_REQUEST 1
@@ -26,7 +29,9 @@
 #define COMMAND_CENTER_STOPPING_NOTIFIER 4
 #define TRAIN_REVERSE_REQUEST 5
 #define GET_TRAIN_LOCATION_REQUEST 6
+#define COMMAND_CENTER_TRAIN_STOPPED 7
 
+#define TRAIN_REVERSE_OFFSET 120
 #define COMMAND_CENTER_SERVER_NAME "Command Center Server"
 
 void CommandCenterNotifier();
@@ -39,5 +44,6 @@ int distanceToDelay( int sensor, int distance, int *train_speed );
 int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed);
 int setTrainDestination( int train_id, int sensor, int offset );
 int shortMoveDistanceToDelay( double distance, int train_num );
+void serverSetStopping (int* train_info, int* train_speed, int sensor, int offset);
 
 #endif

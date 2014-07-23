@@ -52,7 +52,7 @@ void FirstUserTask () {
     // perfTest();
 
     // ClockServerTest();
-    Create(2, (&clockServer));
+    Create(1, (&clockServer));
     initInterface();
     Exit();
 }
