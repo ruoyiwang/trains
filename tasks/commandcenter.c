@@ -368,6 +368,7 @@ void serverSetStopping (int* train_info, int* train_speed, int sensor, int offse
     int notifier_tid = Create(1, (&CommandCenterStoppingNotifier));
     int stopping_sensor_dist = 0, stopping_sensor = -1;
     int sensor_route[20];
+    int blocked_nodes[20];
     // update the train info
     train_info[TRAIN_INFO_STOPPING_NOTIFIER] = notifier_tid;
     train_info[TRAIN_INFO_STOPPING_SENSOR] = sensor;
@@ -377,13 +378,14 @@ void serverSetStopping (int* train_info, int* train_speed, int sensor, int offse
 
     DebugPutStr("s", "DEBUG: routing to ", sensor);
     // find path which will also set the switches
-    md = pathFindDijkstra(
+    pathFindDijkstra(
+        &md,
         train_info[TRAIN_INFO_SENSOR],          // current node
-        sensor,          // where it wants to go
-        790,                     // stoping distance
-        &stopping_sensor,       // returning node
-        &stopping_sensor_dist,  // returning distance
-        sensor_route           // the sensors the train's gonna pass
+        0,                      // offset
+        sensor,                 // where it wants to go
+        790,                    // stoping distance
+        blocked_nodes,          // the nodes the trains can't use
+        0                       // the length of the blocked nodes array
     );
     stopping_sensor = md.stopping_sensor;
     stopping_sensor_dist = md.stopping_dist;
