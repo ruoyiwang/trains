@@ -364,7 +364,7 @@ void handle (td *active, int req, int args[5],
                 *(tds[args[0]].sendQ->sender_tid) = active->tid;
                 if (tds[args[0]].sendQ->msg_len < ((mailbox *)args[1])->msg_len) {
                      // bwprintf(COM2, "%c[2JRECEIVE %d %d %d\n", 0x1b,active->tid,tds[args[0]].sendQ->msg_len, ((mailbox *)args[1])->msg_len);
-                    assert_ker(tds, td_pq);
+                    assert_ker_msg(tds, td_pq, 100);
                 }
                 memcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value, (unsigned int)((mailbox *)args[1])->msg_len);
                 tds[args[0]].sendQ->msg->iValue = ((mailbox *)args[1])->msg->iValue;
@@ -397,7 +397,7 @@ void handle (td *active, int req, int args[5],
                 // bwprintf(COM2, "CRYING3\n");
                 if (((mailbox*)args[0])->msg_len < active->sendQ->msg_len) {
                      // bwprintf(COM2, "%c[2JSEND %d %d %d\n", 0x1b,active->tid,((mailbox*)args[0])->msg_len, active->sendQ->msg_len);
-                    assert_ker(tds, td_pq);
+                    assert_ker_msg(tds, td_pq, 101);
                 }
                 *((mailbox*)args[0])->sender_tid = *(active->sendQ->sender_tid);
                 memcpy(((mailbox*)args[0])->msg->value, active->sendQ->msg->value, (unsigned int)active->sendQ->msg_len);
@@ -417,7 +417,7 @@ void handle (td *active, int req, int args[5],
                 // bwprintf(COM2, "CRYING5\n");
                 if (((mailbox *)(tds[args[0]].args[1]))->rpl_len < (unsigned int)args[2]) {
                      // bwprintf(COM2, "%c[2JREPLY %d %d %d\n", 0x1b,active->tid,((mailbox *)(tds[args[0]].args[1]))->rpl_len, (unsigned int)args[2]);
-                    assert_ker(tds, td_pq);
+                    assert_ker_msg(tds, td_pq, 102);
                 }
                 memcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value, (unsigned int)args[2]);
                 ((mailbox *)(tds[args[0]].args[1]))->rpl->iValue = ((message *)args[1])->iValue;
@@ -426,13 +426,13 @@ void handle (td *active, int req, int args[5],
             }
             break;
         case 14:
-            assert_ker(tds, td_pq);
+            assert_ker_msg(tds, td_pq, 103);
             break;
         case 15:
             active->ret = idle_usage;
             break;
         default:
-            assert_ker(tds, td_pq);
+            assert_ker_msg(tds, td_pq, req);
     }
 }
 
