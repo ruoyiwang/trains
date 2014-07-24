@@ -169,7 +169,7 @@ void setSwitch ( int state, int address ) {
     char buffer[256] = {0};
     int index = 0;
 
-    int msglen = 10, track_task_id;
+    int msglen = 2, rpllen = 10, track_task_id;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.type = SET_SWITCH;
@@ -181,12 +181,12 @@ void setSwitch ( int state, int address ) {
         if (state == SW_STRAIGHT) {
             outputPutStr ( "S", &r, &c, buffer, &index );
             msg_struct.value[0] = 's';
-            Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+            Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
         }
         else if (state == SW_CURVE) {
             outputPutStr ( "C", &r, &c, buffer, &index );
             msg_struct.value[0] = 'c';
-            Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+            Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
         }
     }
     buffer[(index)++] = 0;
@@ -715,6 +715,7 @@ void handleCommandTask() {
     putstr(COM2, buffer);
 
     for ( i=1; i <=18 ; i++) {
+        Delay(5);
         setSwitch ( SW_STRAIGHT, i);
     }
     // setSwitch ( SW_CURVE, 3);

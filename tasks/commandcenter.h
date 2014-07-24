@@ -32,7 +32,7 @@
 #define COMMAND_CENTER_TRAIN_STOPPED 7
 
 #define TRAIN_REVERSE_OFFSET 120
-#define COMMAND_CENTER_SERVER_NAME "Command Center Server"
+#define COMMAND_CENTER_SERVER_NAME "CCS"
 
 void CommandCenterNotifier();
 void CommandCenterCourier();

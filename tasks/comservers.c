@@ -107,7 +107,7 @@ void PutServer() {
             case PUTC_REQUEST:
 
                 // if a task wanted something and is blocked, we return it to it
-                char_from_request = msg[0];
+                char_from_request = msg_struct.value[0];
                 if (blocked_notifier != -1) {
                     reply[0] = char_from_request;
                     Reply (blocked_notifier, (char *)&reply_struct, rpllen);
@@ -313,6 +313,11 @@ void GetServer() {
                 }
                 break;
             case GETC_REQUEST:
+                if (msg_struct.type != GETC_REQUEST) {
+                    bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll shits going down %d", msg_struct.type);
+                    Assert();
+                    break;
+                }
                 // read char from the buffer
                 // if there is char on the buffer, return it
                 if (buf_len > 0) {
@@ -363,7 +368,7 @@ void GetServer() {
 void putc(int COM, char c) {
     char msg[2] = {0};
     char reply[4] = {0};
-    int msglen = 4;
+    int msglen = 2, rpllen = 4;
     static int com1_receiver_tid = -1, com2_receiver_tid = -1;
     int receiver_tid;
     message msg_struct, reply_struct;
@@ -391,7 +396,7 @@ void putc(int COM, char c) {
     }
 
     msg_struct.type = PUTC_REQUEST;
-    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     return ;
 }
@@ -507,7 +512,7 @@ char getc(int COM) {
 //     char msg[2] = {0};
 //     char reply[2] = {0};
 //     int msglen = 2;
-//     static int com1_receiver_tid = -1, com2_receiver_tid = -1;
+//     int com1_receiver_tid = -1, com2_receiver_tid = -1;
 //     int receiver_tid;
 //     message msg_struct, reply_struct;
 //     msg_struct.value = msg;

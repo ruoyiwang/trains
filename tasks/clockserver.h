@@ -12,7 +12,7 @@ typedef struct {
 #define TIME_REQUEST		1
 #define DELAY_REQUEST		2
 #define DELAY_UNTIL_REQUEST	3
-#define CLOCK_SERVER_NAME	"CLOCK SERVER"
+#define CLOCK_SERVER_NAME	"CS"
 void clockServerNotifier();
 void clockServer();
 int Delay( int ticks );

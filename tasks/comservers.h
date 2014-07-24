@@ -6,18 +6,18 @@
 
 #define GETC_NOTIFIER  0
 #define PUTC_NOTIFIER  1
-#define GETC_REQUEST   2
+#define GETC_REQUEST   159
 #define PUTC_REQUEST   3
 #define PUTSTR_REQUEST 4
 #define PUTSTR_LEN_REQUEST 5
 #define GETC_TIMEOUT 6
 #define GETC_TIMEOUT_REQUEST 7
 
-#define COM2_GET_SERVER     "COM2 GET SERVER"
-#define COM2_PUT_SERVER     "COM2 PUT SERVER"
+#define COM2_GET_SERVER     "C2G"
+#define COM2_PUT_SERVER     "C2P"
 
-#define COM1_GET_SERVER     "COM1 GET SERVER"
-#define COM1_PUT_SERVER     "COM1 PUT SERVER"
+#define COM1_GET_SERVER     "C1G"
+#define COM1_PUT_SERVER     "C1P"
 
 void Com1PutServerNotifier();
 void Com2PutServerNotifier();

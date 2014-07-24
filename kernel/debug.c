@@ -38,22 +38,22 @@ void assert_ker_msg(
     // print the tasks
     // tid || status
     bwprintf(COM2, "\n\nerror code: %d\n", error_code);
-    bwprintf(COM2, "\n id || pr || st\n");
-    for (i = 0; i < 64; i++) {
-        if (i < 10 && tds[i].priority < 10) {
-            bwprintf(COM2, " %d  || %d  || %d\n", tds[i].tid, tds[i].priority, tds[i].state);
-        }
-        else if (i < 10) {
-            bwprintf(COM2, " %d  || %d || %d\n", tds[i].tid, tds[i].priority, tds[i].state);
-        }
-        else if (tds[i].priority < 10) {
-            bwprintf(COM2, " %d || %d  || %d\n", tds[i].tid, tds[i].priority, tds[i].state);
-        }
-        else {
-            bwprintf(COM2, " %d || %d || %d\n", tds[i].tid, tds[i].priority, tds[i].state);
-        }
+    // bwprintf(COM2, "\n id || pr || st\n");
+    // for (i = 0; i < 64; i++) {
+    //     if (i < 10 && tds[i].priority < 10) {
+    //         bwprintf(COM2, " %d  || %d  || %d\n", tds[i].tid, tds[i].priority, tds[i].state);
+    //     }
+    //     else if (i < 10) {
+    //         bwprintf(COM2, " %d  || %d || %d\n", tds[i].tid, tds[i].priority, tds[i].state);
+    //     }
+    //     else if (tds[i].priority < 10) {
+    //         bwprintf(COM2, " %d || %d  || %d\n", tds[i].tid, tds[i].priority, tds[i].state);
+    //     }
+    //     else {
+    //         bwprintf(COM2, " %d || %d || %d\n", tds[i].tid, tds[i].priority, tds[i].state);
+    //     }
 
-    }
+    // }
 
     FOREVER{ }
 }

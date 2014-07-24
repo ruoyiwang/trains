@@ -7,7 +7,7 @@
 #define WAIT_REQUEST 1
 #define SENSORS_DUMP_REQUEST 2
 #define SENSORS_CREATE_NOTIFIER 3
-#define SENSOR_SERVER_NAME "Sensor Server"
+#define SENSOR_SERVER_NAME "SS"
 
 void SensorNotifier();
 void SensorCourier();

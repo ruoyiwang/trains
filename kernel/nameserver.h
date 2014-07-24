@@ -15,7 +15,7 @@
 
 
 typedef struct {
-    char task_name[32];
+    char task_name[64];
     int tid;
 } name_server_element;
 
@@ -24,13 +24,13 @@ void NameServer();
 void initialize_look_up_array(name_server_element lookupArray[]);
 
 int NameServerInsert(
-    int tid, 
-    char name[], 
+    int tid,
+    char name[],
     name_server_element lookupArray[]
 );
 
 int NameServerLookUp(
-    char name[], 
+    char name[],
     name_server_element lookupArray[]
 );
 

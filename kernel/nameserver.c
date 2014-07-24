@@ -64,6 +64,11 @@ int NameServerLookUp(
             return lookupArray[i].tid;
         }
     }
+    // bwprintf(COM2, "\n\n\n\n\n\n\nnameserver failed %s!\n", name);
+    // for ( i = 0; i < LOOKUP_ARRAY_SIZE; i++ ) {
+    //     bwprintf(COM2, "%s!", lookupArray[i].task_name);
+    // }
+    // Assert();
     return -1;
 }
 
@@ -76,15 +81,17 @@ void NameServer() {
     int tid;        // used for whois
     int msglen = 64;
     char msg[64] = {0};
-    char task_name[63] = {0};
+    char task_name[64] = {0};
     char reply[64] = {0};
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
     // initialize server internals
     FOREVER {
+        memset(msg, 0, 64);
+        msglen = 64;
         Receive( &sender_tid, (char*)&msg_struct, msglen );
-
+        memset(task_name, 0, 64);
         switch( msg_struct.type ) {
             case REGISTER:
                 strcpy(task_name, msg_struct.value);
@@ -102,7 +109,7 @@ void NameServer() {
                 else {
                     reply_struct.value[0] = tid;
                 }
-                Reply (sender_tid, (char *)&reply_struct, 64);
+                Reply (sender_tid, (char *)&reply_struct, 1);
                 break;
             default:
                 // This should never happen
@@ -163,7 +170,7 @@ int WhoIs(char* name) {
         return -1;
     }
     else {
-        int tid = reply_struct.value[0];
+        tid = reply_struct.value[0];
         return tid;
     }
     // yeah ==

@@ -11,7 +11,7 @@
 #define PATH_FIND_DIJKSTRA  0x54
 #define INIT_TRACK          0x55
 
-#define TRACK_TASK      "track task"
+#define TRACK_TASK      "TT"
 
 #define REVERSING_WEIGHT    400
 #define TRAIN_LENGTH        300

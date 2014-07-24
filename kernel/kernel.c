@@ -399,6 +399,7 @@ void handle (td *active, int req, int args[5],
                      // bwprintf(COM2, "%c[2JRECEIVE %d %d %d\n", 0x1b,active->tid,tds[args[0]].sendQ->msg_len, ((mailbox *)args[1])->msg_len);
                     assert_ker_msg(tds, td_pq, 100);
                 }
+                // strcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value);
                 memcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value, (unsigned int)((mailbox *)args[1])->msg_len);
                 tds[args[0]].sendQ->msg->iValue = ((mailbox *)args[1])->msg->iValue;
                 tds[args[0]].sendQ->msg->type = ((mailbox *)args[1])->msg->type;
@@ -433,6 +434,7 @@ void handle (td *active, int req, int args[5],
                     assert_ker_msg(tds, td_pq, 101);
                 }
                 *((mailbox*)args[0])->sender_tid = *(active->sendQ->sender_tid);
+                // strcpy(((mailbox*)args[0])->msg->value, active->sendQ->msg->value);
                 memcpy(((mailbox*)args[0])->msg->value, active->sendQ->msg->value, (unsigned int)active->sendQ->msg_len);
                 ((mailbox*)args[0])->msg->iValue = active->sendQ->msg->iValue;
                 ((mailbox*)args[0])->msg->type = active->sendQ->msg->type;
@@ -452,6 +454,7 @@ void handle (td *active, int req, int args[5],
                      // bwprintf(COM2, "%c[2JREPLY %d %d %d\n", 0x1b,active->tid,((mailbox *)(tds[args[0]].args[1]))->rpl_len, (unsigned int)args[2]);
                     assert_ker_msg(tds, td_pq, 102);
                 }
+                // strcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value);
                 memcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value, (unsigned int)args[2]);
                 ((mailbox *)(tds[args[0]].args[1]))->rpl->iValue = ((message *)args[1])->iValue;
                 ((mailbox *)(tds[args[0]].args[1]))->rpl->type = ((message *)args[1])->type;
