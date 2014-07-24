@@ -124,8 +124,7 @@ void DebugPutStr ( char* fmt, ... ) {
                 break;
             default:
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll DEBUGPUTSTR %d", c);
-                Assert();
-                break;
+                return;
         }
     }
     va_end(va);

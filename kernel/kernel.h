@@ -36,6 +36,8 @@
 #define IDLE_TID                2
 #define FOREVER for(;;)
 
+#define FAIL_TYPE               -1
+
 typedef struct message_t
 {
 	char *value;
@@ -114,5 +116,7 @@ int Assert();
 void uninitialize();
 
 int IdleUsage();
+
+void unzombifytd (unsigned int* free_list_lo, unsigned int* free_list_hi, int tid);
 
 #endif

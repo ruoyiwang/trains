@@ -61,7 +61,8 @@ void TrainTask () {
                 break;
             default:
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll TRAINSERVER %d", msg_struct.type);
-                Assert();
+                reply_struct.type = FAIL_TYPE;
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
         }
     }
@@ -71,7 +72,7 @@ int reverseTrain( int num ) {
     char msg[10] = {0};
     char reply[10] = {0};
     int msglen = 10, rpllen = 10;
-    static int receiver_tid;
+    int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.type = TRAIN_REVERSE;
@@ -79,7 +80,6 @@ int reverseTrain( int num ) {
 
     genTrainName(num, msg);
     receiver_tid = WhoIs(msg);
-
     if (receiver_tid == -1) {
         receiver_tid = Create(3, (&TrainTask));
         msg_struct.iValue = num;
@@ -99,7 +99,7 @@ int setTrainSpeed( int num, int speed ) {
     char msg[10] = {0};
     char reply[10] = {0};
     int msglen = 10, rpllen = 10;
-    static int receiver_tid;
+    int receiver_tid;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.type = TRAIN_SET_SPEED;

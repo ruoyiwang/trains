@@ -57,15 +57,11 @@ void SensorNotifierNoCourier() {
         memset(&msg_struct, 0, sizeof(message));
         msg_struct.type = SENSOR_NOTIFIER;
         msg_struct.value = sensors_bytes;
-        // Delay(5);
+        Delay(5);
         putc(COM1, DUMP_ALL_SENSORS);
         for ( i=0; i < 10; i++) {
             // Delay(2);
             c = getc(COM1);
-            if (c == 0xfd) {
-                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll dropped byte %d", msg_struct.type);
-                Assert();
-            }
             sensors_bytes[i] = c;
         }
         // sensors_bytes[0] = Time();
@@ -185,7 +181,8 @@ void SensorServer() {
             default:
                 // wtf
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll SENSORSSERVER %d", msg_struct.type);
-                Assert();
+                reply_struct.type = FAIL_TYPE;
+                Reply (sender_tid, (char *)&reply_struct, 10);
                 break;
         }
     }

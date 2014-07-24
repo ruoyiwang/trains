@@ -109,7 +109,8 @@ void clockServer() {
             default:
                 // wtf
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll CLOCKSERVER %d", msg_struct.type);
-                Assert();
+                reply_struct.type = FAIL_TYPE;
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
         }
     }

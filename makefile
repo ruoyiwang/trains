@@ -21,7 +21,7 @@ all:  kernel.s kernel.elf
 
 
 kernel.s: kernel/kernel.c kernel/kernel.h kernel/nameserver.h tasks/clockserver.h tasks/sensors.h tasks/commandcenter.h tasks/comservers.h tasks/interface.h kernel/queue.h tasks/Tasks.h tasks/train.h lib/bwio.h
-	$(XCC) -S $(CFLAGS) -O2 kernel/kernel.c
+	$(XCC) -S $(CFLAGS) kernel/kernel.c
 
 kernel.o: kernel.s kernel/ker_ent_exit.asm kernel/int_ker_ent_exit.asm
 	$(AS) $(ASFLAGS) -o kernel.o kernel.s kernel/ker_ent_exit.asm kernel/int_ker_ent_exit.asm

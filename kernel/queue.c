@@ -30,6 +30,10 @@ int pq_pop_front(td_queue td_pq[16], int pri) {
 void pq_push_back(td_queue td_pq[16], td tds[64], int tid) {
     int pri = tds[tid].priority;
     tds[tid].state = STATE_READY;
+    int i;
+    for (i = 0; i<5 ; i++) {
+        tds[tid].args[i] = 0;
+    }
     if (td_pq[pri].front == NULL) {
         td_pq[pri].front = (tds + tid);
         td_pq[pri].back = (tds + tid);

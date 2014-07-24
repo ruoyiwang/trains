@@ -64,10 +64,6 @@ int NameServerLookUp(
             return lookupArray[i].tid;
         }
     }
-    // bwprintf(COM2, "\n\n\n\n\n\n\nnameserver failed %s!\n", name);
-    // for ( i = 0; i < LOOKUP_ARRAY_SIZE; i++ ) {
-    //     bwprintf(COM2, "%s!", lookupArray[i].task_name);
-    // }
     // Assert();
     return -1;
 }
@@ -109,13 +105,14 @@ void NameServer() {
                 else {
                     reply_struct.value[0] = tid;
                 }
-                Reply (sender_tid, (char *)&reply_struct, 1);
+                Reply (sender_tid, (char *)&reply_struct, 64);
                 break;
             default:
                 // This should never happen
                 // TODO: reply false or some shit
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll NAMESEVER %d", msg_struct.type);
-                Assert();
+                reply_struct.type = FAIL_TYPE;
+                Reply (sender_tid, (char *)&reply_struct, 64);
                 break;
         }
     }

@@ -116,7 +116,6 @@ int setspeed( int channel, int speed ) {
             break;
     default:
         bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll SETSPEED1 %d", channel);
-        Assert();
         return -1;
         break;
     }
@@ -131,7 +130,6 @@ int setspeed( int channel, int speed ) {
         return 0;
     default:
         bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll SETSPEED2 %d", channel);
-        Assert();
         return -1;
     }
 }

@@ -69,6 +69,10 @@ int AwaitEvent( int eventId ) {
 }
 
 int _send ( int tid, mailbox *mail ) {
+    if (mail->rpl_len <= 0) {
+        bwprintf(COM2, "\n\n\n\nREPLY %d\n", tid);
+        Assert();
+    }
     asm ("swi 11");
     register int ret asm("r0");
     return ret;
@@ -112,20 +116,30 @@ int Assert ( ) {
 }
 
 int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
-	int i;
-	for ( i = 0; i < 0x20; i++ ) {
-		if ( !((*free_list_lo) & (1 << i)) ) {
-			*free_list_lo = (*free_list_lo) | (1 << i);
-			return i;
-		}
-	}
-	for ( i = 0; i < 0x20; i++ ) {
-		if ( !((*free_list_hi) & (1 << i)) ) {
-			*free_list_hi = (*free_list_hi) | (1 << i);
-			return 32+i;
-		}
-	}
+    int i;
+    for ( i = 0; i < 0x20; i++ ) {
+        if ( !((*free_list_lo) & (1 << i)) ) {
+            *free_list_lo = (*free_list_lo) | (1 << i);
+            return i;
+        }
+    }
+    for ( i = 0; i < 0x20; i++ ) {
+        if ( !((*free_list_hi) & (1 << i)) ) {
+            *free_list_hi = (*free_list_hi) | (1 << i);
+            return 32+i;
+        }
+    }
     return -1;
+}
+
+void unzombifytd (unsigned int* free_list_lo, unsigned int* free_list_hi, int tid) {
+    if (tid < 32){
+        *free_list_lo = (*free_list_lo) & ~(1 << tid);
+    }
+    else {
+        tid-=32;
+        *free_list_hi = (*free_list_hi) & ~(1 << tid);
+    }
 }
 
 void calculate_idle_usage( unsigned int *before_idle, unsigned int *time_idled, unsigned int *current_frame, unsigned int *usage) {
@@ -284,7 +298,7 @@ void handle (td *active, int req, int args[5],
                         interrupt_queue[EVENT_COM1_RECEIVE] = 0;
                     }
                     else {
-                        temp = *uart1_data;
+                        // temp = *uart1_data;
                         interrupt_queue[EVENT_COM1_RECEIVE]++;
                     }
                 }
@@ -299,7 +313,7 @@ void handle (td *active, int req, int args[5],
                     // assert_ker(tds, td_pq);
                     if (*uart1_flags & CTS_MASK ) {
                         uart_noops();
-                        *uart1_ctrl = * uart1_ctrl & ~MSIEN_MASK;
+                        // *uart1_ctrl = * uart1_ctrl & ~MSIEN_MASK;
                         *uart1_cts_flag = 1;
                     }
                 }
@@ -338,7 +352,7 @@ void handle (td *active, int req, int args[5],
                     }
                     else {
                         // assert_ker_msg(tds, td_pq, 110);
-                        temp = *uart2_data;
+                        // temp = *uart2_data;
                         interrupt_queue[EVENT_COM2_RECEIVE]++;
                     }
                 }
@@ -356,6 +370,7 @@ void handle (td *active, int req, int args[5],
         case 7:
             break;
         case 8:
+            unzombifytd (free_list_lo, free_list_hi, active->tid);
             active->state = STATE_ZOMBIE;
             break;
         case 9:     // wait
@@ -364,7 +379,7 @@ void handle (td *active, int req, int args[5],
             }
             else if (args[0] == EVENT_COM2_RECEIVE && interrupt_queue[EVENT_COM2_RECEIVE] > 0) {
                 // assert_ker_msg(tds, td_pq, 112);
-                active->ret = 0xfd;
+                active->ret = *uart2_data;
                 interrupt_queue[EVENT_COM2_RECEIVE]--;
             }
             else if (args[0] == EVENT_COM2_TRANSMIT && interrupt_queue[EVENT_COM2_TRANSMIT] > 0) {
@@ -372,7 +387,7 @@ void handle (td *active, int req, int args[5],
             }
             else if (args[0] == EVENT_COM1_RECEIVE && interrupt_queue[EVENT_COM1_RECEIVE] > 0) {
                 // assert_ker_msg(tds, td_pq, 113);
-                active->ret = 0xfd;
+                active->ret = *uart1_data;
                 interrupt_queue[EVENT_COM1_RECEIVE]--;
             }
             else if (args[0] == EVENT_COM1_TRANSMIT && interrupt_queue[EVENT_COM1_TRANSMIT] > 0) {
@@ -396,7 +411,7 @@ void handle (td *active, int req, int args[5],
             if ( tds[args[0]].state == STATE_SND_BLK ) {    //if receive first
                 *(tds[args[0]].sendQ->sender_tid) = active->tid;
                 if (tds[args[0]].sendQ->msg_len < ((mailbox *)args[1])->msg_len) {
-                     // bwprintf(COM2, "%c[2JRECEIVE %d %d %d\n", 0x1b,active->tid,tds[args[0]].sendQ->msg_len, ((mailbox *)args[1])->msg_len);
+                    bwprintf(COM2, "%c[2JRECEIVE %d %d %d\n", 0x1b,active->tid,tds[args[0]].sendQ->msg_len, ((mailbox *)args[1])->msg_len);
                     assert_ker_msg(tds, td_pq, 100);
                 }
                 // strcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value);
@@ -430,7 +445,7 @@ void handle (td *active, int req, int args[5],
             if ( active->sendQ ) {    //if send first
                 // bwprintf(COM2, "CRYING3\n");
                 if (((mailbox*)args[0])->msg_len < active->sendQ->msg_len) {
-                     // bwprintf(COM2, "%c[2JSEND %d %d %d\n", 0x1b,active->tid,((mailbox*)args[0])->msg_len, active->sendQ->msg_len);
+                    bwprintf(COM2, "%c[2JSEND %d %d %d\n", 0x1b,active->tid,((mailbox*)args[0])->msg_len, active->sendQ->msg_len);
                     assert_ker_msg(tds, td_pq, 101);
                 }
                 *((mailbox*)args[0])->sender_tid = *(active->sendQ->sender_tid);
@@ -451,7 +466,7 @@ void handle (td *active, int req, int args[5],
             if ( tds[args[0]].state == STATE_RPL_BLK ) {
                 // bwprintf(COM2, "CRYING5\n");
                 if (((mailbox *)(tds[args[0]].args[1]))->rpl_len < (unsigned int)args[2]) {
-                     // bwprintf(COM2, "%c[2JREPLY %d %d %d\n", 0x1b,active->tid,((mailbox *)(tds[args[0]].args[1]))->rpl_len, (unsigned int)args[2]);
+                    bwprintf(COM2, "\n\n\n\nREPLY %d %d %d %d %d\n", active->tid, args[0], tds[args[0]].args[1],((mailbox *)(tds[args[0]].args[1]))->rpl_len, (unsigned int)args[2]);
                     assert_ker_msg(tds, td_pq, 102);
                 }
                 // strcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value);

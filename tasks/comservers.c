@@ -19,11 +19,11 @@ void Com2PutServerNotifier() {
     int * uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
 
     FOREVER {
-        msglen = 2;
         AwaitEvent( EVENT_COM2_TRANSMIT );
         msg[0] = (char) data;
         // send evt to data
         msg_struct.type = PUTC_NOTIFIER;
+        msglen = 2;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
         *uart2_data = (char) reply_struct.value[0];
     }
@@ -43,11 +43,11 @@ void Com1PutServerNotifier() {
     int * uart1_data = (int *)( UART1_BASE + UART_DATA_OFFSET );
 
     FOREVER {
-        msglen = 2;
         AwaitEvent( EVENT_COM1_TRANSMIT );
         msg[0] = (char) data;
         // send evt to data
         msg_struct.type = PUTC_NOTIFIER;
+        msglen = 2;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
         *uart1_data = (char) reply_struct.value[0];
         // Delay(10);
@@ -96,7 +96,6 @@ void PutServer() {
             break;
         default:
             bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMSERVEREXIT %d", msg_struct.type);
-            Assert();
             Exit();
     }
 
@@ -180,7 +179,8 @@ void PutServer() {
             default:
                 // shit
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMPUTSERVER %d", msg_struct.type);
-                Assert();
+                reply_struct.type = FAIL_TYPE;
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
         }
     }
@@ -202,6 +202,7 @@ void Com1GetServerNotifier() {
         msg[0] = (char) data;
         // send evt to data
         msg_struct.type = GETC_NOTIFIER;
+        msglen = 2;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
     }
 }
@@ -222,6 +223,7 @@ void Com2GetServerNotifier() {
         msg[0] = (char) data;
         // send evt to data
         msg_struct.type = GETC_NOTIFIER;
+        msglen = 2;
         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
     }
 }
@@ -285,7 +287,6 @@ void GetServer() {
             break;
         default:
             bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll GETSERVEREXIT %d", msg_struct.type);
-            Assert();
             Exit();
     }
     // timeout_notifier_tid = Create(1, (&GetTimeoutNotifier));
@@ -359,7 +360,8 @@ void GetServer() {
             default:
                 // shit
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMGETSERVER %d", msg_struct.type);
-                Assert();
+                reply_struct.type = FAIL_TYPE;
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
         }
     }
@@ -391,7 +393,6 @@ void putc(int COM, char c) {
     }
     else {
         bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll putc %d", COM);
-        Assert();
         return;
     }
 

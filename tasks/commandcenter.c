@@ -246,6 +246,7 @@ void CommandCenterServer() {
                             train_info[i][TRAIN_INFO_DEST_SENSOR] == train_info[i][TRAIN_INFO_NEXT_SENSOR]) {
                             train_info[i][TRAIN_INFO_DEST_SENSOR] = -1;
                             train_info[i][TRAIN_INFO_DEST_OFFSET] = 0;
+                            DebugPutStr("s", "DEBUG: Arrived at destination!");
                             break;
                         }
 
@@ -261,7 +262,7 @@ void CommandCenterServer() {
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (msg_struct.iValue == train_info[i][TRAIN_INFO_ID]) {
                         // if train is stopped
-                        if (train_info[i][TRAIN_INFO_STOPPED] && train_info[i][TRAIN_INFO_STOPPING_SENSOR] >= 0) {
+                        if (train_info[i][TRAIN_INFO_STOPPED] && train_info[i][TRAIN_INFO_TIME] >= 0) {
                             // if the train stopped really close the the stopping sensor
                             if (train_info[i][TRAIN_INFO_NEXT_SENSOR] == train_info[i][TRAIN_INFO_STOPPING_SENSOR]
                                 && train_info[i][TRAIN_INFO_STOPPING_OFFSET] < 5) {
@@ -346,8 +347,9 @@ void CommandCenterServer() {
                 requests[sender_tid] = msg_struct.iValue;
                 break;
             default:
-                // bwprintf(COM2, "wtf %d\n", msg_struct.type);
-                Assert();
+                bwprintf(COM2, "fmlllll COMMAND CENTER SEVER %d\n", msg_struct.type);
+                reply_struct.type = FAIL_TYPE;
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
         }
     }
@@ -376,12 +378,13 @@ void serverSetStopping (int* train_info, int* train_speed, int sensor, int offse
     pathFindDijkstra(
         &md,
         train_info[TRAIN_INFO_SENSOR],          // current node
-        train_info[TRAIN_INFO_SENSOR_OFFSET],                      // offset
+        0,                      // offset
         sensor,                 // where it wants to go
         790,                    // stoping distance
         blocked_nodes,          // the nodes the trains can't use
         0                       // the length of the blocked nodes array
     );
+    DebugPutStr("s", "DEBUG: found route ");
     stopping_sensor = md.stopping_sensor;
     stopping_sensor_dist = md.stopping_dist;
 
@@ -407,10 +410,21 @@ void serverSetStopping (int* train_info, int* train_speed, int sensor, int offse
         }
         msg_struct.value[0] = -1;
         msg_struct.iValue = 1;
-        DebugPutStr("s", "DEBUG: reversing");
         int next_sensor, prev_sensor;
         next_sensor = getSensorComplement(train_info[TRAIN_INFO_SENSOR]);
         prev_sensor = getSensorComplement(train_info[TRAIN_INFO_NEXT_SENSOR]);
+        DebugPutStr("sdsd", "DEBUG: reversing: prev:", prev_sensor, " next:", next_sensor);
+        pathFindDijkstra(
+            &md,
+            prev_sensor,          // current node
+            0,                      // offset
+            next_sensor,                 // where it wants to go
+            790,                    // stoping distance
+            blocked_nodes,          // the nodes the trains can't use
+            0                       // the length of the blocked nodes array
+        );
+        DebugPutStr("sd", "DEBUG: edge length is: ", md.total_distance);
+        train_info[TRAIN_INFO_SENSOR_OFFSET] = md.total_distance - train_info[TRAIN_INFO_SENSOR_OFFSET];
         train_info[TRAIN_INFO_SENSOR] = prev_sensor;
         train_info[TRAIN_INFO_NEXT_SENSOR] = next_sensor;
         reverseTrain(train_info[TRAIN_INFO_ID]);
