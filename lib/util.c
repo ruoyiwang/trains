@@ -80,6 +80,8 @@ unsigned int rand(unsigned int seed) {
 
 void TurnCacheOn() {
     asm("stmdb sp!, {r4}");
+    asm("mov r4, #0");
+    asm("mcr p15, 0, r4, c7, c5, 0");
     asm("MRC p15, 0, R4, c1, c0, 0");
     asm("ORR R4, R4, #4096");
     asm("ORR R4, R4, #4");

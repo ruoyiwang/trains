@@ -184,7 +184,6 @@ void initialize (td tds[64], int event_blocked_tds[5]) {
     handler = (void *) 0x38;
     *handler = (int) syscall;
     initialize_interrupts();
-    volatile _tds = tds;
 
     // set SHena to enable halt mode
     int *device_cfg = (int *) DEVICE_CFG;
@@ -234,6 +233,7 @@ void handle (td *active, int req, int args[5],
     for (i = 0; i<5 ; i++) {
         active->args[i] = args[i];
     }
+    int temp;
 
     switch ( req ) {
         case 20:    //interrupts
@@ -246,18 +246,33 @@ void handle (td *active, int req, int args[5],
                 if (event_blocked_tds[EVENT_CLOCK]) {
                     pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_CLOCK])->tid);
                     event_blocked_tds[EVENT_CLOCK] = 0;
+                    interrupt_queue[EVENT_CLOCK]=0;
                 }
                 else {
                     interrupt_queue[EVENT_CLOCK]=1;
                 }
             }
             if (*VIC2Status & (1 << 20)) {
+
+                if (*uart1_intr & RIS_MASK ){
+                    if (event_blocked_tds[EVENT_COM1_RECEIVE]) {
+                        ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->ret = *uart1_data;
+                        pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->tid);
+                        event_blocked_tds[EVENT_COM1_RECEIVE] = 0;
+                        interrupt_queue[EVENT_COM1_RECEIVE] = 0;
+                    }
+                    else {
+                        temp = *uart1_data;
+                        interrupt_queue[EVENT_COM1_RECEIVE]++;
+                    }
+                }
                 if (*uart1_intr & TIS_MASK ){
                     *uart1_tx_flag = 1;
                     uart_noops();
                     *uart1_ctrl = * uart1_ctrl & ~TIEN_MASK;
                 }
                 if (*uart1_intr & MIS_MASK ){
+                    uart_noops();
                     *uart1_intr = 0;
                     // assert_ker(tds, td_pq);
                     if (*uart1_flags & CTS_MASK ) {
@@ -278,18 +293,6 @@ void handle (td *active, int req, int args[5],
                         interrupt_queue[EVENT_COM1_TRANSMIT] = 1;
                     }
                 }
-
-                if (*uart1_intr & RIS_MASK ){
-                    if (event_blocked_tds[EVENT_COM1_RECEIVE]) {
-                        ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->ret = *uart1_data;
-                        pq_push_back(td_pq, tds, ((td *) event_blocked_tds[EVENT_COM1_RECEIVE])->tid);
-                        event_blocked_tds[EVENT_COM1_RECEIVE] = 0;
-                        interrupt_queue[EVENT_COM1_RECEIVE] = 0;
-                    }
-                    else {
-                        interrupt_queue[EVENT_COM1_RECEIVE]++;
-                    }
-                }
             }
             if (*VIC2Status & (1 << 22)) {
                 if (*uart2_intr & TIS_MASK ){
@@ -301,7 +304,7 @@ void handle (td *active, int req, int args[5],
                         interrupt_queue[EVENT_COM2_TRANSMIT] = 0;
                     }
                     else {
-                        interrupt_queue[EVENT_COM2_TRANSMIT]=1;
+                        interrupt_queue[EVENT_COM2_TRANSMIT] = 1;
                     }
                 }
                 if (*uart2_intr & RIS_MASK ){
@@ -312,6 +315,8 @@ void handle (td *active, int req, int args[5],
                         interrupt_queue[EVENT_COM2_RECEIVE] = 0;
                     }
                     else {
+                        // assert_ker_msg(tds, td_pq, 110);
+                        temp = *uart2_data;
                         interrupt_queue[EVENT_COM2_RECEIVE]++;
                     }
                 }
@@ -336,14 +341,16 @@ void handle (td *active, int req, int args[5],
                 interrupt_queue[EVENT_CLOCK] = 0;
             }
             else if (args[0] == EVENT_COM2_RECEIVE && interrupt_queue[EVENT_COM2_RECEIVE] > 0) {
-                active->ret = 0;
+                // assert_ker_msg(tds, td_pq, 112);
+                active->ret = 0xfd;
                 interrupt_queue[EVENT_COM2_RECEIVE]--;
             }
             else if (args[0] == EVENT_COM2_TRANSMIT && interrupt_queue[EVENT_COM2_TRANSMIT] > 0) {
                 interrupt_queue[EVENT_COM2_TRANSMIT] = 0;
             }
             else if (args[0] == EVENT_COM1_RECEIVE && interrupt_queue[EVENT_COM1_RECEIVE] > 0) {
-                active->ret = 0;
+                // assert_ker_msg(tds, td_pq, 113);
+                active->ret = 0xfd;
                 interrupt_queue[EVENT_COM1_RECEIVE]--;
             }
             else if (args[0] == EVENT_COM1_TRANSMIT && interrupt_queue[EVENT_COM1_TRANSMIT] > 0) {
@@ -357,7 +364,7 @@ void handle (td *active, int req, int args[5],
                 if (args[0] == EVENT_COM1_TRANSMIT) {
                     uart_noops();
                     *uart1_ctrl = * uart1_ctrl | TIEN_MASK | MSIEN_MASK;
-                    uart1_cts_flag = *uart1_flags & CTS_MASK;
+                    // *uart1_cts_flag = *uart1_flags & CTS_MASK;
                 }
                 active->state = STATE_EVT_BLK;
                 event_blocked_tds[args[0]] = active;

@@ -409,9 +409,7 @@ void initInterface() {
 
     // Create(2, (&clockServer));
     Create(4, (&clockDisplayTask));
-    Create(7, (&IdleDisplayTask));
     Create(5, (&handleCommandTask));
-
 }
 
 void formClockStr (int time_tick, char* buffer) {
@@ -736,6 +734,7 @@ void handleCommandTask() {
     Delay(600);
     Create(3, (&SensorServer));
     Create(6, (&SensorsDisplayTask));
+    Create(7, (&IdleDisplayTask));
 
     Create(3, (&CommandCenterServer));
     // Create(5, (&LocationDisplayTask));

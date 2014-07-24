@@ -62,6 +62,10 @@ void SensorNotifierNoCourier() {
         for ( i=0; i < 10; i++) {
             // Delay(2);
             c = getc(COM1);
+            if (c == 0xfd) {
+                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll dropped byte %d", msg_struct.type);
+                Assert();
+            }
             sensors_bytes[i] = c;
         }
         // sensors_bytes[0] = Time();

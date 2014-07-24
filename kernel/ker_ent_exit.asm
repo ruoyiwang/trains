@@ -27,8 +27,8 @@ ker_entry:
 	str r2, [r0, #0xc]				/* store spsr to TD */
 	str ip, [r0, #0x8]				/* store the sp to the TD */
 	ldr r0, [r3, #-4]				/* get the swi arguemnt and return it */
-	ldmia   sp!, { r4-r12, lr} 		/* pop the kernal stack */
-	mov pc, lr 						/* this go back to kernel */
+	ldmia   sp!, { r4-r12, pc} 		/* pop the kernal stack */
+	/*mov pc, lr 						 this go back to kernel */
 .size	ker_entry, .-ker_entry
 
 .global	ker_exit
