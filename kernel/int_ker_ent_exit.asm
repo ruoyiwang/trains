@@ -5,7 +5,7 @@
 .type	int_ker_entry, %function
 int_ker_entry:
 	msr cpsr_c, #0xdf 				/* change to system mode */
-	stmdb   sp!, {r0-r12, lr, ip} 	/* store the task registers */
+	stmdb   sp!, {r0-r12, lr} 	/* store the task registers */
 	mov ip, sp
 
 	msr cpsr_c, #0xd2 				/* change back to irq mode */
@@ -37,7 +37,7 @@ int_ker_exit:
 
 	msr cpsr_c, #0xdf				/* change to system mode */
     ldr sp, [r0, #8]				/* load the td sp */
-    ldmia   sp!, {r0-r12, lr, ip}		/* reload r0 - r10 of the task */
+    ldmia   sp!, {r0-r12, lr}		/* reload r0 - r10 of the task */
 
     msr cpsr_c, #0xd3				/* change to system mode */
     movs pc, lr

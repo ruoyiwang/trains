@@ -17,7 +17,7 @@ ker_entry:
 	mov r3, lr 						/* save the lr to r3 */
 
 	msr cpsr_c, #0xdf 				/* change to system mode */
-	stmdb   sp!, {r0-r12, lr, ip} 			/* store the task registers */
+	stmdb   sp!, {r0-r12, lr} 			/* store the task registers */
 	mov ip, sp 						/* save the sp to r1 */
 
 	msr cpsr_c, #0xd3 				/* change back to superviser mode */
@@ -44,7 +44,7 @@ ker_exit:
 
     msr cpsr_c, #0xdf				/* change to system mode */
     ldr sp, [r0, #8]				/* load the td sp */
-    ldmia   sp!, {r0-r12, lr, ip}		/* reload r4 - r10 of the task */
+    ldmia   sp!, {r0-r12, lr}		/* reload r4 - r10 of the task */
 
     msr cpsr_c, #0xd3 				/* change back to superviser mode */
     ldr r1, [sp, #4]

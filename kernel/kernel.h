@@ -44,7 +44,7 @@ typedef struct message_t
 } message;
 
 typedef struct mailbox_t {
-	int *sender_tid;
+	unsigned int *sender_tid;
 	message *msg;
 	int msg_len;
 	message *rpl;
@@ -71,7 +71,7 @@ void first();
 
 void SVC_HANDLER();
 
-void initialize ( td tds[64], int event_blocked_tds[5] );
+void initialize ( td tds[64], td* event_blocked_tds[5] );
 
 void testContextNOP();
 
@@ -112,5 +112,7 @@ int AwaitEvent( int eventId );
 int Assert();
 
 void uninitialize();
+
+int IdleUsage();
 
 #endif

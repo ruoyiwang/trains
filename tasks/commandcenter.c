@@ -14,13 +14,11 @@
 #include <trainspeed.h>
 
 void CommandCenterNotifier() {
-    int i;
-    char c;
     int courier_tid;
 
     char msg[11] = {0};
     char reply[11] = {0};
-    int receiver_tid, msglen = 10, rpllen = 10;
+    int msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.type = COMMAND_CENTER_NOTIFIER;
@@ -38,10 +36,9 @@ void CommandCenterNotifier() {
 
 void CommandCenterCourier() {
     int notifier_tid, server_tid;
-    char sensor;
     char msg[11] = {0};
     char rpl[11] = {0};
-    int receiver_tid, msglen = 10, rpllen = 10;
+    int msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.type = COMMAND_CENTER_NOTIFIER;
@@ -59,13 +56,11 @@ void CommandCenterCourier() {
 }
 
 void CommandCenterStoppingNotifier() {
-    int i;
-    char c;
     int server_tid;
 
     char msg[11] = {0};
     char reply[11] = {0};
-    int receiver_tid, msglen = 10, rpllen = 10;
+    int msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.type = COMMAND_CENTER_STOPPING_NOTIFIER;
@@ -77,7 +72,7 @@ void CommandCenterStoppingNotifier() {
     DebugPutStr("sdsd", "DEBUG: notifier: ", msg_struct.value[0], " : ", msg_struct.iValue);
     int is_short_move = 0;
     int delay = (int) msg_struct.iValue;
-    if (!(msg_struct.value[0] >= 0 && msg_struct.value[0] < 80)) {
+    if (!(msg_struct.value[0] < (char) 80)) {
         is_short_move = 1;
     }
     if (!is_short_move){
@@ -103,7 +98,7 @@ void CommandCenterServer() {
     char msg[11] = {0};
     char reply[30] = {0};
     int sender_tid, msglen = 10, rpllen = 10, expected_time;
-    int actual_time, location, total_distance;
+    int actual_time, total_distance;
 
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -111,9 +106,7 @@ void CommandCenterServer() {
 
     int requests[64] = {-1};
     char sensors_ahead[5] = {-1};
-    int courier_tid, notifier_tid, train_count = 0, sensor = -1;
-    int stopping_sensor = -1, stopping_sensor_dist = -1, stop_delay = 0;
-    char sensor_route[20] = {0};    // the sensors the train's gonna
+    int courier_tid, notifier_tid, train_count = 0;
 
     int train_info[MAX_TRAIN_COUNT][TRAIN_INFO_SIZE];
     int train_speed[MAX_TRAIN_COUNT][80];
@@ -363,8 +356,7 @@ void CommandCenterServer() {
 void serverSetStopping (int* train_info, int* train_speed, int sensor, int offset) {
     char msg[11] = {0};
     char reply[30] = {0};
-    int sender_tid, msglen = 10, rpllen = 10, expected_time;
-    int actual_time, location, total_distance;
+    int msglen = 10, rpllen = 10;
 
     move_data md;
     message msg_struct, reply_struct;
@@ -374,7 +366,6 @@ void serverSetStopping (int* train_info, int* train_speed, int sensor, int offse
     // initialize the stoping notifier
     int notifier_tid = Create(1, (&CommandCenterStoppingNotifier));
     int stopping_sensor_dist = 0, stopping_sensor = -1;
-    int sensor_route[20];
     int blocked_nodes[20];
     // update the train info
     train_info[TRAIN_INFO_STOPPING_NOTIFIER] = notifier_tid;

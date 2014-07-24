@@ -120,7 +120,7 @@ struct move_data_t pathFindDijkstraTrackTask(
     int src_node_offfset,
     int stopping_node,
     int stopping_dist,
-    int blocked_nodes[],         // the landmarks the train cannot use
+    int blocked_nodes[TRACK_MAX],         // the landmarks the train cannot use
     int blocked_nodes_len
 );
 

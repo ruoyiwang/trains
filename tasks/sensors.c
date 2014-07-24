@@ -101,7 +101,7 @@ void SensorServer() {
     // msg shits
     char msg[10] = {0};
     char reply[10] = {0};
-    int sender_tid, msglen = 10, rpllen = 10, cur_time;
+    int sender_tid, msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -124,7 +124,7 @@ void SensorServer() {
     // msg_struct.iValue = notifier_tid;
     // Send (courier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     RegisterAs(SENSOR_SERVER_NAME);
-    int notifier_tid = Create(1, (&SensorNotifierNoCourier));
+    Create(1, (&SensorNotifierNoCourier));
 
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );

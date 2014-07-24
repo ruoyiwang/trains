@@ -45,5 +45,7 @@ int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_s
 int setTrainDestination( int train_id, int sensor, int offset );
 int shortMoveDistanceToDelay( double distance, int train_num );
 void serverSetStopping (int* train_info, int* train_speed, int sensor, int offset);
+int timeToDistance( int sensor, int delta_time, int *train_speed );
+int getTrainLocation ( int train_id, int* sensor, int* offset);
 
 #endif

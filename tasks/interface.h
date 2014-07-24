@@ -67,5 +67,5 @@ void SensorsTask();
 void handleCommandTask();
 void parseCommand ( char* str, int *argc, char argv[10][10], int* command);
 void IdleDisplayTask();
-
+unsigned int atoi ( char *str );
 #endif

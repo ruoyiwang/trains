@@ -126,8 +126,8 @@ void PutServer() {
             case PUTSTR_REQUEST:
                 i=0;
                 // copy_len = msg_struct.iValue;
-                copystr = msg_struct.iValue;
-                while ( char_from_request = copystr[i++]) {
+                copystr = (char *)msg_struct.iValue;
+                while ( (char_from_request = copystr[i++]) ) {
                     insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
                     string_buffer[insetion_point] = char_from_request;
                     buf_len++;
@@ -226,24 +226,24 @@ void Com2GetServerNotifier() {
     }
 }
 
-void GetTimeoutNotifier() {
-    // msg shits
-    char msg[2] = {0};
-    char reply[2] = {0};
-    int receiver_tid, msglen = 2;
-    message msg_struct, reply_struct;
-    msg_struct.value = msg;
-    reply_struct.value = reply;
-    char data;
+// void GetTimeoutNotifier() {
+//     // msg shits
+//     char msg[2] = {0};
+//     char reply[2] = {0};
+//     int receiver_tid, msglen = 2;
+//     message msg_struct, reply_struct;
+//     msg_struct.value = msg;
+//     reply_struct.value = reply;
+//     char data;
 
-    FOREVER {
-        Receive( &receiver_tid, (char*)&msg_struct, msglen );
-        Reply (receiver_tid, (char *)&reply_struct, msglen);
-        Delay(msg_struct.iValue);
-        msg_struct.type = GETC_TIMEOUT;
-        Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
-    }
-}
+//     FOREVER {
+//         Receive( &receiver_tid, (char*)&msg_struct, msglen );
+//         Reply (receiver_tid, (char *)&reply_struct, msglen);
+//         Delay(msg_struct.iValue);
+//         msg_struct.type = GETC_TIMEOUT;
+//         Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+//     }
+// }
 
 // assuming only 1 thing is gonna call get
 void GetServer() {
@@ -254,7 +254,7 @@ void GetServer() {
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
-    int timeout_notifier_tid;
+    // int timeout_notifier_tid;
 
     // current task blocked
     int blocked_task = -1;
@@ -288,7 +288,7 @@ void GetServer() {
             Assert();
             Exit();
     }
-    timeout_notifier_tid = Create(1, (&GetTimeoutNotifier));
+    // timeout_notifier_tid = Create(1, (&GetTimeoutNotifier));
 
     FOREVER {
         msglen = 2, rpllen = 2;
@@ -326,31 +326,31 @@ void GetServer() {
                     blocked_task = sender_tid;
                 }
                 break;
-            case GETC_TIMEOUT:
-                if (blocked_task != -1) {
-                    reply[0] = -1;
-                    reply_struct.iValue = -1;
-                    Reply (blocked_task, (char *)&reply_struct, rpllen);
-                    Reply (sender_tid, (char *)&reply_struct, rpllen);
-                    blocked_task = -1;
-                }
-                break;
-            case GETC_TIMEOUT_REQUEST:
-                // read char from the buffer
-                // if there is char on the buffer, return it
-                if (buf_len > 0) {
-                    reply[0] = string_buffer[buf_start];
-                    buf_start = (buf_start+1) % BUFFER_SIZE;
-                    buf_len--;
-                    Reply (sender_tid, (char *)&reply_struct, rpllen);
-                }
-                else {
-                    // task is blocked;
-                    blocked_task = sender_tid;
-                    msg[0] = blocked_task;
-                    Send (timeout_notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
-                }
-                break;
+            // case GETC_TIMEOUT:
+            //     if (blocked_task != -1) {
+            //         reply[0] = -1;
+            //         reply_struct.iValue = -1;
+            //         Reply (blocked_task, (char *)&reply_struct, rpllen);
+            //         Reply (sender_tid, (char *)&reply_struct, rpllen);
+            //         blocked_task = -1;
+            //     }
+            //     break;
+            // case GETC_TIMEOUT_REQUEST:
+            //     // read char from the buffer
+            //     // if there is char on the buffer, return it
+            //     if (buf_len > 0) {
+            //         reply[0] = string_buffer[buf_start];
+            //         buf_start = (buf_start+1) % BUFFER_SIZE;
+            //         buf_len--;
+            //         Reply (sender_tid, (char *)&reply_struct, rpllen);
+            //     }
+            //     else {
+            //         // task is blocked;
+            //         blocked_task = sender_tid;
+            //         msg[0] = blocked_task;
+            //         Send (timeout_notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+            //     }
+            //     break;
             default:
                 // shit
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMGETSERVER %d", msg_struct.type);
@@ -397,9 +397,9 @@ void putc(int COM, char c) {
 }
 
 void putstr(int COM, char* str ) {
-    char msg[0] = {0};
+    char msg[1] = {0};
     char reply[4] = {0};
-    int msglen = 0 , rpllen = 4;
+    int msglen = 1 , rpllen = 4;
     static int com1_receiver_tid = -1, com2_receiver_tid = -1;
     int receiver_tid;
     message msg_struct, reply_struct;
@@ -408,7 +408,7 @@ void putstr(int COM, char* str ) {
     // reply_struct.iValue = 0;
     // msglen = strlen(str);
     // memcpy(msg, str, msglen);
-    msg_struct.iValue = str;
+    msg_struct.iValue = (int)str;
 
     if (COM == COM1) {
         if (com1_receiver_tid < 0) {
@@ -503,43 +503,43 @@ char getc(int COM) {
     return reply_struct.value[0];
 }
 
-char getc_timeout(int COM, int timeout, int* timedout) {
-    char msg[2] = {0};
-    char reply[2] = {0};
-    int msglen = 2;
-    static int com1_receiver_tid = -1, com2_receiver_tid = -1;
-    int receiver_tid;
-    message msg_struct, reply_struct;
-    msg_struct.value = msg;
-    reply_struct.value = reply;
-    reply_struct.iValue = 0;
-    msg_struct.type = GETC_TIMEOUT_REQUEST;
+// char getc_timeout(int COM, int timeout, int* timedout) {
+//     char msg[2] = {0};
+//     char reply[2] = {0};
+//     int msglen = 2;
+//     static int com1_receiver_tid = -1, com2_receiver_tid = -1;
+//     int receiver_tid;
+//     message msg_struct, reply_struct;
+//     msg_struct.value = msg;
+//     reply_struct.value = reply;
+//     reply_struct.iValue = 0;
+//     msg_struct.type = GETC_TIMEOUT_REQUEST;
 
-    if (COM == COM1) {
-        if (com1_receiver_tid < 0) {
-            com1_receiver_tid = WhoIs(COM1_GET_SERVER);
-        }
-        receiver_tid = com1_receiver_tid;
-    }
-    else if (COM == COM2) {
-        if (com2_receiver_tid < 0) {
-            com2_receiver_tid = WhoIs(COM2_GET_SERVER);
-        }
-        receiver_tid = com2_receiver_tid;
-    }
-    else {
-        bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll getc_timeout %d", COM);
-        // Assert();
-        return 0;
-    }
+//     if (COM == COM1) {
+//         if (com1_receiver_tid < 0) {
+//             com1_receiver_tid = WhoIs(COM1_GET_SERVER);
+//         }
+//         receiver_tid = com1_receiver_tid;
+//     }
+//     else if (COM == COM2) {
+//         if (com2_receiver_tid < 0) {
+//             com2_receiver_tid = WhoIs(COM2_GET_SERVER);
+//         }
+//         receiver_tid = com2_receiver_tid;
+//     }
+//     else {
+//         bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll getc_timeout %d", COM);
+//         // Assert();
+//         return 0;
+//     }
 
-    msg_struct.iValue = timeout;
-    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+//     msg_struct.iValue = timeout;
+//     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
 
-    *timedout = 0;
-    if (reply_struct.iValue < 0){
-        *timedout = 1;
-    }
+//     *timedout = 0;
+//     if (reply_struct.iValue < 0){
+//         *timedout = 1;
+//     }
 
-    return reply_struct.value[0];
-}
+//     return reply_struct.value[0];
+// }

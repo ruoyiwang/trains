@@ -28,41 +28,57 @@ int schedule ( td_queue td_pq[16] ) {
 
 int IdleUsage() {
     asm ("swi 15");
+    register int ret asm("r0");
+    return ret;
 }
 
 int MyTid() {
     asm ("swi 5");
+    register int ret asm("r0");
+    return ret;
 }
 
 int MyParentTid() {
     asm ("swi 6");
+    register int ret asm("r0");
+    return ret;
 }
 
 int Create( int priority,  void (* pc) ()) {
     asm ("swi 2");
+    register int ret asm("r0");
+    return ret;
 }
 
 int Pass() {
     asm ("swi 7");
+    register int ret asm("r0");
+    return ret;
 }
 
 int Exit() {
     asm ("swi 8");
+    register int ret asm("r0");
+    return ret;
 }
 
 int AwaitEvent( int eventId ) {
     asm ("swi 9");
+    register int ret asm("r0");
+    return ret;
 }
 
 int _send ( int tid, mailbox *mail ) {
     asm ("swi 11");
+    register int ret asm("r0");
+    return ret;
 }
 
 int Send ( int tid, char *msg, int msglen, char * reply, int replylen ) {
     mailbox mail;
-    mail.msg = msg;
+    mail.msg = (message *)msg;
     mail.msg_len = msglen;
-    mail.rpl = reply;
+    mail.rpl = (message *)reply;
     mail.rpl_len = replylen;
     mail.next = NULL;
     return _send (tid, &mail);
@@ -70,12 +86,14 @@ int Send ( int tid, char *msg, int msglen, char * reply, int replylen ) {
 
 int _receive ( mailbox *mail ) {
     asm ("swi 12");
+    register int ret asm("r0");
+    return ret;
 }
 
 int Receive ( int *tid, char *msg, int msglen ) {
     mailbox mail;
-    mail.sender_tid = tid;
-    mail.msg = msg;
+    mail.sender_tid = (unsigned int *)tid;
+    mail.msg = (message*)msg;
     mail.msg_len = msglen;
     mail.next = NULL;
     return _receive ( &mail );
@@ -83,10 +101,14 @@ int Receive ( int *tid, char *msg, int msglen ) {
 
 int Reply ( int tid, char *msg, int msglen ) {
     asm ("swi 13");
+    register int ret asm("r0");
+    return ret;
 }
 
 int Assert ( ) {
     asm ("swi 14");
+    register int ret asm("r0");
+    return ret;
 }
 
 int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
@@ -106,7 +128,7 @@ int get_free_td (unsigned int* free_list_lo, unsigned int* free_list_hi) {
     return -1;
 }
 
-void calculate_idle_usage( int *before_idle, int *time_idled, int *current_frame, int *usage) {
+void calculate_idle_usage( unsigned int *before_idle, unsigned int *time_idled, unsigned int *current_frame, unsigned int *usage) {
     volatile unsigned int * timer_4_low;
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
     int after_idle = *timer_4_low;
@@ -142,7 +164,7 @@ int initialize_td(
 
 void initialize_interrupts() {
     int * VIC2Enable =(int *) (VIC2_BASE + VICxIntEnable);
-    int * VIC1Enable =(int *) (VIC1_BASE + VICxIntEnable);
+    // int * VIC1Enable =(int *) (VIC1_BASE + VICxIntEnable);
     *VIC2Enable = *VIC2Enable | (1 << 19);
     *VIC2Enable = *VIC2Enable | (1 << 20);
     *VIC2Enable = *VIC2Enable | (1 << 22);
@@ -169,7 +191,7 @@ void uninitialize() {
     * timer3ctrl = 0;
 }
 
-void initialize (td tds[64], int event_blocked_tds[5]) {
+void initialize (td tds[64], td* event_blocked_tds[5]) {
     initTimers();
     TurnCacheOn();
     int i = 0;
@@ -203,7 +225,7 @@ void initialize (td tds[64], int event_blocked_tds[5]) {
         tds[i].flags        = 0;
     }
     for (i = 0 ; i < 5; i++) {
-        event_blocked_tds[i] = 0;
+        event_blocked_tds[i] = (td*)0;
     }
     return;
 }
@@ -213,14 +235,14 @@ void handle (td *active, int req, int args[5],
             unsigned int * free_list_hi,
             td tds[64],
             td_queue td_pq[16],
-            int event_blocked_tds[5],
+            td* event_blocked_tds[5],
             int interrupt_queue[5],
             int idle_usage,
             unsigned int *uart1_tx_flag,
             unsigned int *uart1_cts_flag )   {
     volatile int i, *timer3clear, *VIC2Status, *VIC1Status;
-    char c;
-    int *uart2_flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
+    // char c;
+    // int *uart2_flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
     int *uart2_data = (int *)( UART2_BASE + UART_DATA_OFFSET );
     int * uart2_ctrl = (int *)( UART2_BASE + UART_CTLR_OFFSET );
     int * uart2_intr = (int *)( UART2_BASE + UART_INTR_OFFSET );
@@ -450,17 +472,17 @@ void handle (td *active, int req, int args[5],
 int main( int argc, char* argv[] ) {
     td *active;
     td tds[64];
-    message messages[64];
+    // message messages[64];
     td_queue td_pq[16];
     int args[5];
-    int event_blocked_tds[5];
+    td* event_blocked_tds[5];
     int interrupt_queue[5] = {0};
     unsigned int free_list_lo = 0, free_list_hi = 0;
 
 
     initialize(tds, event_blocked_tds);
     initialize_td_pq(td_pq);
-    int tid = initialize_td(2, &free_list_lo, &free_list_hi, (&FirstUserTask), tds, td_pq, -1);
+    int tid = initialize_td(2, &free_list_lo, &free_list_hi, (int)(&FirstUserTask), tds, td_pq, -1);
     // for tracking idle usage
     volatile unsigned int * timer_4_low;
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
@@ -470,7 +492,8 @@ int main( int argc, char* argv[] ) {
     int *uart1_flags = (int *)( UART1_BASE + UART_FLAG_OFFSET );
     unsigned int uart1_tx_flag = 0, uart1_cts_flag = *uart1_flags & CTS_MASK;
 
-    int i, req = 0;
+    // int i;
+    int req = 0;
     for (;;) {
         tid = schedule(td_pq);
         if (tid == -1) break;

@@ -101,7 +101,7 @@ void DebugPutStr ( char* fmt, ... ) {
     cursorCommand ("D", buffer, &index);
     flushLine (buffer, &index);
     va_start(va,fmt);
-    while (c = *(fmt++)){
+    while ( (c = *(fmt++)) ){
         switch(c){
             case 's':
                 str = va_arg( va, char* );
@@ -169,7 +169,7 @@ void setSwitch ( int state, int address ) {
     char buffer[256] = {0};
     int index = 0;
 
-    int server_tid, msglen = 10, track_task_id;
+    int msglen = 10, track_task_id;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     msg_struct.type = SET_SWITCH;
@@ -249,11 +249,11 @@ void drawTrack ( int *row, int *col ) {
     buffer[index++] = 0; putstr(COM2, buffer); index = 0;
 }
 
-unsigned int atoi ( unsigned char *str ) {
+unsigned int atoi ( char *str ) {
     unsigned int value = 0, i = 0;
     while ( str[i] != '\0' ) {
         value *= 10;
-        value += (unsigned int) ( str[i] - (unsigned char) '0' );
+        value += (unsigned int) ( str[i] - (char) '0' );
         i++;
     }
     return value;
@@ -346,7 +346,6 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
 }
 
 void initInterface() {
-    char c;
     char msg[2] = {0};
     char reply[2] = {0};
     int server_tid, msglen = 2;
@@ -376,7 +375,7 @@ void initInterface() {
 
     // bwprintf(COM2, "WEREWREWREW\n\n");
     flushScreen(buffer, &index);
-    int row = 24, col = 1, i=0;
+    int row = 24, col = 1;
     outputPutStr ( "OUTPUT: ", &row, &col , buffer, &index );
     cursorCommand( "[25;39r" , buffer, &index );			//scroll section
 
@@ -458,7 +457,6 @@ void IdleDisplayTask() {
     char buffer[128] = {0};
     int index = 0;
 
-    int currentTime = Time()+10;
     FOREVER {
         index = 0;
 
@@ -505,7 +503,7 @@ void SensorsDisplayTask() {
     // }
     // int time_index;
     // int cur_time;
-    unsigned char sensorStr[10] = {0};
+    char sensorStr[10] = {0};
 
     char commandstr[2];
     commandstr[0] = 0;
@@ -561,8 +559,7 @@ void LocationOffsetDisplayTask() {
     char buffer[200] = {0};
     int index = 0;
 
-    char c;
-    int i,j, row, col, offset, sensor;
+    int row, col, offset, sensor;
     char sensor_str[20] = {0};
 
     char msg[10] = {0}, rpl[10] = {0};
@@ -598,8 +595,7 @@ void LocationDisplayTask() {
     char buffer[200] = {0};
     int index = 0;
 
-    char c;
-    int i,j, row, col;
+    int row, col;
     int train_info[10] = {-1};
     char sensor_str[20] = {0};
     int sender_tid, offset_tid;
@@ -686,7 +682,7 @@ void handleCommandTask() {
 
     char msg[10];
     char reply[10];
-    int msglen = 10, rpllen = 10, i;
+    int i;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
     reply_struct.value = reply;
@@ -856,7 +852,7 @@ void handleCommandTask() {
                         1090,                     // stoping distance
                         &stopping_sensor,       // returning node
                         &stoppong_sensor_dist,  // returning distance
-                        &sensor_route           // the sensors the train's gonna pass
+                        sensor_route           // the sensors the train's gonna pass
                     );
 
                     // if (result >= 0) {

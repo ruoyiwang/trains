@@ -19,7 +19,7 @@ void TracksTask () {
     volatile path_find_requirements pfr;
 
     char* msg;
-    msg = &pfr;
+    msg = (char *)&pfr;
     // so msg and pft share the same address space
     // holy shit this is ugly =__=
 
@@ -34,7 +34,6 @@ void TracksTask () {
     msg_struct.value = (char*)&pfr;
     reply_struct.value = reply;
     char commandstr[10] = {0};
-    int i = 0;
 
     // switch status, bitwise 32-0,
     // think we only 22-1?
@@ -120,7 +119,7 @@ void TracksTask () {
                     msg_struct.iValue,      // stopping distance
                     &stop_command_sensor,   // the triggers to be triggered
                     &stop_command_sensor_dist,   // returning distance
-                    &path                    // this is the route
+                    path                    // this is the route
                 );
                 reply[0] = stop_command_sensor;
                 reply[1] = path_len;
@@ -353,7 +352,7 @@ int pathFindTrackTask(
     // to find the path through all the nodes
     track_node* path[TRACK_MAX];
     for (i = 0; i < TRACK_MAX; i++) {
-        path[i] = -1;
+        path[i] = (track_node*)-1;
     }
 
     pf_result = bfsPathFind(tracks, &tracks[cur_sensor], &tracks[stopping_node], path);
@@ -363,7 +362,7 @@ int pathFindTrackTask(
 
     // then set all the switches
     for (i = 0; i < TRACK_MAX; i++) {
-        if (path[i] == -1 ){
+        if ((int)path[i] == -1 ){
             path_landmark_count = i;
             break;
         }
@@ -417,7 +416,7 @@ struct move_data_t pathFindDijkstraTrackTask(
     int src_node_offfset,
     int stopping_node,
     int stopping_dist,
-    int blocked_nodes[],         // the landmarks the train cannot use
+    int blocked_nodes[TRACK_MAX],         // the landmarks the train cannot use
     int blocked_nodes_len
 ) {
     int i = 0, unsafe_reverses_list_size = 10;
@@ -786,7 +785,7 @@ void makePath(track_node* node, track_node* init_node, track_node** path) {
     // find how long the path is
     track_node* cur_node = node;
     int path_length = 1;
-    while ( (cur_node = cur_node->parent) != -1 ){
+    while ( (int)(cur_node = cur_node->parent) != -1 ){
         path_length++;
     }
     // add shits to path backwards
