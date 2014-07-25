@@ -75,6 +75,7 @@ void PutServer() {
     // this is a circ buffer
     unsigned char string_buffer[BUFFER_SIZE];
     int buf_start = 0, buf_len = 0, i = 0;
+    unsigned int output_point = 0, input_point = 0;
     for (i = 0; i < BUFFER_SIZE; i++) {
         string_buffer[i] = 0;
     }
@@ -115,9 +116,10 @@ void PutServer() {
                 }
                 else {
                     // put char on the buffer
-                    insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
-                    string_buffer[insetion_point] = char_from_request;
-                    buf_len++;
+                    // insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
+                    // string_buffer[insetion_point] = char_from_request;
+                    // buf_len++;
+                    string_buffer[(input_point++)%BUFFER_SIZE] = char_from_request;
                     // don't really care what we reply
                     Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
@@ -127,15 +129,16 @@ void PutServer() {
                 // copy_len = msg_struct.iValue;
                 copystr = (char *)msg_struct.iValue;
                 while ( (char_from_request = copystr[i++]) ) {
-                    insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
-                    string_buffer[insetion_point] = char_from_request;
-                    buf_len++;
+                    // insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
+                    // string_buffer[insetion_point] = char_from_request;
+                    // buf_len++;
+                    string_buffer[(input_point++)%BUFFER_SIZE] = char_from_request;
                 }
                 // if a task wanted something and is blocked, we return it to it
                 if (blocked_notifier != -1) {
-                    reply[0] = string_buffer[buf_start];
-                    buf_start = (buf_start+1) % BUFFER_SIZE;
-                    buf_len--;
+                    reply[0] = string_buffer[(output_point++)%BUFFER_SIZE];
+                    // buf_start = (buf_start+1) % BUFFER_SIZE;
+                    // buf_len--;
                     Reply (blocked_notifier, (char *)&reply_struct, rpllen);
                     blocked_notifier = -1;
                 }
@@ -147,15 +150,17 @@ void PutServer() {
                 copy_len = msg_struct.iValue;
                 while ( copy_len-- > 0) {
                     char_from_request = msg[i++];
-                    insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
-                    string_buffer[insetion_point] = char_from_request;
-                    buf_len++;
+                    // insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
+                    // string_buffer[insetion_point] = char_from_request;
+                    // buf_len++;
+                    string_buffer[(input_point++)%BUFFER_SIZE] = char_from_request;
                 }
                 // if a task wanted something and is blocked, we return it to it
                 if (blocked_notifier != -1) {
-                    reply[0] = string_buffer[buf_start];
-                    buf_start = (buf_start+1) % BUFFER_SIZE;
-                    buf_len--;
+                    // reply[0] = string_buffer[buf_start];
+                    // buf_start = (buf_start+1) % BUFFER_SIZE;
+                    // buf_len--;
+                    reply[0] = string_buffer[(output_point++)%BUFFER_SIZE];
                     Reply (blocked_notifier, (char *)&reply_struct, rpllen);
                     blocked_notifier = -1;
                 }
@@ -165,10 +170,11 @@ void PutServer() {
             case PUTC_NOTIFIER:
                 // read char from the buffer
                 // if there is char on the buffer, return it
-                if (buf_len > 0) {
-                    reply[0] = string_buffer[buf_start];
-                    buf_start = (buf_start+1) % BUFFER_SIZE;
-                    buf_len--;
+                if (input_point > output_point) {
+                    // reply[0] = string_buffer[buf_start];
+                    // buf_start = (buf_start+1) % BUFFER_SIZE;
+                    // buf_len--;
+                    reply[0] = string_buffer[(output_point++)%BUFFER_SIZE];
                     Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
                 else {
@@ -178,7 +184,8 @@ void PutServer() {
                 break;
             default:
                 // shit
-                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMPUTSERVER %d", msg_struct.type);
+                bwprintf(COM2, "\233[2J\n\n\n\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMPUTSERVER %d %d %d", msg_struct.type, input_point, output_point);
+                Assert();
                 reply_struct.type = FAIL_TYPE;
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
@@ -268,6 +275,7 @@ void GetServer() {
     // this is a circ buffer
     unsigned char string_buffer[BUFFER_SIZE];
     int buf_start = 0, buf_len = 0, i = 0;
+    unsigned int output_point = 0, input_point = 0;
     for (i = 0; i < BUFFER_SIZE; i++) {
         string_buffer[i] = 0;
     }
@@ -306,10 +314,11 @@ void GetServer() {
                 }
                 else {
                     // put char on the buffer
-                    insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
-                    string_buffer[insetion_point] = char_from_notifier;
-                    buf_len++;
+                    // insetion_point = ( buf_start + buf_len ) % BUFFER_SIZE;
+                    // string_buffer[insetion_point] = char_from_notifier;
+                    // buf_len++;
                     // don't really care what we reply
+                    string_buffer[(input_point++)%BUFFER_SIZE] = char_from_notifier;
                     Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
                 break;
@@ -321,10 +330,11 @@ void GetServer() {
                 }
                 // read char from the buffer
                 // if there is char on the buffer, return it
-                if (buf_len > 0) {
-                    reply[0] = string_buffer[buf_start];
-                    buf_start = (buf_start+1) % BUFFER_SIZE;
-                    buf_len--;
+                if (input_point > output_point) {
+                    // reply[0] = string_buffer[buf_start];
+                    // buf_start = (buf_start+1) % BUFFER_SIZE;
+                    // buf_len--;
+                    reply[0] = string_buffer[(output_point++)%BUFFER_SIZE];
                     Reply (sender_tid, (char *)&reply_struct, rpllen);
                 }
                 else {
@@ -359,7 +369,8 @@ void GetServer() {
             //     break;
             default:
                 // shit
-                bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMGETSERVER %d", msg_struct.type);
+                bwprintf(COM2, "\233[2J\n\n\n\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMGETSERVER %d %d %d", msg_struct.type, input_point, output_point);
+
                 reply_struct.type = FAIL_TYPE;
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
