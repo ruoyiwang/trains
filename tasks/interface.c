@@ -154,7 +154,7 @@ int getSwCursor ( int sw, int *row, int *col ) {
 void setAllTrainSpeedToOne() {
     char commandstr[3];
     int i = 45;
-    for (i = 45; i < 54; i++) {
+    for (i = 40; i < 60; i++) {
         commandstr[0] = 16;
         commandstr[1] = (char)i;
         putstr_len(COM1, commandstr, 2);
@@ -327,6 +327,14 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
     }
     else if ( strcmp (cmdstr, "cn") == 0 ){
         *command = CMD_CREATE_SENSOR_NOTIFIER;
+        return;
+    }
+    else if ( strcmp (cmdstr, "sd") == 0 ){
+        *command = CMD_SET_STOPPING_DIST;
+        return;
+    }
+    else if ( strcmp (cmdstr, "mm") == 0 ){
+        *command = CMD_SET_SHORT_MULT;
         return;
     }
     else if ( cmdstr[0] == 'A' ){
@@ -940,6 +948,12 @@ void handleCommandTask() {
                     }
                     initTrack(argv[0][0]);
                     break;
+                case CMD_SET_SHORT_MULT:
+                    setTrainShortMult( atoi(argv[0]), atoi(argv[1]));
+                    break;
+                case CMD_SET_STOPPING_DIST:
+                    setTrainStopDist( atoi(argv[0]), atoi(argv[1]));
+                    break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;
                     // train_rindex++;
@@ -961,6 +975,17 @@ void handleCommandTask() {
             buffer[(index)++] = 0;
             putstr(COM2, buffer);
     	}
+        else if (c == 0x08) {
+            if (command_str_index > 0){
+                command_str_index--;
+                index = 0;
+                setCursor( CMD_POSITION_X, CMD_POSITION_Y+command_str_index, buffer, &index);
+                flushLine (buffer, &index);
+                buffer[(index)++] = 0;
+                putstr(COM2, buffer);
+            }
+
+        }
     	else {
     		putc(COM2, c);
     		commandStr[command_str_index++] = c;
