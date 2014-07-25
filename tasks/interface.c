@@ -714,7 +714,7 @@ void handleCommandTask() {
     putstr(COM2, buffer);
 
     for ( i=1; i <=18 ; i++) {
-        Delay(5);
+        // Delay(5);
         setSwitch ( SW_STRAIGHT, i);
     }
     // setSwitch ( SW_CURVE, 3);
@@ -727,7 +727,7 @@ void handleCommandTask() {
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
-    Delay(600);
+    // Delay(600);
     Create(3, (&SensorServer));
     Create(6, (&SensorsDisplayTask));
     Create(7, (&IdleDisplayTask));

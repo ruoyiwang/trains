@@ -54,6 +54,7 @@ void TracksTask () {
     FOREVER {
         rpllen = 10;
         reply_struct.value = reply;
+        memset(&pfr, 0, sizeof(path_find_requirements));
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch (msg_struct.type) {
             case SET_SWITCH:
@@ -421,17 +422,17 @@ struct move_data_t pathFindDijkstraTrackTask(
     int blocked_nodes_len
 ) {
     int i = 0, unsafe_reverses_list_size = 10;
-    int unsafe_reverses[10];
-    unsafe_reverses[i++] = 3;     // A4
-    unsafe_reverses[i++] = 30;    // B15
-    unsafe_reverses[i++] = 37;     // C6
-    unsafe_reverses[i++] = 38;     // C7
-    unsafe_reverses[i++] = 40;     // C9
-    unsafe_reverses[i++] = 42;     // C11
-    unsafe_reverses[i++] = 44;     // C13
-    unsafe_reverses[i++] = 67;     // E4
-    unsafe_reverses[i++] = 68;     // E5
-    unsafe_reverses[i++] = 74;     // E11
+    int unsafe_reverses[10];        // note tis is only for track b
+    unsafe_reverses[i++] = 3;       // A4
+    unsafe_reverses[i++] = 30;      // B15
+    unsafe_reverses[i++] = 37;      // C6
+    unsafe_reverses[i++] = 38;      // C7
+    unsafe_reverses[i++] = 40;      // C9
+    unsafe_reverses[i++] = 42;      // C11
+    unsafe_reverses[i++] = 44;      // C13
+    unsafe_reverses[i++] = 67;      // E4
+    unsafe_reverses[i++] = 68;      // E5
+    unsafe_reverses[i++] = 74;      // E11
 
     int distances[TRACK_MAX] = {0};
     int route[TRACK_MAX] = {0};
@@ -584,7 +585,7 @@ struct move_data_t pathFindDijkstraTrackTask(
         md.node_list[1].id = second_node.index;
         md.node_list[1].num = second_node.num;
         md.list_len = 2;
-        md.total_distance = 2;
+        md.total_distance = 0;
 
         if (posintlistIsInList(first_node.index, unsafe_reverses, unsafe_reverses_list_size)) {
             // if unsafe, command center needs to handle it by shifting it train's len
@@ -625,34 +626,35 @@ struct move_data_t pathFindDijkstraTrackTask(
         else if (tracks[cur_node_num].type == NODE_MERGE &&
             tracks[cur_node_num].reverse->index == tracks[next_node_num].index) {
             // just greedy find the closest sensor
-            cur_node_num = tracks[cur_node_num].edge[DIR_AHEAD].dest->index;
+            // cur_node_num = tracks[cur_node_num].edge[DIR_AHEAD].dest->index;
             while (true) {   // can only be max chain 4 though
-                j++;
-                md.list_len = j+1;
-                md.node_list[j].type = tracks[cur_node_num].type;
-                md.node_list[j].id = tracks[cur_node_num].index;
-                md.node_list[j].num = tracks[cur_node_num].num;
                 if (tracks[cur_node_num].type == NODE_MERGE) {
                     // the one to look at next
-                    cur_node_num = tracks[cur_node_num].edge[DIR_AHEAD].dest->index;
                     md.total_distance += tracks[cur_node_num].edge[DIR_AHEAD].dist;
+                    cur_node_num = tracks[cur_node_num].edge[DIR_AHEAD].dest->index;
                 }
                 else if (tracks[cur_node_num].type == NODE_SENSOR) {
                     // break_outer_loop = 1;
+                    // md.total_distance += tracks[cur_node_num].edge[DIR_AHEAD].dist;
                     break;
                 }
                 else if (tracks[cur_node_num].type == NODE_BRANCH) {                    // if straight is a sensor, then go straight
                     if (tracks[cur_node_num].edge[DIR_STRAIGHT].dest->type == NODE_SENSOR) {
                         md.node_list[j].branch_state = SW_STRAIGHT;
-                        cur_node_num = tracks[cur_node_num].edge[DIR_STRAIGHT].dest->index;
                         md.total_distance += tracks[cur_node_num].edge[DIR_STRAIGHT].dist;
+                        cur_node_num = tracks[cur_node_num].edge[DIR_STRAIGHT].dest->index;
                     }
                     else {
                         md.node_list[j].branch_state = SW_CURVE;
-                        cur_node_num = tracks[cur_node_num].edge[DIR_CURVED].dest->index;
                         md.total_distance += tracks[cur_node_num].edge[DIR_CURVED].dist;
+                        cur_node_num = tracks[cur_node_num].edge[DIR_CURVED].dest->index;
                     }
                 }
+                j++;
+                md.list_len = j+1;
+                md.node_list[j].type = tracks[cur_node_num].type;
+                md.node_list[j].id = tracks[cur_node_num].index;
+                md.node_list[j].num = tracks[cur_node_num].num;
             }
             break;
         }
