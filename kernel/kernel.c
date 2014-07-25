@@ -466,7 +466,7 @@ void handle (td *active, int req, int args[5],
             if ( tds[args[0]].state == STATE_RPL_BLK ) {
                 // bwprintf(COM2, "CRYING5\n");
                 if (((mailbox *)(tds[args[0]].args[1]))->rpl_len < (unsigned int)args[2]) {
-                    bwprintf(COM2, "\n\n\n\nREPLY %d %d %d %d %d\n", active->tid, args[0], tds[args[0]].args[1],((mailbox *)(tds[args[0]].args[1]))->rpl_len, (unsigned int)args[2]);
+                    // bwprintf(COM2, "\n\n\n\nREPLY %d %d %d %d %d\n", active->tid, args[0], tds[args[0]].args[1],((mailbox *)(tds[args[0]].args[1]))->rpl_len, (unsigned int)args[2]);
                     // assert_ker_msg(tds, td_pq, 102);
                     memcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value, ((mailbox *)(tds[args[0]].args[1]))->rpl_len);
                 }
