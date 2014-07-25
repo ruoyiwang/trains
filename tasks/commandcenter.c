@@ -111,7 +111,7 @@ void CommandCenterServer() {
     int train_info[MAX_TRAIN_COUNT][TRAIN_INFO_SIZE];
     int train_speed[MAX_TRAIN_COUNT][80];
     // each tid can only call one delay at a time
-    int i, j;
+    int i, j = -1;
     for (i = 0; i < MAX_TRAIN_COUNT; i++) {
         train_info[i][TRAIN_INFO_ID] = -1;
         train_info[i][TRAIN_INFO_SENSOR] = -1;
@@ -234,9 +234,9 @@ void CommandCenterServer() {
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i][TRAIN_INFO_STOPPING_NOTIFIER] == sender_tid) {
                         DebugPutStr("s", "DEBUG: Train Stopped!");
-                        if (train_info[i][TRAIN_INFO_SENSOR] == train_info[i][TRAIN_INFO_STOPPING_SENSOR]){
-                            train_info[i][TRAIN_INFO_SENSOR_OFFSET] = train_info[i][TRAIN_INFO_STOPPING_OFFSET];
-                        }
+                        train_info[i][TRAIN_INFO_SENSOR] = train_info[i][TRAIN_INFO_STOPPING_SENSOR];
+                        train_info[i][TRAIN_INFO_SENSOR_OFFSET] = train_info[i][TRAIN_INFO_STOPPING_OFFSET];
+
 
                         train_info[i][TRAIN_INFO_STOPPED] = 1;
                         train_info[i][TRAIN_INFO_STOPPING_SENSOR] = -1;
@@ -302,32 +302,53 @@ void CommandCenterServer() {
                 break;
 
             case INIT_TRAIN_REQUEST:
+                j = train_count;
+                for (i = 0; i < MAX_TRAIN_COUNT; i++) {
+                    if (msg_struct.value[0] == train_info[i][TRAIN_INFO_ID]) {
+                        j = i;
+                        break;
+                    }
+                }
                 // handle the request to start a new train
-                train_info[train_count][TRAIN_INFO_SENSOR] = msg_struct.iValue;
-                train_info[train_count][TRAIN_INFO_ID] = (int) msg_struct.value[0];
-                train_info[train_count][TRAIN_INFO_TASK] = (int) msg_struct.value[1];
+                train_info[j][TRAIN_INFO_SENSOR] = msg_struct.iValue;
+                train_info[j][TRAIN_INFO_ID] = (int) msg_struct.value[0];
+                train_info[j][TRAIN_INFO_TASK] = (int) msg_struct.value[1];
 
                 // initialize the notifier and the courier
                 notifier_tid = Create(1, (&CommandCenterNotifier));
                 courier_tid = Create(2, (&CommandCenterCourier));
-                train_info[train_count][TRAIN_INFO_COURIER] = courier_tid;
+                train_info[j][TRAIN_INFO_COURIER] = courier_tid;
                 msg_struct.iValue = notifier_tid;
 
                 // pass the sensors to be waited on to the notifier, there is no time out on first wait
-                predictSensor(train_info[train_count][TRAIN_INFO_SENSOR], 2, sensors_ahead);
-                train_info[train_count][TRAIN_INFO_NEXT_SENSOR] = sensors_ahead[0];
+                predictSensor(train_info[j][TRAIN_INFO_SENSOR], 2, sensors_ahead);
+                train_info[j][TRAIN_INFO_NEXT_SENSOR] = sensors_ahead[0];
 
-                DebugPutStr("sdsd", "DEBUG: from:", train_info[train_count][TRAIN_INFO_SENSOR], " to:", train_info[train_count][TRAIN_INFO_NEXT_SENSOR]);
-                msg_struct.value[0] = train_info[train_count][TRAIN_INFO_NEXT_SENSOR];
+                DebugPutStr("sdsd", "DEBUG: from:", train_info[j][TRAIN_INFO_SENSOR], " to:", train_info[train_count][TRAIN_INFO_NEXT_SENSOR]);
+                msg_struct.value[0] = train_info[j][TRAIN_INFO_NEXT_SENSOR];
                 msg_struct.value[1] = sensors_ahead[1];
-                msg_struct.value[2] = getSensorComplement(train_info[train_count][TRAIN_INFO_SENSOR]);
+                msg_struct.value[2] = getSensorComplement(train_info[j][TRAIN_INFO_SENSOR]);
                 predictSensor(msg_struct.value[2], 2, sensors_ahead);
                 msg_struct.value[3] = sensors_ahead[0];
                 Send (courier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
                 // initialize the train speed table
-                init_train_speed(train_info[train_count][TRAIN_INFO_ID], train_speed[train_count]);
-                train_count++;
+                init_train_speed(train_info[j][TRAIN_INFO_ID], train_speed[j]);
+                if (j == train_count){
+                    train_count++;
+                }
+                for (i=0; i < 64; i++) {
+                    if (requests[i] == train_info[j][TRAIN_INFO_ID]) {
+                        // return the sensors and the expected and predicted time
+                        reply_struct.value[0] = train_info[j][TRAIN_INFO_SENSOR];
+                        reply_struct.value[1] = train_info[j][TRAIN_INFO_NEXT_SENSOR];
+                        bwi2a(train_info[j][TRAIN_INFO_TIME_PREDICTION], reply + 2);
+                        reply_struct.iValue = train_info[j][TRAIN_INFO_TIME];
+                        Reply (i, (char *)&reply_struct, 30);
+                        break;
+                    }
+                }
+                j = -1;
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
 
@@ -495,7 +516,7 @@ int shortMoveDistanceToDelay( double distance, int train_num ) {
         square = 0.000753205 * distance * distance;
         linear = 0.737617 * distance;
         constant = 46.55;
-        result = (cubic - square + linear + constant);
+        result = (cubic - square + linear + constant) * 1.1;
     }
     else {
         cubic = 1.5E-7 * distance * distance * distance;
