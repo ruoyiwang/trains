@@ -28,53 +28,53 @@ int schedule ( td_queue td_pq[16] ) {
 
 int IdleUsage() {
     asm ("swi 15");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
 int MyTid() {
     asm ("swi 5");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
 int MyParentTid() {
     asm ("swi 6");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
 int Create( int priority,  void (* pc) ()) {
     asm ("swi 2");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
 int Pass() {
     asm ("swi 7");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
 int Exit() {
     asm ("swi 8");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
 int AwaitEvent( int eventId ) {
     asm ("swi 9");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
 int _send ( int tid, mailbox *mail ) {
-    if (mail->rpl_len <= 0) {
-        bwprintf(COM2, "\n\n\n\nREPLY %d\n", tid);
-        Assert();
-    }
+    // if (mail->rpl_len <= 0) {
+    //     bwprintf(COM2, "\n\n\n\nREPLY %d\n", tid);
+    //     Assert();
+    // }
     asm ("swi 11");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
@@ -90,7 +90,7 @@ int Send ( int tid, char *msg, int msglen, char * reply, int replylen ) {
 
 int _receive ( mailbox *mail ) {
     asm ("swi 12");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
@@ -105,13 +105,13 @@ int Receive ( int *tid, char *msg, int msglen ) {
 
 int Reply ( int tid, char *msg, int msglen ) {
     asm ("swi 13");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
 int Assert ( ) {
     asm ("swi 14");
-    register int ret asm("r0");
+    register int ret asm("r4");
     return ret;
 }
 
@@ -229,7 +229,7 @@ void initialize (td tds[64], td* event_blocked_tds[5]) {
     for (i = 0 ; i < 64; i++) {
         tds[i].tid          = i;
         tds[i].sp           = USER_STACK_BEGIN - i * 4 * USER_STACK_SIZE;
-        tds[i].spsr         = 0x5f;
+        tds[i].spsr         = 0x50;
         tds[i].ret          = 0;
         tds[i].priority     = 15;
         tds[i].parent_tid   = -1;
@@ -411,7 +411,7 @@ void handle (td *active, int req, int args[5],
             if ( tds[args[0]].state == STATE_SND_BLK ) {    //if receive first
                 *(tds[args[0]].sendQ->sender_tid) = active->tid;
                 if (tds[args[0]].sendQ->msg_len < ((mailbox *)args[1])->msg_len) {
-                    bwprintf(COM2, "%c[2JRECEIVE %d %d %d\n", 0x1b,active->tid,tds[args[0]].sendQ->msg_len, ((mailbox *)args[1])->msg_len);
+                    // bwprintf(COM2, "%c[2JRECEIVE %d %d %d\n", 0x1b,active->tid,tds[args[0]].sendQ->msg_len, ((mailbox *)args[1])->msg_len);
                     assert_ker_msg(tds, td_pq, 100);
                 }
                 // strcpy(tds[args[0]].sendQ->msg->value, ((mailbox *)args[1])->msg->value);
@@ -445,7 +445,7 @@ void handle (td *active, int req, int args[5],
             if ( active->sendQ ) {    //if send first
                 // bwprintf(COM2, "CRYING3\n");
                 if (((mailbox*)args[0])->msg_len < active->sendQ->msg_len) {
-                    bwprintf(COM2, "%c[2JSEND %d %d %d\n", 0x1b,active->tid,((mailbox*)args[0])->msg_len, active->sendQ->msg_len);
+                    // bwprintf(COM2, "%c[2JSEND %d %d %d\n", 0x1b,active->tid,((mailbox*)args[0])->msg_len, active->sendQ->msg_len);
                     assert_ker_msg(tds, td_pq, 101);
                 }
                 *((mailbox*)args[0])->sender_tid = *(active->sendQ->sender_tid);
@@ -467,10 +467,13 @@ void handle (td *active, int req, int args[5],
                 // bwprintf(COM2, "CRYING5\n");
                 if (((mailbox *)(tds[args[0]].args[1]))->rpl_len < (unsigned int)args[2]) {
                     bwprintf(COM2, "\n\n\n\nREPLY %d %d %d %d %d\n", active->tid, args[0], tds[args[0]].args[1],((mailbox *)(tds[args[0]].args[1]))->rpl_len, (unsigned int)args[2]);
-                    assert_ker_msg(tds, td_pq, 102);
+                    // assert_ker_msg(tds, td_pq, 102);
+                    memcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value, ((mailbox *)(tds[args[0]].args[1]))->rpl_len);
+                }
+                else {
+                    memcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value, (unsigned int)args[2]);
                 }
                 // strcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value);
-                memcpy(((mailbox *)(tds[args[0]].args[1]))->rpl->value, ((message *)args[1])->value, (unsigned int)args[2]);
                 ((mailbox *)(tds[args[0]].args[1]))->rpl->iValue = ((message *)args[1])->iValue;
                 ((mailbox *)(tds[args[0]].args[1]))->rpl->type = ((message *)args[1])->type;
                 pq_push_back(td_pq, tds, args[0]);

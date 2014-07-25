@@ -185,7 +185,6 @@ void PutServer() {
             default:
                 // shit
                 bwprintf(COM2, "\233[2J\n\n\n\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMPUTSERVER %d %d %d", msg_struct.type, input_point, output_point);
-                Assert();
                 reply_struct.type = FAIL_TYPE;
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
@@ -370,7 +369,6 @@ void GetServer() {
             default:
                 // shit
                 bwprintf(COM2, "\233[2J\n\n\n\n\n\n\n\n\n\nfmlllllllllllllllllllllllll COMGETSERVER %d %d %d", msg_struct.type, input_point, output_point);
-
                 reply_struct.type = FAIL_TYPE;
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;

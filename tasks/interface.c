@@ -509,7 +509,7 @@ void SensorsDisplayTask() {
     commandstr[1] = 50;
 
     FOREVER {
-        Delay(30);
+        Delay(10);
         memcpy(prev_sensors_bytes, sensors_bytes, 10);
         getLatestSensors(sensors_bytes);
         for (i = 0; i<10 ; i ++){

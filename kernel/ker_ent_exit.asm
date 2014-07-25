@@ -5,6 +5,7 @@
 .type	ker_entry, %function
 ker_entry:
 	msr cpsr_c, #0xdf 				/* change to system mode */
+	stmdb   sp!, {r0-r12, lr} 			/* store the task registers */
 	ldr     r4, [fp, #4]			/* get the 5th argument*/
 
 	msr cpsr_c, #0xd3 				/* change back to superviser mode */
@@ -17,7 +18,6 @@ ker_entry:
 	mov r3, lr 						/* save the lr to r3 */
 
 	msr cpsr_c, #0xdf 				/* change to system mode */
-	stmdb   sp!, {r0-r12, lr} 			/* store the task registers */
 	mov ip, sp 						/* save the sp to r1 */
 
 	msr cpsr_c, #0xd3 				/* change back to superviser mode */
@@ -27,14 +27,14 @@ ker_entry:
 	str r2, [r0, #0xc]				/* store spsr to TD */
 	str ip, [r0, #0x8]				/* store the sp to the TD */
 	ldr r0, [r3, #-4]				/* get the swi arguemnt and return it */
-	ldmia   sp!, { r4-r12, pc} 		/* pop the kernal stack */
+	ldmia   sp!, { r1-r12, pc} 		/* pop the kernal stack */
 	/*mov pc, lr 						 this go back to kernel */
 .size	ker_entry, .-ker_entry
 
 .global	ker_exit
 .type	ker_exit, %function
 ker_exit:
-	stmdb   sp!, { r4-r12, lr}		/* move registers to the kernal stack */
+	stmdb   sp!, { r1-r12, lr}		/* move registers to the kernal stack */
     stmdb   sp!, {r0}				/* move registers to the kernal stack */
  	stmdb   sp!, {r1}				/* move registers to the kernal stack */
 
@@ -47,8 +47,8 @@ ker_exit:
     ldmia   sp!, {r0-r12, lr}		/* reload r4 - r10 of the task */
 
     msr cpsr_c, #0xd3 				/* change back to superviser mode */
-    ldr r1, [sp, #4]
-    ldr r0, [r1, #0x10] 			/* load the return value into r0 */
+    ldr r5, [sp, #4]
+    ldr r4, [r5, #0x10] 			/* load the return value into r0 */
     movs pc, lr
 .size	ker_exit, .-ker_exit
 

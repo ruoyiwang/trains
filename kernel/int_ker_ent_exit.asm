@@ -11,23 +11,23 @@ int_ker_entry:
 	msr cpsr_c, #0xd2 				/* change back to irq mode */
 	mov r3, lr 						/* save the lr to r3 */
 	sub r3, lr, #4
+	mrs r2, spsr 					/* save the spsr to r2 */
 
 	msr cpsr_c, #0xd3
 	ldmia 	sp!, {r1}					/* save all the argments */
 	ldmia   sp!, {r0}			 	/* pop the kernal stack */
 	str r3, [r0, #0x4] 				/* write to the lr of the TD */
-	mrs r2, spsr 					/* save the spsr to r2 */
 	str r2, [r0, #0xc]				/* store spsr to TD */
 	str ip, [r0, #0x8]				/* store the sp to the TD */
 	mov r0, #20						/* get the swi arguemnt and return it */
-	ldmia   sp!, { r4-r12, pc} 		/* pop the kernal stack */
+	ldmia   sp!, { r1-r12, pc} 		/* pop the kernal stack */
 	/*mov pc, lr 						 this go back to kernel */
 .size	int_ker_entry, .-int_ker_entry
 
 .global	int_ker_exit
 .type	int_ker_exit, %function
 int_ker_exit:
-	stmdb   sp!, { r4-r12, lr}		/* move registers to the kernal stack */
+	stmdb   sp!, { r1-r12, lr}		/* move registers to the kernal stack */
     stmdb   sp!, {r0}				/* move registers to the kernal stack */
  	stmdb   sp!, {r1}				/* move registers to the kernal stack */
 

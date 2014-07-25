@@ -378,7 +378,7 @@ void serverSetStopping (int* train_info, int* train_speed, int sensor, int offse
     pathFindDijkstra(
         &md,
         train_info[TRAIN_INFO_SENSOR],          // current node
-        0,                      // offset
+        train_info[TRAIN_INFO_SENSOR_OFFSET],                      // offset
         sensor,                 // where it wants to go
         790,                    // stoping distance
         blocked_nodes,          // the nodes the trains can't use
