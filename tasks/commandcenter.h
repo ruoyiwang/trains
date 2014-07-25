@@ -20,7 +20,30 @@
 #define TRAIN_INFO_DEST_SENSOR 13
 #define TRAIN_INFO_DEST_OFFSET 14
 #define TRAIN_INFO_REVERSED 15
-#define TRAIN_INFO_SIZE 16
+#define TRAIN_INFO_STOPPING_DIST 16
+#define TRAIN_INFO_SHORT_MULT 17
+#define TRAIN_INFO_SIZE 18
+
+typedef struct train_info_t {
+	int id;
+	int sensor;
+	int next_sensor;
+	int arrival_tme;
+	int task_tid;
+	int courier_tid;
+	int time_prediction;
+	int stopping_notifier;
+	int stopping_sensor;
+	int stopping_offset;
+	int is_stopped;
+	int timeout;
+	int offset;
+	int dest_offset;
+	int dest_sensor;
+	int is_reversed;
+	int stopping_dist;
+	double short_move_mult;
+} Train_info;
 
 #define COMMAND_CENTER_NOTIFIER 0
 #define INIT_TRAIN_REQUEST 1
@@ -44,7 +67,7 @@ int distanceToDelay( int sensor, int distance, int *train_speed );
 int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed);
 int setTrainDestination( int train_id, int sensor, int offset );
 int shortMoveDistanceToDelay( double distance, int train_num );
-void serverSetStopping (int* train_info, int* train_speed, int sensor, int offset);
+void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, int offset);
 int timeToDistance( int sensor, int delta_time, int *train_speed );
 int getTrainLocation ( int train_id, int* sensor, int* offset);
 

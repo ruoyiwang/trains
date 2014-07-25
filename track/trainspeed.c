@@ -90,3 +90,14 @@ void init_train_speed(int train_num, int* train_speeds) {
 		}
 	}
 }
+
+void get_train_calibrations( int train_num, int* train_stopping_dist, double* short_move_multiplier) {
+	if (train_num == 49){
+		*train_stopping_dist = 780;
+		*short_move_multiplier = 1.1;
+	}
+	else {
+		*train_stopping_dist = 790;
+		*short_move_multiplier = 1;
+	}
+}
