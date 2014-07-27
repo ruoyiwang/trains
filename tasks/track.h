@@ -14,7 +14,7 @@
 #define TRACK_TASK      "TT"
 
 #define REVERSING_WEIGHT    400
-#define TRAIN_LENGTH        300
+#define TRAIN_LENGTH        220
 
 typedef enum {
     LONG_MOVE,

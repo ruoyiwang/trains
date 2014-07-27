@@ -681,6 +681,7 @@ struct move_data_t pathFindDijkstraTrackTask(
     }
 
 
+    md.total_distance += TRAIN_LENGTH;
     if (md.type != LONG_MOVE) {
         // just return on short move or reverse
         return md;
@@ -689,10 +690,9 @@ struct move_data_t pathFindDijkstraTrackTask(
     // have to tell the caller where to stop
     int cur_dist = src_node_offfset;
     // if the ending node is in unsafe_reverses, we need to make the train go train leng more
-    if (posintlistIsInList(md.node_list[md.list_len-1].id, unsafe_reverses, unsafe_reverses_list_size)) {
-        cur_dist -= TRAIN_LENGTH;
-        md.total_distance += TRAIN_LENGTH;
-    }
+    // if (posintlistIsInList(md.node_list[md.list_len-1].id, unsafe_reverses, unsafe_reverses_list_size)) {
+    cur_dist -= TRAIN_LENGTH;
+    // }
     for (i = md.list_len-2; i > 0; i--) {   // start with the second last one
         if (md.node_list[i].type == NODE_BRANCH) {
             if (md.node_list[i].branch_state == SW_STRAIGHT) {
