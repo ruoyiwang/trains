@@ -82,7 +82,7 @@ void CommandCenterStoppingNotifier() {
     Send (server_tid, (char *)&reply_struct, rpllen, (char *)&msg_struct, msglen);
     if (is_short_move) {
         // DebugPutStr("s", "FAST STOP");
-        Delay(delay);
+        Delay(delay+50);
     }
     else {
         Delay(790);
@@ -106,7 +106,7 @@ void CommandCenterAdjustTask() {
     Receive( &server_tid, (char*)&msg_struct, msglen );
     Reply (server_tid, (char *)&reply_struct, rpllen);
 
-    DebugPutStr("s", "DEBUG: Off target Adjusting");
+    DebugPutStr("sd", "DEBUG: Off target Adjusting for ", msg_struct.value[1]);
     Delay(100);
     setTrainSpeed((int)msg_struct.value[0], 3);
 
@@ -158,8 +158,10 @@ void CommandCenterServer() {
         train_info[i].is_reversed = 0;
         train_info[i].stopping_dist = 790;
         train_info[i].short_move_mult = 100;
+        train_info[i].speed_mult = 100;
         train_info[i].off_course = 0;
         train_info[i].signal = -100;
+        train_info[i].notifier_tid = -1;
     }
 
     RegisterAs(COMMAND_CENTER_SERVER_NAME);
@@ -233,7 +235,8 @@ void CommandCenterServer() {
                         expected_time = predictArrivalTime(train_info[i].sensor,
                                                                      train_info[i].next_sensor,
                                                                      train_info[i].arrival_tme,
-                                                                     train_speed[i]);
+                                                                     train_speed[i],
+                                                                     train_info[i].speed_mult);
                         train_info[i].time_prediction = expected_time;
                         break;
                     }
@@ -264,11 +267,13 @@ void CommandCenterServer() {
                 // handle stoping notifer, this means the train needs to stop now
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i].stopping_notifier == sender_tid) {
-                        // if (train_info[i].sensor == train_info[i].stopping_sensor) {
-                            train_info[i].signal = -100;
-                            DebugPutStr("s", "DEBUG: Train Stopped!");
-                            train_info[i].sensor = train_info[i].stopping_sensor;
-                            train_info[i].offset = train_info[i].stopping_offset;
+                        if (train_info[i].sensor == train_info[i].stopping_sensor// || train_info[i].next_sensor == train_info[i].stopping_sensor
+                            || train_info[i].signal == UNSAFE_REVERSE || train_info[i].signal == SAFE_REVERSE) {
+                            DebugPutStr("sd", "DEBUG: Train Stopped at sensor : ", train_info[i].sensor);
+                            if (train_info[i].signal != UNSAFE_REVERSE && train_info[i].signal != SAFE_REVERSE ) {
+                                train_info[i].sensor = train_info[i].stopping_sensor;
+                                train_info[i].offset = train_info[i].stopping_offset;
+                            }
                             if (train_info[i].signal == SAFE_REVERSE ) {
                                 train_info[i].offset = 0;
                             }
@@ -286,24 +291,36 @@ void CommandCenterServer() {
                                 train_info[i].dest_sensor = -1;
                                 train_info[i].dest_offset = 0;
                                 DebugPutStr("s", "DEBUG: Arrived at destination!");
-                                Reply (sender_tid, (char *)&reply_struct, rpllen);
                                 break;
                             }
 
-                            serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, train_info[i].dest_offset);
-                        // }
-                        // else {
-                        //     train_info[i].signal = -100;
-                        //     //try to reach target
-                        //     DebugPutStr("s", "DEBUG: Adjusting!");
-                        //     notifier_tid = Create(1, (&CommandCenterStoppingNotifier));
-                        //     train_info[i].stopping_notifier = notifier_tid;
-                        //     msg_struct.value[0] = -1;
-                        //     msg_struct.iValue = shortMoveDistanceToDelay(300, train_info->id, train_info->short_move_mult);
-                        //     Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
-                        //     setTrainSpeed(train_info[i].id, 12);
-                        //     train_info[i].off_course = 1;
-                        // }
+                            train_info[i].signal = -100;
+                            serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, train_info[i].dest_offset, requests);
+                            break;
+                        }
+                        else if (train_info[i].next_sensor == train_info[i].stopping_sensor){
+                            train_info[i].signal = -100;
+                            //try to reach target
+                            notifier_tid = Create(1, (&CommandCenterAdjustTask));
+                            train_info[i].stopping_notifier = notifier_tid;
+                            msg_struct.value[0] = train_info[i].id;
+                            msg_struct.value[1] = train_info[i].stopping_sensor;
+                            predictSensor(train_info[i].stopping_sensor, 2, sensors_ahead);
+                            msg_struct.value[2] = sensors_ahead[0];
+                            Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+                            train_info[i].off_course = 1;
+                            break;
+                        }
+                        else {
+                            DebugPutStr("sd", "DEBUG: Train is Off course! heading to ",train_info[i].dest_sensor);
+                            train_info[i].is_stopped = 1;
+                            train_info[i].offset = 0;
+                            train_info[i].stopping_sensor = -1;
+                            train_info[i].stopping_offset = 0;
+                            train_info[i].stopping_notifier = -1;
+                            train_info[i].signal = -100;
+                            serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, train_info[i].dest_offset, requests);
+                        }
                     }
                 }
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
@@ -338,7 +355,7 @@ void CommandCenterServer() {
                             actual_time = Time();
                             total_distance = findDistanceBetweenLandmarks( train_info[i].sensor, train_info[i].next_sensor, 100);
                             train_info[i].offset = timeToDistance( train_info[i].sensor,
-                                                    actual_time - train_info[i].arrival_tme, train_speed[i] );
+                                                    actual_time - train_info[i].arrival_tme, train_speed[i], train_info[i].speed_mult );
                             // cannot be greater than the max distance
                             // DebugPutStr("sdsd", "DEBUG: time:", actual_time - train_info[i].arrival_tme, " distance:", total_distance);
                             if (train_info[i].offset > total_distance) {
@@ -370,6 +387,7 @@ void CommandCenterServer() {
                 notifier_tid = Create(1, (&CommandCenterNotifier));
                 courier_tid = Create(2, (&CommandCenterCourier));
                 train_info[j].courier_tid = courier_tid;
+                train_info[j].notifier_tid = notifier_tid;
                 msg_struct.iValue = notifier_tid;
 
                 // pass the sensors to be waited on to the notifier, there is no time out on first wait
@@ -386,7 +404,7 @@ void CommandCenterServer() {
 
                 // initialize the train speed table
                 init_train_speed(train_info[j].id, train_speed[j]);
-                get_train_calibrations(train_info[j].id, &(train_info[j].stopping_dist), &(train_info[j].short_move_mult));
+                get_train_calibrations(train_info[j].id, &(train_info[j].stopping_dist), &(train_info[j].short_move_mult), &(train_info[j].speed_mult));
                 if (j == train_count){
                     train_count++;
                 }
@@ -411,7 +429,7 @@ void CommandCenterServer() {
                         train_info[i].dest_sensor = msg_struct.iValue;
                         train_info[i].dest_offset = (int) msg_struct.value[1]*10;
 
-                        serverSetStopping(&(train_info[i]), train_speed[i], msg_struct.iValue, (int) msg_struct.value[1]*10);
+                        serverSetStopping(&(train_info[i]), train_speed[i], msg_struct.iValue, (int) msg_struct.value[1]*10, requests);
                     }
                 }
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
@@ -433,7 +451,6 @@ void CommandCenterServer() {
             case SET_TRAIN_SHORT_MULT:
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (msg_struct.value[0] == train_info[i].id) {
-                        DebugPutStr("sd", "DEBUG: Setting multiplier to ", msg_struct.iValue);
                         train_info[i].short_move_mult = msg_struct.iValue;
                     }
                 }
@@ -449,11 +466,12 @@ void CommandCenterServer() {
     }
 }
 
-void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, int offset) {
+void serverSetStopping (Train_info* train_info, int* train_speed, int stop_sensor, int stop_offset, int* requests) {
     char msg[11] = {0};
     char reply[30] = {0};
     int msglen = 10, rpllen = 10;
 
+    char sensors_ahead[5] = {-1};
     move_data md;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
@@ -467,69 +485,68 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, in
     train_info->stopping_notifier = notifier_tid;
     train_info->timeout = 300;
 
-    DebugPutStr("sdsdsd", "DEBUG: routing from ", train_info->sensor, ":", train_info->offset, " to ", sensor);
+    DebugPutStr("sdsdsd", "DEBUG: routing from ", train_info->sensor, ":", train_info->offset, " to ", stop_sensor);
     // find path which will also set the switches
     pathFindDijkstra(
         &md,
         train_info->sensor,          // current node
         train_info->offset,                      // offset
-        sensor,                 // where it wants to go
+        stop_sensor,                 // where it wants to go
         train_info->stopping_dist,                    // stoping distance
         blocked_nodes,          // the nodes the trains can't use
         0                       // the length of the blocked nodes array
     );
     // need to addjust more if unsafe
-    // if ( md.type == UNSAFE_REVERSE && train_info->off_course){
-    //     pathFindDijkstra(
-    //         &md,
-    //         getSensorComplement(train_info->sensor),          // current node
-    //         30,                      // offset
-    //         sensor,                 // where it wants to go
-    //         train_info->stopping_dist,                    // stoping distance
-    //         blocked_nodes,          // the nodes the trains can't use
-    //         0                       // the length of the blocked nodes array
-    //     );
+    if ( md.type == UNSAFE_REVERSE && train_info->off_course){
+        pathFindDijkstra(
+            &md,
+            getSensorComplement(train_info->sensor),          // current node
+            30,                      // offset
+            stop_sensor,                 // where it wants to go
+            train_info->stopping_dist,                    // stoping distance
+            blocked_nodes,          // the nodes the trains can't use
+            0                       // the length of the blocked nodes array
+        );
 
-    //     int i;
-    //     for (i = 0; i < md.list_len; i++) {
-    //         if (md.node_list[i].type == NODE_BRANCH) {
-    //             setSwitch(md.node_list[i].branch_state, md.node_list[i].num);
-    //         }
-    //     }
-    //     train_info->signal = UNSAFE_OFF_COURSE_SIGNAL;
-    //     stopping_sensor_dist = md.total_distance - train_info->offset;
-    //     if (stopping_sensor == train_info->dest_sensor ){
-    //         stopping_sensor_dist += offset;
-    //     }
-    //     if (train_info->is_reversed){
-    //         stopping_sensor_dist -= TRAIN_REVERSE_OFFSET;
-    //     }
-    //     if (stopping_sensor_dist < 0){
-    //         stopping_sensor_dist = 0;
-    //     }
-    //     msg_struct.value[0] = -1;
-    //     msg_struct.iValue = shortMoveDistanceToDelay(30, train_info->id, train_info->short_move_mult);
-    //     DebugPutStr("s", "DEBUG: Short Move");
+        int i;
+        for (i = 0; i < md.list_len; i++) {
+            if (md.node_list[i].type == NODE_BRANCH) {
+                setSwitch(md.node_list[i].branch_state, md.node_list[i].num);
+            }
+        }
+        train_info->signal = UNSAFE_OFF_COURSE_SIGNAL;
 
-    //     Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
-    //     setTrainSpeed (train_info->id, 12);
-    //     train_info->off_course = 0;
-    //     return;
-    // }
+        train_info->is_stopped = 0;
+        train_info->stopping_sensor = train_info->sensor;
+        if (train_info->is_reversed){
+            train_info->stopping_offset = 5;
+        }
+        else {
+            train_info->stopping_offset = 15;
+        }
+        train_info->stopping_offset = 30;
+        msg_struct.value[0] = -1;
+        msg_struct.iValue = shortMoveDistanceToDelay(train_info->stopping_offset, train_info->id, train_info->short_move_mult);
+        DebugPutStr("s", "DEBUG: Short Move");
+
+        Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+        setTrainSpeed (train_info->id, 12);
+        train_info->off_course = 0;
+        return;
+    }
     int i;
     for (i = 0; i < md.list_len; i++) {
         if (md.node_list[i].type == NODE_BRANCH) {
             setSwitch(md.node_list[i].branch_state, md.node_list[i].num);
         }
     }
-
     DebugPutStr("s", "DEBUG: found route ");
     stopping_sensor = md.stopping_sensor;
     stopping_sensor_dist = md.stopping_dist;
 
     train_info->is_stopped = 0;
-    train_info->stopping_sensor = sensor;
-    train_info->stopping_offset = offset;
+    train_info->stopping_sensor = stop_sensor;
+    train_info->stopping_offset = stop_offset;
     train_info->stopping_sensor = md.node_list[md.list_len-1].num;
     if (md.type == UNSAFE_REVERSE) {
         train_info->stopping_offset = 30;
@@ -540,7 +557,7 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, in
             &md,
             getSensorComplement(train_info->sensor),          // current node
             30,                      // offset
-            sensor,                 // where it wants to go
+            stop_sensor,                 // where it wants to go
             train_info->stopping_dist,                    // stoping distance
             blocked_nodes,          // the nodes the trains can't use
             0                       // the length of the blocked nodes array
@@ -561,8 +578,11 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, in
         msg_struct.value[0] = -1;
         msg_struct.iValue = 1;
         int next_sensor, prev_sensor;
-        next_sensor = getSensorComplement(train_info->sensor);
         prev_sensor = getSensorComplement(train_info->next_sensor);
+        predictSensor(prev_sensor, 2, sensors_ahead);
+        next_sensor = sensors_ahead[0];
+        changeWaitForSensors(train_info->notifier_tid, sensors_ahead, 2 );
+
         DebugPutStr("sdsd", "DEBUG: reversing: prev:", prev_sensor, " next:", next_sensor);
         pathFindDijkstra(
             &md,
@@ -581,9 +601,14 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, in
         Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     }
     else if (md.type == SHORT_MOVE) {
+
+        predictSensor(train_info->sensor, 2, sensors_ahead);
+        train_info->next_sensor = sensors_ahead[0];
+        changeWaitForSensors(train_info->notifier_tid, sensors_ahead, 2 );
+
         stopping_sensor_dist = md.total_distance - train_info->offset;
         if (stopping_sensor == train_info->dest_sensor ){
-            stopping_sensor_dist += offset;
+            stopping_sensor_dist += stop_offset;
         }
         if (train_info->is_reversed){
             stopping_sensor_dist -= TRAIN_REVERSE_OFFSET;
@@ -600,8 +625,13 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, in
 
     }
     else if (md.type == LONG_MOVE) {
+
+        predictSensor(train_info->sensor, 2, sensors_ahead);
+        train_info->next_sensor = sensors_ahead[0];
+        changeWaitForSensors(train_info->notifier_tid, sensors_ahead, 2 );
+
         if (stopping_sensor == train_info->dest_sensor ){
-            stopping_sensor_dist += offset;
+            stopping_sensor_dist += stop_offset;
         }
         if (train_info->is_reversed){
             stopping_sensor_dist -= TRAIN_REVERSE_OFFSET;
@@ -609,7 +639,7 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, in
         if (stopping_sensor_dist < 0){
             stopping_sensor_dist = 0;
         }
-        int stop_delay = distanceToDelay( stopping_sensor, stopping_sensor_dist, train_speed);
+        int stop_delay = distanceToDelay( stopping_sensor, stopping_sensor_dist, train_speed, train_info->speed_mult);
 
         // start the notifier
         msg_struct.value[0] = stopping_sensor;
@@ -621,32 +651,54 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, in
         setTrainSpeed (train_info->id, 12);
     }
     train_info->off_course = 0;
+
+    // check if there were any request on the blocked sensor
+    for (i=0; i < 64; i++) {
+        if (requests[i] == train_info->id) {
+            // return the sensors and the expected and predicted time
+            reply_struct.value[0] = train_info->sensor;
+            reply_struct.value[1] = train_info->next_sensor;
+            bwi2a(train_info->time_prediction, reply + 2);
+            reply_struct.iValue = train_info->arrival_tme;
+            Reply (i, (char *)&reply_struct, 30);
+            break;
+       }
+   }
 }
 
-int timeToDistance( int sensor, int delta_time, int *train_speed ) {
+int timeToDistance( int sensor, int delta_time, int *train_speed, double speed_mult ) {
     float velocity = train_speed[sensor] / 100; // velocity is in mm/tick;
+    velocity = velocity * speed_mult / 100;
     int distance = delta_time * velocity;
     return distance;
 }
 
-int distanceToDelay( int sensor, int distance, int *train_speed ) {
+int distanceToDelay( int sensor, int distance, int *train_speed, double speed_mult  ) {
     float velocity = train_speed[sensor] / 100; // velocity is in mm/tick;
+    velocity = velocity * speed_mult / 100;
     int delta_time = (int) distance / velocity;
     return delta_time;
 }
 
-int shortMoveDistanceToDelay( double distance, int train_num, double short_move_mult ) {
+int shortMoveDistanceToDelay( double distance, int train_num, double short_move_mult) {
     double cubic;
     double square;
     double linear;
     double constant;
     double result = -1;
-    distance = distance * short_move_mult / (double) 100;
+    distance = distance * short_move_mult / 100;
     if (train_num == 49) {
         cubic = 2.9053E-7 * distance * distance * distance;
         square = 0.000753205 * distance * distance;
         linear = 0.737617 * distance;
         constant = 46.55;
+        result = (cubic - square + linear + constant);
+    }
+    else if (train_num == 56) {
+        cubic = 1.7E-7 * distance * distance * distance;
+        square = 5.6E-4 * distance * distance;
+        linear = 0.68 * distance;
+        constant = 61+20;
         result = (cubic - square + linear + constant);
     }
     else {
@@ -659,9 +711,10 @@ int shortMoveDistanceToDelay( double distance, int train_num, double short_move_
     return (int) result;
 }
 
-int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed) {
+int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed, double speed_mult) {
     int delta_distance = findDistanceBetweenLandmarks( sensor, next_sensor, 10);  //distance is in mm
     float velocity = train_speed[sensor] / 100; // velocity is in mm/tick;
+    velocity = velocity * speed_mult / 100;
 
     int delta_time = (int) delta_distance / velocity;
     int ret =  init_time + delta_time;

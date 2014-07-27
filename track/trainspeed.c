@@ -91,13 +91,20 @@ void init_train_speed(int train_num, int* train_speeds) {
 	}
 }
 
-void get_train_calibrations( int train_num, int* train_stopping_dist, double* short_move_multiplier) {
+void get_train_calibrations( int train_num, int* train_stopping_dist, double* short_move_multiplier, double* speed_multiplier) {
 	if (train_num == 49){
 		*train_stopping_dist = 780;
-		*short_move_multiplier = 1.1;
+		*short_move_multiplier = 110;
+		*speed_multiplier = 100;
+	}
+	if (train_num == 56){
+		*train_stopping_dist = 670;
+		*short_move_multiplier = 100;
+		*speed_multiplier = 120;
 	}
 	else {
 		*train_stopping_dist = 790;
-		*short_move_multiplier = 1;
+		*short_move_multiplier = 100;
+		*speed_multiplier = 100;
 	}
 }

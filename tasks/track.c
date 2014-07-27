@@ -691,6 +691,7 @@ struct move_data_t pathFindDijkstraTrackTask(
     // if the ending node is in unsafe_reverses, we need to make the train go train leng more
     if (posintlistIsInList(md.node_list[md.list_len-1].id, unsafe_reverses, unsafe_reverses_list_size)) {
         cur_dist -= TRAIN_LENGTH;
+        md.total_distance += TRAIN_LENGTH;
     }
     for (i = md.list_len-2; i > 0; i--) {   // start with the second last one
         if (md.node_list[i].type == NODE_BRANCH) {

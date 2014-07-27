@@ -7,12 +7,14 @@
 #define WAIT_REQUEST 1
 #define SENSORS_DUMP_REQUEST 2
 #define SENSORS_CREATE_NOTIFIER 3
+#define CHANGE_WAIT_REQUEST 4
 #define SENSOR_SERVER_NAME "SS"
 
 void SensorNotifier();
 void SensorCourier();
 void SensorServer();
 void SensorNotifierNoCourier();
+int changeWaitForSensors(int tid, char *sensors, int len );
 int waitForSensors( char *sensors, int len, int timeOut );
 int sensorToInt (char module, int num);
 int getSensorComplement (int num);

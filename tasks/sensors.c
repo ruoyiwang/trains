@@ -178,6 +178,15 @@ void SensorServer() {
                 }
                 // memcpy(requests[sender_tid]+1, msg_struct.value, msg_struct.value[0]);
                 break;
+            case CHANGE_WAIT_REQUEST:
+                // add request to list of suspended tasks
+                requests[msg_struct.iValue][0] = 1000000;
+                for (i= 0; i < (int)msg_struct.value[0]; i ++) {
+                    requests[msg_struct.iValue][1+i] = msg_struct.value[i+1];
+                }
+                // memcpy(requests[sender_tid]+1, msg_struct.value, msg_struct.value[0]);
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
             default:
                 // wtf
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll SENSORSSERVER %d", msg_struct.type);
@@ -202,6 +211,36 @@ int waitForSensors( char *sensors, int len, int timeOut ) {
     reply_struct.value = reply;
 
     msg_struct.iValue = timeOut;
+    msg[0] = (char)len;
+
+    // int i;
+    // for (i = 0; i < len; i++) {
+    //     msg[1+i] = sensors[i];
+    // }
+    memcpy(msg+1, sensors, len);
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, msglen);
+
+    if (strcmp(msg_struct.value, "FAIL") != 0) {
+        // if succeded
+        return reply_struct.iValue;
+    }
+    return -1;
+}
+
+int changeWaitForSensors(int tid, char *sensors, int len ) {
+    char msg[10] = {0};
+    char reply[10] = {0};
+    int msglen = 10;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(SENSOR_SERVER_NAME);
+    }
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.type = CHANGE_WAIT_REQUEST;
+    reply_struct.value = reply;
+
+    msg_struct.iValue = tid;
     msg[0] = (char)len;
 
     // int i;

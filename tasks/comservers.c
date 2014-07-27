@@ -70,11 +70,10 @@ void PutServer() {
 
     // string buffer
     char char_from_request;
-    int insetion_point;
 
     // this is a circ buffer
     unsigned char string_buffer[BUFFER_SIZE];
-    int buf_start = 0, buf_len = 0, i = 0;
+    int i = 0;
     unsigned int output_point = 0, input_point = 0;
     for (i = 0; i < BUFFER_SIZE; i++) {
         string_buffer[i] = 0;
@@ -269,11 +268,9 @@ void GetServer() {
 
     // string buffer
     char char_from_notifier;
-    int insetion_point;
-
     // this is a circ buffer
     unsigned char string_buffer[BUFFER_SIZE];
-    int buf_start = 0, buf_len = 0, i = 0;
+    int i = 0;
     unsigned int output_point = 0, input_point = 0;
     for (i = 0; i < BUFFER_SIZE; i++) {
         string_buffer[i] = 0;

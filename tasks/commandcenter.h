@@ -14,6 +14,7 @@ typedef struct train_info_t {
 	int arrival_tme;
 	int task_tid;
 	int courier_tid;
+	int notifier_tid;
 	int time_prediction;
 	int stopping_notifier;
 	int stopping_sensor;
@@ -28,6 +29,7 @@ typedef struct train_info_t {
 	int off_course;
 	int signal;
 	double short_move_mult;
+	double speed_mult;
 } Train_info;
 
 #define COMMAND_CENTER_NOTIFIER 0
@@ -51,12 +53,12 @@ void CommandCenterStoppingNotifier();
 void CommandCenterAdjustTask();
 int initTrainLocation( int train_id, int sensor );
 int waitTrainInfo ( int train_id, int *train_info);
-int distanceToDelay( int sensor, int distance, int *train_speed );
-int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed);
+int distanceToDelay( int sensor, int distance, int *train_speed , double short_move_mult );
+int predictArrivalTime( int sensor, int next_sensor, int init_time, int *train_speed, double short_move_mult );
 int setTrainDestination( int train_id, int sensor, int offset );
 int shortMoveDistanceToDelay( double distance, int train_num, double mult );
-void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, int offset);
-int timeToDistance( int sensor, int delta_time, int *train_speed );
+void serverSetStopping (Train_info* train_info, int* train_speed, int sensor, int offset, int* requests);
+int timeToDistance( int sensor, int delta_time, int *train_speed , double short_move_mult );
 int getTrainLocation ( int train_id, int* sensor, int* offset);
 int setTrainShortMult ( int train_id, int short_mult);
 int setTrainStopDist ( int train_id, int stop_dist);
