@@ -52,6 +52,7 @@
 #define CMD_SET_SHORT_MULT 	17
 #define CMD_RESERVE_NODE	18
 #define CMD_FREE_NODE		19
+#define CMD_LIST_RESERVED_NODE		20
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);

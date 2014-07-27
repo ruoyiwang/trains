@@ -12,6 +12,7 @@
 #define INIT_TRACK              0x55
 #define RESERVE_NODES_REQUEST   0x56
 #define FREE_RESERVED_NODES     0x57
+#define GET_RESERVED_NODES      0x58
 
 #define TRACK_TASK      "TT"
 
@@ -139,5 +140,7 @@ void initTrack(char track);
 int reserveNodesRequest (char* nodes, int msglen);
 
 void freeNodes (char* nodes, int msglen);
+
+int getReservedNodes(char* nodes, int len);
 
 #endif

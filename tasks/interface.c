@@ -292,7 +292,7 @@ unsigned int atoi ( char *str ) {
 void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
     int i = 0, j = 0;
     *argc = 0;
-    char cmdstr[10];
+    char cmdstr[10] = {0};
     while ( str[i] != '\0' && str[i] != '\t' && str[i] != ' ' ) {
         cmdstr[i] = str[i];
         i++;
@@ -314,7 +314,7 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         argv[*argc][j] = '\0';
         (*argc) ++;
     }
-	cmdstr[2] = 0;
+	// cmdstr[2] = 0;
     if ( strcmp (cmdstr, "tr") == 0 && *argc == 2 ){
         *command = CMD_TRAIN;
     }
@@ -374,6 +374,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
     }
     else if ( strcmp (cmdstr, "fn") == 0 ){
         *command = CMD_FREE_NODE;
+        return;
+    }
+    else if ( strcmp (cmdstr, "lrn") == 0 ){
+        *command = CMD_LIST_RESERVED_NODE;
         return;
     }
     else if ( cmdstr[0] == 'A' ){
@@ -770,6 +774,9 @@ void handleCommandTask() {
     int prediction_len, result;
     char tempstr[20] = {0};
 
+    // for listing reserved nodes
+    char reserved_nodes[80] = {0};
+
     buffer[index++] = 0;
     putstr(COM2, buffer);
 
@@ -1062,6 +1069,13 @@ void handleCommandTask() {
                     msg_struct.type = SENSORS_CREATE_NOTIFIER;
                     receiver_tid = WhoIs(SENSOR_SERVER_NAME);
                     Send (receiver_tid, (char *)&msg_struct, 0, (char *)&reply_struct, 20);
+                    break;
+                case CMD_LIST_RESERVED_NODE:
+                    result = getReservedNodes(reserved_nodes, 80);
+                    DebugPutStr("ds", result, "Reserved Nodes:");
+                    for (i = 0; i < result; i++) {
+                        DebugPutStr("cd", reserved_nodes[i]/16+'A', reserved_nodes[i]%16+1);
+                    }
                     break;
                 default:
                     outputPutStrLn ( "Invalid input", &row, &col, buffer, &index );

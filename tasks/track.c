@@ -54,6 +54,7 @@ void TracksTask () {
     FOREVER {
         rpllen = 10;
         reply_struct.value = reply;
+        reply_struct.iValue = 0;
         memset(&pfr, 0, sizeof(path_find_requirements));
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch (msg_struct.type) {
@@ -194,7 +195,7 @@ void TracksTask () {
                     tracks[(int)msg[i]].reverse->reserved = true;
                 }
                 // reply
-                Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             case FREE_RESERVED_NODES:
                 // free them    ETERNAL SUMMERRR?
@@ -202,7 +203,17 @@ void TracksTask () {
                     tracks[(int)msg[i]].reserved = false;
                     tracks[(int)msg[i]].reverse->reserved = false;
                 }
-                Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
+            case GET_RESERVED_NODES:
+                for (i = 0; i < 80; i++) {
+                    if (tracks[i].reserved) {
+                        reply_struct.value[reply_struct.iValue] = tracks[i].index;
+                        reply_struct.iValue++;
+                    }
+                }
+                rpllen = reply_struct.iValue;
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             default:
                 bwprintf(COM2, "\n\n\n\n\n\n\nfmlllllllllllllllllllllllll TRACKSERVER %d", msg_struct.type);
@@ -1085,4 +1096,36 @@ void freeNodes (char* nodes, int msglen) {
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     return;
+}
+
+// state how long ur array is or just get owned
+// input:   ur result array, how big it is
+// return:  amount of reserved nodes
+int getReservedNodes(char* nodes, int len) {
+    // msg shits
+    char msg[10] = {0};
+    char reply[80] = {0};
+    int rpllen = 80, msglen = 1;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(TRACK_TASK);
+    }
+
+    message msg_struct, reply_struct;
+
+    msg_struct.value = msg;
+    msg_struct.type = GET_RESERVED_NODES;
+
+    reply_struct.value = reply;
+
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+    if (len < reply_struct.iValue) {
+        memcpy(nodes, reply, len);
+    }
+    else {
+        memcpy(nodes, reply, reply_struct.iValue);
+    }
+
+    return reply_struct.iValue;
 }
