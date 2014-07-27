@@ -47,9 +47,11 @@
 #define CMD_SHORT_MOVE_TIME	12
 #define CMD_PF_DIJKSTRA		13	// path find dijkstra
 #define CMD_INIT_TRACK   	14
-#define CMD_CREATE_SENSOR_NOTIFIER 15
-#define CMD_SET_STOPPING_DIST 16
-#define CMD_SET_SHORT_MULT 17
+#define CMD_CREATE_SENSOR_NOTIFIER 	15
+#define CMD_SET_STOPPING_DIST 		16
+#define CMD_SET_SHORT_MULT 	17
+#define CMD_RESERVE_NODE	18
+#define CMD_FREE_NODE		19
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);

@@ -4,17 +4,22 @@
 #include <track_data.h>
 #include <track_node.h>
 
-#define SET_SWITCH          0x50
-#define PREDICT_SENSOR      0x51
-#define PATH_FIND           0x52
+#define SET_SWITCH              0x50
+#define PREDICT_SENSOR          0x51
+#define PATH_FIND               0x52
 #define FIND_DISTANCE_BETWEEN_TWO_LANDMARKS 0x53
-#define PATH_FIND_DIJKSTRA  0x54
-#define INIT_TRACK          0x55
+#define PATH_FIND_DIJKSTRA      0x54
+#define INIT_TRACK              0x55
+#define RESERVE_NODES_REQUEST   0x56
+#define FREE_RESERVED_NODES     0x57
 
 #define TRACK_TASK      "TT"
 
 #define REVERSING_WEIGHT    400
 #define TRAIN_LENGTH        220
+
+#define RESERVATION_SUCCESSFUL  0x60
+#define RESERVATION_FAILED      0x61
 
 typedef enum {
     LONG_MOVE,
@@ -47,6 +52,7 @@ typedef struct move_data_t {
     int stopping_sensor;
     int stopping_dist;
     int total_distance;
+    int unsafe_forward;
 } move_data;
 
 void TracksTask ();
@@ -129,5 +135,9 @@ void makePath(track_node* node, track_node* init_node, track_node** path);
 void setSwitchTrackTask(int switch_num, char switch_dir, unsigned int* switch_status);
 
 void initTrack(char track);
+
+int reserveNodesRequest (char* nodes, int msglen);
+
+void freeNodes (char* nodes, int msglen);
 
 #endif

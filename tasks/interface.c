@@ -337,6 +337,14 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_SET_SHORT_MULT;
         return;
     }
+    else if ( strcmp (cmdstr, "rn") == 0 ){
+        *command = CMD_RESERVE_NODE;
+        return;
+    }
+    else if ( strcmp (cmdstr, "fn") == 0 ){
+        *command = CMD_FREE_NODE;
+        return;
+    }
     else if ( cmdstr[0] == 'A' ){
         *command = CMD_ASSERT;
         return;
@@ -919,6 +927,9 @@ void handleCommandTask() {
                         DebugPutStr("s", "PATH_NOT_FOUND");
                         break;
                     }
+                    if (md.unsafe_forward) {
+                        DebugPutStr("s", "unsafe forward");
+                    }
 
                     for (i = 0; i < md.list_len; i++) {
                         if (md.node_list[i].type == NODE_SENSOR) {
@@ -953,6 +964,31 @@ void handleCommandTask() {
                     break;
                 case CMD_SET_STOPPING_DIST:
                     setTrainStopDist( atoi(argv[0]), atoi(argv[1]));
+                    break;
+                case CMD_RESERVE_NODE:
+                    DebugPutStr("s", "Reseving Nodes:");
+                    for (i = 0; i < argc - 1; i+= 2) {
+                        result = sensorToInt(argv[i][0], atoi(argv[i+1]));
+                        DebugPutStr("cdsd", argv[i][0], atoi(argv[i+1]), " ", result);
+                        argv[0][i/2] = result;
+                    }
+
+                    if (reserveNodesRequest(argv[0], argc / 2)) {
+                        DebugPutStr("s", "Reservation Successful");
+                    }
+                    else {
+                        DebugPutStr("s", "Reservation Failed");
+                    }
+                    break;
+                case CMD_FREE_NODE:
+                    DebugPutStr("s", "Freeing Nodes:");
+                    for (i = 0; i < argc - 1; i+= 2) {
+                        result = sensorToInt(argv[i][0], atoi(argv[i+1]));
+                        DebugPutStr("cdsd", argv[i][0], atoi(argv[i+1]), " ", result);
+                        argv[0][i/2] = result;
+                    }
+
+                    freeNodes(argv[0], argc / 2);
                     break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;

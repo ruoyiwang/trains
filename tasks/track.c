@@ -49,7 +49,7 @@ void TracksTask () {
     int cur_sensor, prediction_len = 8, landmark1, landmark2, lookup_limit;
     int stop_command_sensor, stop_command_sensor_dist;
 
-    // move data from path find
+    int i = 0;
 
     FOREVER {
         rpllen = 10;
@@ -172,6 +172,36 @@ void TracksTask () {
                 reply_struct.iValue = 1;
                 // memcpy(reply_struct.value, md, sizeof(move_data));
                 reply_struct.value = (char*)&md;
+                Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
+                break;
+            case RESERVE_NODES_REQUEST:
+                reply_struct.type = RESERVATION_SUCCESSFUL;
+                // check if reservation is possible
+                for (i = 0; i < msg_struct.iValue; i++) {
+                    if (tracks[(int)msg[i]].reserved == true ||
+                        tracks[(int)msg[i]].reverse->reserved == true) {
+                        reply_struct.type = RESERVATION_FAILED;
+                        break;
+                    }
+                }
+                if (reply_struct.type == RESERVATION_FAILED) {
+                    Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
+                    break;
+                }
+                // reserve them
+                for (i = 0; i < msg_struct.iValue; i++) {
+                    tracks[(int)msg[i]].reserved = true;
+                    tracks[(int)msg[i]].reverse->reserved = true;
+                }
+                // reply
+                Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
+                break;
+            case FREE_RESERVED_NODES:
+                // free them    ETERNAL SUMMERRR?
+                for (i = 0; i < msg_struct.iValue; i++) {
+                    tracks[(int)msg[i]].reserved = false;
+                    tracks[(int)msg[i]].reverse->reserved = false;
+                }
                 Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
                 break;
             default:
@@ -434,6 +464,19 @@ struct move_data_t pathFindDijkstraTrackTask(
     unsafe_reverses[i++] = 68;      // E5
     unsafe_reverses[i++] = 74;      // E11
 
+    i=0;
+    int unsafe_forwords[10];        // note tis is only for track b
+    unsafe_forwords[i++] = 2;       // A3
+    unsafe_forwords[i++] = 31;      // B16
+    unsafe_forwords[i++] = 36;      // C7
+    unsafe_forwords[i++] = 39;      // C8
+    unsafe_forwords[i++] = 41;      // C10
+    unsafe_forwords[i++] = 43;      // C12
+    unsafe_forwords[i++] = 45;      // C14
+    unsafe_forwords[i++] = 66;      // E3
+    unsafe_forwords[i++] = 69;      // E6
+    unsafe_forwords[i++] = 75;      // E12
+
     int distances[TRACK_MAX] = {0};
     int route[TRACK_MAX] = {0};
 
@@ -468,15 +511,43 @@ struct move_data_t pathFindDijkstraTrackTask(
         // remove u from Q
         posintlistErase(u, Q, TRACK_MAX);
 
-        if (posintlistIsInList(u, blocked_nodes, blocked_nodes_len) &&
+
+        // no accessable path from current block
+        if (min_dist == 1000000000) {
+            break;  // exit dijsktra and algo will return NG
+        }
+
+        // blocked_nodes array is deprecated
+        else if (posintlistIsInList(u, blocked_nodes, blocked_nodes_len) &&
             u == stopping_node) {
-            break;
+            break;  // if the stopping is unavailable, return NG
         }
         else if (posintlistIsInList(u, blocked_nodes, blocked_nodes_len)) {
             // we avoid the items that are not available
             continue;
         }
-        else if (u == stopping_node) {
+
+        // reserved flag is currently in use
+        else if (tracks[u].reserved && u == stopping_node){
+            continue;
+        }
+        else if (tracks[u].reserved){
+            continue;
+        }
+
+        // binded nodes are in use
+        else if ((int)tracks[u].binded_nodes[0] != -1) {
+            if (tracks[u].binded_nodes[0]->reserved) {
+                continue;
+            }
+        }
+        else if ((int)tracks[u].binded_nodes[1] != -1) {
+            if (tracks[u].binded_nodes[1]->reserved) {
+                continue;
+            }
+        }
+
+        if (u == stopping_node) {
             found_path = 1;
             break;
         }
@@ -538,6 +609,7 @@ struct move_data_t pathFindDijkstraTrackTask(
     move_data md;
     md.total_distance = 0;
     md.stopping_sensor = -1;
+    md.unsafe_forward = 0;
 
     if (!found_path) {
         md.type = PATH_NOT_FOUND;
@@ -611,9 +683,6 @@ struct move_data_t pathFindDijkstraTrackTask(
         md.node_list[j].id = tracks[cur_node_num].index;
         md.node_list[j].num = tracks[cur_node_num].num;
         md.list_len = j+1;
-        if (md.total_distance > stopping_dist * 2.5) {
-            md.type = LONG_MOVE;
-        }
 
         // if stopping node, return
         if (cur_node_num == stopping_node) {
@@ -679,9 +748,21 @@ struct move_data_t pathFindDijkstraTrackTask(
         else {
             md.total_distance += tracks[cur_node_num].edge[DIR_AHEAD].dist;
         }
-
     }
 
+    // used for stop distance calc
+    int cur_dist = 0;
+
+
+    if (posintlistIsInList(md.node_list[md.list_len-1].id, unsafe_forwords, 10)) {
+        md.total_distance -= TRAIN_LENGTH;
+        md.unsafe_forward = 1;
+        cur_dist -= TRAIN_LENGTH;
+    }
+
+    if (md.total_distance > stopping_dist * 2.5) {
+        md.type = LONG_MOVE;
+    }
 
     if (md.type != LONG_MOVE) {
         // just return on short move or reverse
@@ -689,7 +770,6 @@ struct move_data_t pathFindDijkstraTrackTask(
     }
 
     // have to tell the caller where to stop
-    int cur_dist = 0;
     // if the ending node is in unsafe_reverses, we need to make the train go train leng more
     // if (posintlistIsInList(md.node_list[md.list_len-1].id, unsafe_reverses, unsafe_reverses_list_size)) {
     // cur_dist += TRAIN_LENGTH;
@@ -961,4 +1041,48 @@ void initTrack(char track) {
         msg[0] = 'b';
     }
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+}
+
+int reserveNodesRequest (char* nodes, int msglen) {
+    // msg shits
+    char reply[10] = {0};
+    int rpllen = 10;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(TRACK_TASK);
+    }
+
+    message msg_struct, reply_struct;
+    msg_struct.value = nodes;
+    msg_struct.iValue = msglen;
+    msg_struct.type = RESERVE_NODES_REQUEST;
+    reply_struct.value = reply;
+
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+    if (reply_struct.type == RESERVATION_SUCCESSFUL) {
+        return true;
+    }
+
+    return false;
+}
+
+void freeNodes (char* nodes, int msglen) {
+    // msg shits
+    char reply[10] = {0};
+    int rpllen = 10;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(TRACK_TASK);
+    }
+
+    message msg_struct, reply_struct;
+    msg_struct.value = nodes;
+    msg_struct.iValue = msglen;
+    msg_struct.type = FREE_RESERVED_NODES;
+    reply_struct.value = reply;
+
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+    return;
 }

@@ -32,7 +32,9 @@ struct track_node {
   track_node *reverse;  /* same location, but opposite direction */
   track_node *parent;
   int visisted;
+  int reserved;
   track_edge edge[2];
+  track_node *binded_nodes[2];
 };
 
 #endif

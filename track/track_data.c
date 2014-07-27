@@ -9,6 +9,7 @@ void init_tracka(track_node *track) {
   for (i = 0; i < TRACK_MAX; i++) {
     track[i].parent = 0;
     track[i].index = i;
+    track[i].reserved = 0;
   }
   track[0].name = "A1";
   track[0].type = NODE_SENSOR;
@@ -1198,6 +1199,9 @@ void init_trackb(track_node *track) {
   for (i = 0; i < TRACK_MAX; i++) {
     track[i].parent = 0;
     track[i].index = i;
+    track[i].reserved = 0;
+    track[i].binded_nodes[0] = (track_node*)-1;
+    track[i].binded_nodes[1] = (track_node*)-1;
   }
   track[0].name = "A1";
   track[0].type = NODE_SENSOR;
@@ -1859,6 +1863,7 @@ void init_trackb(track_node *track) {
   track[81].edge[DIR_AHEAD].src = &track[81];
   track[81].edge[DIR_AHEAD].dest = &track[83];
   track[81].edge[DIR_AHEAD].dist = 188;
+  track[81].binded_nodes[0] = &track[38];
   track[82].name = "BR2";
   track[82].type = NODE_BRANCH;
   track[82].num = 2;
@@ -1879,6 +1884,7 @@ void init_trackb(track_node *track) {
   track[83].edge[DIR_AHEAD].src = &track[83];
   track[83].edge[DIR_AHEAD].dest = &track[85];
   track[83].edge[DIR_AHEAD].dist = 185;
+  track[83].binded_nodes[0] = &track[38];
   track[84].name = "BR3";
   track[84].type = NODE_BRANCH;
   track[84].num = 3;
@@ -1899,6 +1905,7 @@ void init_trackb(track_node *track) {
   track[85].edge[DIR_AHEAD].src = &track[85];
   track[85].edge[DIR_AHEAD].dest = &track[38];
   track[85].edge[DIR_AHEAD].dist = 128;
+  track[85].binded_nodes[0] = &track[38];
   track[86].name = "BR4";
   track[86].type = NODE_BRANCH;
   track[86].num = 4;
@@ -1919,6 +1926,7 @@ void init_trackb(track_node *track) {
   track[87].edge[DIR_AHEAD].src = &track[87];
   track[87].edge[DIR_AHEAD].dest = &track[103];
   track[87].edge[DIR_AHEAD].dist = 185;
+  track[87].binded_nodes[0] = &track[44];
   track[88].name = "BR5";
   track[88].type = NODE_BRANCH;
   track[88].num = 5;
@@ -1939,6 +1947,7 @@ void init_trackb(track_node *track) {
   track[89].edge[DIR_AHEAD].src = &track[89];
   track[89].edge[DIR_AHEAD].dest = &track[114];
   track[89].edge[DIR_AHEAD].dist = 155;
+  track[89].binded_nodes[0] = &track[39];
   track[90].name = "BR6";
   track[90].type = NODE_BRANCH;
   track[90].num = 6;
@@ -1959,6 +1968,7 @@ void init_trackb(track_node *track) {
   track[91].edge[DIR_AHEAD].src = &track[91];
   track[91].edge[DIR_AHEAD].dest = &track[37];
   track[91].edge[DIR_AHEAD].dist = 61;
+  track[91].binded_nodes[0] = &track[37];
   track[92].name = "BR7";
   track[92].type = NODE_BRANCH;
   track[92].num = 7;
@@ -1979,6 +1989,7 @@ void init_trackb(track_node *track) {
   track[93].edge[DIR_AHEAD].src = &track[93];
   track[93].edge[DIR_AHEAD].dest = &track[74];
   track[93].edge[DIR_AHEAD].dist = 43;
+  track[93].binded_nodes[0] = &track[74];
   track[94].name = "BR8";
   track[94].type = NODE_BRANCH;
   track[94].num = 8;
@@ -1999,6 +2010,8 @@ void init_trackb(track_node *track) {
   track[95].edge[DIR_AHEAD].src = &track[95];
   track[95].edge[DIR_AHEAD].dest = &track[96];
   track[95].edge[DIR_AHEAD].dist = 155;
+  track[95].binded_nodes[0] = &track[52];
+  track[95].binded_nodes[1] = &track[55];
   track[96].name = "BR9";
   track[96].type = NODE_BRANCH;
   track[96].num = 9;
@@ -2019,6 +2032,8 @@ void init_trackb(track_node *track) {
   track[97].edge[DIR_AHEAD].src = &track[97];
   track[97].edge[DIR_AHEAD].dest = &track[94];
   track[97].edge[DIR_AHEAD].dist = 155;
+  track[97].binded_nodes[0] = &track[56];
+  track[97].binded_nodes[1] = &track[73];
   track[98].name = "BR10";
   track[98].type = NODE_BRANCH;
   track[98].num = 10;
@@ -2039,6 +2054,7 @@ void init_trackb(track_node *track) {
   track[99].edge[DIR_AHEAD].src = &track[99];
   track[99].edge[DIR_AHEAD].dest = &track[68];
   track[99].edge[DIR_AHEAD].dist = 50;
+  track[99].binded_nodes[0] = &track[68];
   track[100].name = "BR11";
   track[100].type = NODE_BRANCH;
   track[100].num = 11;
@@ -2059,6 +2075,7 @@ void init_trackb(track_node *track) {
   track[101].edge[DIR_AHEAD].src = &track[101];
   track[101].edge[DIR_AHEAD].dest = &track[44];
   track[101].edge[DIR_AHEAD].dist = 50;
+  track[101].binded_nodes[0] = &track[44];
   track[102].name = "BR12";
   track[102].type = NODE_BRANCH;
   track[102].num = 12;
@@ -2079,6 +2096,7 @@ void init_trackb(track_node *track) {
   track[103].edge[DIR_AHEAD].src = &track[103];
   track[103].edge[DIR_AHEAD].dest = &track[101];
   track[103].edge[DIR_AHEAD].dist = 188;
+  track[103].binded_nodes[0] = &track[44];
   track[104].name = "BR13";
   track[104].type = NODE_BRANCH;
   track[104].num = 13;
@@ -2099,6 +2117,7 @@ void init_trackb(track_node *track) {
   track[105].edge[DIR_AHEAD].src = &track[105];
   track[105].edge[DIR_AHEAD].dest = &track[43];
   track[105].edge[DIR_AHEAD].dist = 120;
+  track[105].binded_nodes[0] = &track[43];
   track[106].name = "BR14";
   track[106].type = NODE_BRANCH;
   track[106].num = 14;
@@ -2119,6 +2138,7 @@ void init_trackb(track_node *track) {
   track[107].edge[DIR_AHEAD].src = &track[107];
   track[107].edge[DIR_AHEAD].dest = &track[3];
   track[107].edge[DIR_AHEAD].dist = 43;
+  track[107].binded_nodes[0] = &track[3];
   track[108].name = "BR15";
   track[108].type = NODE_BRANCH;
   track[108].num = 15;
@@ -2139,6 +2159,7 @@ void init_trackb(track_node *track) {
   track[109].edge[DIR_AHEAD].src = &track[109];
   track[109].edge[DIR_AHEAD].dest = &track[30];
   track[109].edge[DIR_AHEAD].dist = 50;
+  track[109].binded_nodes[0] = &track[30];
   track[110].name = "BR16";
   track[110].type = NODE_BRANCH;
   track[110].num = 16;
@@ -2159,6 +2180,7 @@ void init_trackb(track_node *track) {
   track[111].edge[DIR_AHEAD].src = &track[111];
   track[111].edge[DIR_AHEAD].dest = &track[40];
   track[111].edge[DIR_AHEAD].dist = 128;
+  track[111].binded_nodes[0] = &track[40];
   track[112].name = "BR17";
   track[112].type = NODE_BRANCH;
   track[112].num = 17;
@@ -2179,6 +2201,7 @@ void init_trackb(track_node *track) {
   track[113].edge[DIR_AHEAD].src = &track[113];
   track[113].edge[DIR_AHEAD].dest = &track[77];
   track[113].edge[DIR_AHEAD].dist = 43;
+  track[113].binded_nodes[0] = &track[77];
   track[114].name = "BR18";
   track[114].type = NODE_BRANCH;
   track[114].num = 18;
@@ -2199,6 +2222,7 @@ void init_trackb(track_node *track) {
   track[115].edge[DIR_AHEAD].src = &track[115];
   track[115].edge[DIR_AHEAD].dest = &track[88];
   track[115].edge[DIR_AHEAD].dist = 155;
+  track[115].binded_nodes[0] = &track[34];
   track[116].name = "BR153";
   track[116].type = NODE_BRANCH;
   track[116].num = 153;
@@ -2219,6 +2243,8 @@ void init_trackb(track_node *track) {
   track[117].edge[DIR_AHEAD].src = &track[117];
   track[117].edge[DIR_AHEAD].dest = &track[119];
   track[117].edge[DIR_AHEAD].dist = 0;
+  track[117].binded_nodes[0] = &track[49];
+  track[117].binded_nodes[1] = &track[65];
   track[118].name = "BR154";
   track[118].type = NODE_BRANCH;
   track[118].num = 154;
@@ -2239,6 +2265,8 @@ void init_trackb(track_node *track) {
   track[119].edge[DIR_AHEAD].src = &track[119];
   track[119].edge[DIR_AHEAD].dest = &track[122];
   track[119].edge[DIR_AHEAD].dist = 0;
+  track[119].binded_nodes[0] = &track[49];
+  track[119].binded_nodes[1] = &track[65];
   track[120].name = "BR155";
   track[120].type = NODE_BRANCH;
   track[120].num = 155;
@@ -2259,6 +2287,8 @@ void init_trackb(track_node *track) {
   track[121].edge[DIR_AHEAD].src = &track[121];
   track[121].edge[DIR_AHEAD].dest = &track[123];
   track[121].edge[DIR_AHEAD].dist = 0;
+  track[121].binded_nodes[0] = &track[32];
+  track[121].binded_nodes[1] = &track[29];
   track[122].name = "BR156";
   track[122].type = NODE_BRANCH;
   track[122].num = 156;
@@ -2279,6 +2309,8 @@ void init_trackb(track_node *track) {
   track[123].edge[DIR_AHEAD].src = &track[123];
   track[123].edge[DIR_AHEAD].dest = &track[118];
   track[123].edge[DIR_AHEAD].dist = 0;
+  track[123].binded_nodes[0] = &track[32];
+  track[123].binded_nodes[1] = &track[29];
   track[124].name = "EN1";
   track[124].type = NODE_ENTER;
   track[124].reverse = &track[125];
