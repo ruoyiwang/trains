@@ -9,6 +9,7 @@
 #define SENSORS_CREATE_NOTIFIER 3
 #define CHANGE_WAIT_REQUEST 4
 #define SENSOR_SERVER_NAME "SS"
+#define ANY_SENSOR_REQUEST -2
 
 void SensorNotifier();
 void SensorCourier();

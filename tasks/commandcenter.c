@@ -85,7 +85,7 @@ void CommandCenterStoppingNotifier() {
         Delay(delay+50);
     }
     else {
-        Delay(790);
+        Delay(670);
     }
     reply_struct.type = COMMAND_CENTER_TRAIN_STOPPED;
     Send (server_tid, (char *)&reply_struct, rpllen, (char *)&msg_struct, msglen);
@@ -107,11 +107,11 @@ void CommandCenterAdjustTask() {
     Reply (server_tid, (char *)&reply_struct, rpllen);
 
     DebugPutStr("sd", "DEBUG: Off target Adjusting for ", msg_struct.value[1]);
-    Delay(100);
     setTrainSpeed((int)msg_struct.value[0], 3);
 
     waitForSensors(msg_struct.value+1, 2, 1000000);
     setTrainSpeed((int)msg_struct.value[0], 0);
+    Delay(100);
 
     reply_struct.type = COMMAND_CENTER_TRAIN_STOPPED;
     Send (server_tid, (char *)&reply_struct, rpllen, (char *)&msg_struct, msglen);
@@ -319,6 +319,8 @@ void CommandCenterServer() {
                             train_info[i].stopping_offset = 0;
                             train_info[i].stopping_notifier = -1;
                             train_info[i].signal = -100;
+                            sensors_ahead[0] = ANY_SENSOR_REQUEST;
+                            changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead[0], 1);
                             serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, train_info[i].dest_offset, requests);
                         }
                     }
