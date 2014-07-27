@@ -122,6 +122,7 @@ void SensorServer() {
     RegisterAs(SENSOR_SERVER_NAME);
     Create(1, (&SensorNotifierNoCourier));
 
+    int sensorNum;
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch(msg_struct.type) {
@@ -146,7 +147,8 @@ void SensorServer() {
                     //     }
                     // }
                     for (j=1 ; j< 6; j ++){
-                        if (requests[i][j] != -1 && (current_sensor_state[requests[i][j]/8] & (1 << (7 - (requests[i][j] % 8))))) {
+                        if (requests[i][j] >= 0 && (current_sensor_state[requests[i][j]/8] & (1 << (7 - (requests[i][j] % 8))))) {
+                            msg_struct.value[requests[i][j]/8] = msg_struct.value[requests[i][j]/8] & ~(requests[i][j] % 8);
                             reply_struct.iValue = requests[i][j];
                             requests[i][0] = -1;
                             requests[i][1] = -1;
@@ -156,6 +158,39 @@ void SensorServer() {
                             requests[i][5] = -1;
                             Reply (i, (char *)&reply_struct, rpllen);
                             break;
+                        }
+                    }
+                }
+                sensorNum = -1;
+                for (i = 0; i<10 ; i ++){
+                    if (msg_struct.value[i] == 0) {
+                        continue;
+                    }
+                    for (j = 0; j< 8 ; j++) {
+                        if ( msg_struct.value[i] & ( 1 << j ) ){
+                            if ( (i % 2) ) {
+                                sensorNum = (i / 2) + 15 - j;}
+                            else {
+                                sensorNum =(i / 2) + 7 - j;
+                            }
+                        }
+                    }
+
+                }
+                if (sensorNum != -1){
+                    for (i = 0; i < 64; i++) {
+                        for (j=1 ; j< 6; j ++){
+                            if (requests[i][j] == ANY_SENSOR_REQUEST) {
+                                reply_struct.iValue = sensorNum;
+                                requests[i][0] = -1;
+                                requests[i][1] = -1;
+                                requests[i][2] = -1;
+                                requests[i][3] = -1;
+                                requests[i][4] = -1;
+                                requests[i][5] = -1;
+                                Reply (i, (char *)&reply_struct, rpllen);
+                                break;
+                            }
                         }
                     }
                 }

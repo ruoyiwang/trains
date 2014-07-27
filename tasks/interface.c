@@ -11,6 +11,7 @@
 #include <util.h>
 #include <debug.h>
 #include <ts7200.h>
+#include <display.h>
 
 void cursorCommand( char * cmd, char* buffer, int* index ) {
     *(buffer+((*index)++)) = 0x1B;
@@ -31,13 +32,19 @@ void flushLine (char* buffer, int* index ) {
 void setCursor ( int row, int col, char* buffer, int* index ) {
     *(buffer+((*index)++)) = 0x1B;
     *(buffer+((*index)++)) = '[';
+    if ( row > 99) {
+        *(buffer+((*index)++)) = 0x30 + row / 100;
+    }
     if ( row > 9) {
-        *(buffer+((*index)++)) = 0x30 + row / 10;
+        *(buffer+((*index)++)) = 0x30 + row %100 / 10;
     }
     *(buffer+((*index)++)) = 0x30 + row % 10;
     *(buffer+((*index)++)) = ';';
+    if ( col > 99) {
+        *(buffer+((*index)++)) = 0x30 + col / 100;
+    }
     if ( col > 9) {
-        *(buffer+((*index)++)) = 0x30 + col / 10;
+        *(buffer+((*index)++)) = 0x30 + col %100 / 10;
     }
     *(buffer+((*index)++)) = 0x30 + col % 10;
     *(buffer+((*index)++)) = 'H';
@@ -165,7 +172,7 @@ void setSwitch ( int state, int address ) {
     char msg[10];
     char reply[10];
 
-    char buffer[256] = {0};
+    char buffer[200] = {0};
     int index = 0;
 
     int msglen = 2, rpllen = 10, track_task_id;
@@ -178,14 +185,38 @@ void setSwitch ( int state, int address ) {
     int r = 0, c = 0;
     if ( getSwCursor ( address, &r, &c ) ) {
         if (state == SW_STRAIGHT) {
-            outputPutStr ( "S", &r, &c, buffer, &index );
             msg_struct.value[0] = 's';
             Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+            outputPutStr ( "S", &r, &c, buffer, &index );
+            if (address <= 18){
+                get_cordinates(address + 79, &r, &c);
+            }
+            else{
+                get_cordinates(address, &r, &c);
+            }
+            r+=TRACK_POSITION_X-1;
+            c+=TRACK_POSITION_Y-1;
+            cursorCommand ( "[33m" , buffer, &index ); // set color to white
+            outputPutStr ( "s", &r, &c, buffer, &index );
+            cursorCommand ( "[0m" , buffer, &index ); // set color to white
         }
         else if (state == SW_CURVE) {
-            outputPutStr ( "C", &r, &c, buffer, &index );
             msg_struct.value[0] = 'c';
             Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+            outputPutStr ( "C", &r, &c, buffer, &index );
+            if (address <= 18){
+                get_cordinates(address + 79, &r, &c);
+            }
+            else{
+                get_cordinates(address, &r, &c);
+            }
+            r+=TRACK_POSITION_X-1;
+            c+=TRACK_POSITION_Y-1;
+            cursorCommand ( "[33m" , buffer, &index ); // set color to white
+            outputPutStr ( "c", &r, &c, buffer, &index );
+            cursorCommand ( "[0m" , buffer, &index ); // set color to white
         }
     }
     buffer[(index)++] = 0;
@@ -210,12 +241,12 @@ void drawSwitchesTable ( int *row, int *col , char* buffer, int* index ) {
 void drawTrack ( int *row, int *col ) {
     char buffer[500];
     int index = 0;
-    cursorCommand ( "[33m" , buffer, &index ); // set color to yellow
-    outputPutStr ( " ................o.....s..s...o....s...o.........o.", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    cursorCommand ( "[31m" , buffer, &index ); // set color to yellow
+    outputPutStr ( " ................o....s...s...o....s...o.........o.", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
     buffer[index++] = 0; putstr(COM2, buffer); index = 0;
     outputPutStr ( "                    .       .         .            ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
     buffer[index++] = 0; putstr(COM2, buffer); index = 0;
-    outputPutStr ( "       o.....o....s..o......o..s.o...   .s..o....o.", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
+    outputPutStr ( "       o.....o....s..o......o..s.o...   s...o....o.", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
     buffer[index++] = 0; putstr(COM2, buffer); index = 0;
     outputPutStr ( "     .                                .    .       ", row, col, buffer, &index ); (*row)++; *col = TRACK_POSITION_Y;
     buffer[index++] = 0; putstr(COM2, buffer); index = 0;
@@ -607,7 +638,7 @@ void LocationOffsetDisplayTask() {
 }
 
 void LocationDisplayTask() {
-    char buffer[200] = {0};
+    char buffer[600] = {0};
     int index = 0;
 
     int row, col;
@@ -636,10 +667,25 @@ void LocationDisplayTask() {
     buffer[(index)++] = 0;
     putstr(COM2, buffer);
 
+    int last_prev=0, last_next=0;
+
     FOREVER {
         waitTrainInfo(train_id, train_info);
         int index = 0;
 
+        cursorCommand ( "[31m" , buffer, &index ); // set color to white
+        get_cordinates((int)last_prev, &row, &col);
+        row+=TRACK_POSITION_X-1;
+        col+=TRACK_POSITION_Y-1;
+        outputPutStr ( "o", &row, &col, buffer, &index );
+
+        get_cordinates((int)last_next, &row, &col);
+        row+=TRACK_POSITION_X-1;
+        col+=TRACK_POSITION_Y-1;
+        outputPutStr ( "o", &row, &col, buffer, &index );
+        cursorCommand ( "[0m" , buffer, &index ); // set color to white
+
+        last_next = (int)train_info[1];
         sensor_str[0] = 'A' + (train_info[1] / 16);
         bwi2a( (train_info[1] % 16) + 1, sensor_str + 1);
         row = TRAIN_TABLE_X + row_offset; col = NEXT_POSITION_Y;
@@ -647,12 +693,28 @@ void LocationDisplayTask() {
         row = TRAIN_TABLE_X + row_offset; col = NEXT_POSITION_Y;
         outputPutStr ( sensor_str, &row, &col , buffer, &index );
 
+        get_cordinates((int)train_info[1], &row, &col);
+        row+=TRACK_POSITION_X-1;
+        col+=TRACK_POSITION_Y-1;
+        cursorCommand ( "[36;1m" , buffer, &index ); // set color to white
+        outputPutStr ( "O", &row, &col, buffer, &index );
+        cursorCommand ( "[0m" , buffer, &index ); // set color to white
+
+
+        last_prev = (int)train_info[0];
         sensor_str[0] = 'A' + (train_info[0] / 16);
         bwi2a( (train_info[0] % 16) + 1, sensor_str + 1);
         row = TRAIN_TABLE_X + row_offset; col = PREV_POSITION_Y;
         outputPutStr ( "      ", &row, &col , buffer, &index );
         row = TRAIN_TABLE_X + row_offset; col = PREV_POSITION_Y;
         outputPutStr ( sensor_str, &row, &col , buffer, &index );
+
+        get_cordinates((int)train_info[0], &row, &col);
+        row+=TRACK_POSITION_X-1;
+        col+=TRACK_POSITION_Y-1;
+        cursorCommand ( "[32;1m" , buffer, &index ); // set color to white
+        outputPutStr ( "O", &row, &col, buffer, &index );
+        cursorCommand ( "[0m" , buffer, &index ); // set color to white
 
         row = TRAIN_TABLE_X + row_offset; col = EXPECTED_POSITION_Y;
         outputPutStr ( "           ", &row, &col , buffer, &index );

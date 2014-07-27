@@ -139,8 +139,15 @@ trainspeed.o: trainspeed.s
 	$(AS) $(ASFLAGS) -o trainspeed.o trainspeed.s
 
 
-kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o posintlist.o debug.o track_data.o trainspeed.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o debug.o posintlist.o track_data.o trainspeed.o -lgcc
+display.s: track/display.c track/display.h
+	$(XCC) -S $(CFLAGS) track/display.c
+
+display.o: display.s
+	$(AS) $(ASFLAGS) -o display.o display.s
+
+
+kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o posintlist.o debug.o track_data.o trainspeed.o display.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o debug.o posintlist.o track_data.o trainspeed.o display.o -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map
