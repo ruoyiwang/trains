@@ -537,6 +537,7 @@ struct move_data_t pathFindDijkstraTrackTask(
 
     move_data md;
     md.total_distance = 0;
+    md.stopping_sensor = -1;
 
     if (!found_path) {
         md.type = PATH_NOT_FOUND;
@@ -601,6 +602,7 @@ struct move_data_t pathFindDijkstraTrackTask(
     // second, construct the mode up to the reverse
     int j = 0, cur_node_num, next_node_num;
     md.total_distance = 0 - src_node_offfset;
+    // md.total_distance += TRAIN_LENGTH;
     md.type = SHORT_MOVE;
     for (i = 0; i < path_length; i++, j++) {
         cur_node_num = route[i];
@@ -681,17 +683,16 @@ struct move_data_t pathFindDijkstraTrackTask(
     }
 
 
-    md.total_distance += TRAIN_LENGTH;
     if (md.type != LONG_MOVE) {
         // just return on short move or reverse
         return md;
     }
 
     // have to tell the caller where to stop
-    int cur_dist = src_node_offfset;
+    int cur_dist = 0;
     // if the ending node is in unsafe_reverses, we need to make the train go train leng more
     // if (posintlistIsInList(md.node_list[md.list_len-1].id, unsafe_reverses, unsafe_reverses_list_size)) {
-    cur_dist -= TRAIN_LENGTH;
+    // cur_dist += TRAIN_LENGTH;
     // }
     for (i = md.list_len-2; i > 0; i--) {   // start with the second last one
         if (md.node_list[i].type == NODE_BRANCH) {

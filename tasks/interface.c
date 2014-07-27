@@ -894,7 +894,7 @@ void handleCommandTask() {
                         atoi(argv[0]),          // current node
                         atoi(argv[2]),          // offset
                         atoi(argv[1]),          // where it wants to go
-                        790,                   // stoping distance
+                        400,                   // stoping distance
                         blocked_nodes,          // the sensors the train's gonna pass
                         blocked_nodes_len
                     );

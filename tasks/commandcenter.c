@@ -698,7 +698,7 @@ int shortMoveDistanceToDelay( double distance, int train_num, double short_move_
         cubic = 1.7E-7 * distance * distance * distance;
         square = 5.6E-4 * distance * distance;
         linear = 0.68 * distance;
-        constant = 61+20;
+        constant = 61;
         result = (cubic - square + linear + constant);
     }
     else {
