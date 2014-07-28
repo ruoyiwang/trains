@@ -49,7 +49,7 @@ void TracksTask () {
     int cur_sensor, prediction_len = 8, landmark1, landmark2, lookup_limit;
     int stop_command_sensor, stop_command_sensor_dist;
 
-    int i = 0;
+    int i = 0, j = 0;
 
     FOREVER {
         rpllen = 10;
@@ -141,7 +141,8 @@ void TracksTask () {
                     pfr.dest,
                     pfr.stopping_dist,      // stopping distance
                     pfr.blocked_nodes,
-                    pfr.blocked_nodes_len
+                    pfr.blocked_nodes_len,
+                    pfr.train_id
                 );
                 // debug line
                 // for (i = 0; i < md.list_len; i++) {
@@ -177,22 +178,16 @@ void TracksTask () {
                 break;
             case RESERVE_NODES_REQUEST:
                 reply_struct.type = RESERVATION_SUCCESSFUL;
-                // check if reservation is possible
-                for (i = 0; i < msg_struct.iValue; i++) {
-                    if (tracks[(int)msg[i]].reserved == true ||
-                        tracks[(int)msg[i]].reverse->reserved == true) {
-                        reply_struct.type = RESERVATION_FAILED;
-                        break;
-                    }
-                }
-                if (reply_struct.type == RESERVATION_FAILED) {
-                    Reply (sender_tid, (char *)&reply_struct, sizeof(move_data));
-                    break;
-                }
                 // reserve them
+                // loop through the nodes from input
                 for (i = 0; i < msg_struct.iValue; i++) {
-                    tracks[(int)msg[i]].reserved = true;
-                    tracks[(int)msg[i]].reverse->reserved = true;
+                    // loop to find afree spot in the obj
+                    for (j = 0; j < 5; j++) {
+                        if (tracks[(int)msg[i]].reserved[j] == 0) {
+                            tracks[(int)msg[i]].reserved[j] = (int)msg[msg_struct.iValue];
+                            tracks[(int)msg[i]].reverse->reserved[j] = (int)msg[msg_struct.iValue];
+                        }
+                    }
                 }
                 // reply
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
@@ -200,16 +195,41 @@ void TracksTask () {
             case FREE_RESERVED_NODES:
                 // free them    ETERNAL SUMMERRR?
                 for (i = 0; i < msg_struct.iValue; i++) {
-                    tracks[(int)msg[i]].reserved = false;
-                    tracks[(int)msg[i]].reverse->reserved = false;
+                    // loop to find afree spot in the obj
+                    for (j = 0; j < 5; j++) {
+                        if (tracks[(int)msg[i]].reserved[j] == (int)msg[msg_struct.iValue]) {
+                            tracks[(int)msg[i]].reserved[j] = 0;
+                            tracks[(int)msg[i]].reverse->reserved[j] = 0;
+                        }
+                    }
+                }
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
+            case CHECK_NODES_AVAILABLE:
+                reply_struct.type = NODES_AVAILABLE;
+                for (i = 0; i < msg_struct.iValue; i++) {
+                    // loop to find afree spot in the obj
+                    for (j = 0; j < 5; j++) {
+                        if (tracks[(int)msg[i]].reserved[j] != (int)msg[msg_struct.iValue] &&
+                            tracks[(int)msg[i]].reserved[j] != 0 ) {
+                            reply_struct.type = NODES_UNAVAILABLE;
+                            break;
+                        }
+                    }
+                    if (reply_struct.type == NODES_UNAVAILABLE) {
+                        break;
+                    }
                 }
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             case GET_RESERVED_NODES:
                 for (i = 0; i < 80; i++) {
-                    if (tracks[i].reserved) {
-                        reply_struct.value[reply_struct.iValue] = tracks[i].index;
-                        reply_struct.iValue++;
+                    for (j = 0; j < 5; j++) {
+                        if (tracks[i].reserved[j] != 0) {
+                            reply_struct.value[reply_struct.iValue] = tracks[i].index;
+                            reply_struct.iValue++;
+                            break;
+                        }
                     }
                 }
                 rpllen = reply_struct.iValue;
@@ -460,9 +480,10 @@ struct move_data_t pathFindDijkstraTrackTask(
     int stopping_node,
     int stopping_dist,
     int blocked_nodes[TRACK_MAX],         // the landmarks the train cannot use
-    int blocked_nodes_len
+    int blocked_nodes_len,
+    int train_id
 ) {
-    int i = 0, unsafe_reverses_list_size = 10;
+    int i = 0, unsafe_reverses_list_size = 10, j = 0;
     int unsafe_reverses[10];        // note tis is only for track b
     unsafe_reverses[i++] = 3;       // A4
     unsafe_reverses[i++] = 30;      // B15
@@ -487,6 +508,58 @@ struct move_data_t pathFindDijkstraTrackTask(
     unsafe_forwords[i++] = 66;      // E3
     unsafe_forwords[i++] = 69;      // E6
     unsafe_forwords[i++] = 75;      // E12
+
+    // // first things first, follow the source node+offset to the closest landmark
+    // while (src_node_offfset > 0) {
+    //     if(tracks[cur_sensor].type == NODE_BRANCH) {
+    //         if (getSwitchStatus(switch_status, tracks[cur_sensor].num) == SW_STRAIGHT) {
+    //             if (src_node_offfset - tracks[cur_sensor].edge[DIR_STRAIGHT].dist < 0) {
+    //                 if (tracks[cur_sensor].edge[DIR_STRAIGHT].dist - src_node_offfset < src_node_offfset) {
+    //                     src_node_offfset = tracks[cur_sensor].edge[DIR_STRAIGHT].dist - src_node_offfset;
+    //                     cur_sensor = tracks[cur_sensor].edge[DIR_STRAIGHT].dest->reverse->index;
+    //                 }
+    //                 break;
+    //             }
+    //             else {
+    //                 src_node_offfset -= tracks[cur_sensor].edge[DIR_STRAIGHT].dist;
+    //                 cur_sensor = tracks[cur_sensor].edge[DIR_STRAIGHT].dest->index;
+    //             }
+    //         }
+    //         else {
+    //             if (src_node_offfset - tracks[cur_sensor].edge[DIR_CURVED].dist < 0) {
+    //                 if (tracks[cur_sensor].edge[DIR_CURVED].dist - src_node_offfset < src_node_offfset) {
+    //                     src_node_offfset = tracks[cur_sensor].edge[DIR_CURVED].dist - src_node_offfset;
+    //                     cur_sensor = tracks[cur_sensor].edge[DIR_CURVED].dest->reverse->index;
+    //                 }
+    //                 break;
+    //             }
+    //             else {
+    //                 src_node_offfset -= tracks[cur_sensor].edge[DIR_CURVED].dist;
+    //                 cur_sensor = tracks[cur_sensor].edge[DIR_CURVED].dest->index;
+    //             }
+    //         }
+    //     }
+    //     else if (tracks[cur_sensor].type == NODE_EXIT) {
+    //         // seems like we hit the wall... hmmmm...
+    //         break;
+    //     }
+    //     else {  // sensor or merge
+    //         // we reached the cloest node
+    //         if (src_node_offfset - tracks[cur_sensor].edge[DIR_AHEAD].dist < 0) {
+    //             if (tracks[cur_sensor].edge[DIR_AHEAD].dist - src_node_offfset < src_node_offfset) {
+    //                 src_node_offfset = tracks[cur_sensor].edge[DIR_AHEAD].dist - src_node_offfset;
+    //                 cur_sensor = tracks[cur_sensor].edge[DIR_AHEAD].dest->reverse->index;
+    //             }
+    //             break;
+    //         }
+    //         else {
+    //             src_node_offfset -= tracks[cur_sensor].edge[DIR_AHEAD].dist;
+    //             cur_sensor = tracks[cur_sensor].edge[DIR_AHEAD].dest->index;
+    //         }
+    //     }
+    // }
+
+
 
     int distances[TRACK_MAX] = {0};
     int route[TRACK_MAX] = {0};
@@ -538,25 +611,38 @@ struct move_data_t pathFindDijkstraTrackTask(
             continue;
         }
 
-        // reserved flag is currently in use
-        else if (tracks[u].reserved && u == stopping_node){
-            continue;
+        // current node is reserved by some other train
+        int skip_node = false;
+        for (j = 0; j < 5; j++) {
+            if (tracks[u].reserved[j] != train_id &&
+                tracks[u].reserved[j] != 0){
+                skip_node = true;
+                break;
+            }
+
+            // binded nodes are in use
+            else if ((int)tracks[u].binded_nodes[0] != -1) {
+                if (tracks[u].binded_nodes[0]->reserved[j] != train_id &&
+                    tracks[u].binded_nodes[0]->reserved[j] != 0) {
+                    skip_node = true;
+                    break;
+                }
+            }
+            else if ((int)tracks[u].binded_nodes[1] != -1) {
+                if (tracks[u].binded_nodes[1]->reserved[j] != train_id &&
+                    tracks[u].binded_nodes[1]->reserved[j] != 0) {
+                    skip_node = true;
+                    break;
+                }
+            }
         }
-        else if (tracks[u].reserved){
+        if (skip_node && u == stopping_node) {
+            break;
+        }
+        else if (skip_node) {
             continue;
         }
 
-        // binded nodes are in use
-        else if ((int)tracks[u].binded_nodes[0] != -1) {
-            if (tracks[u].binded_nodes[0]->reserved) {
-                continue;
-            }
-        }
-        else if ((int)tracks[u].binded_nodes[1] != -1) {
-            if (tracks[u].binded_nodes[1]->reserved) {
-                continue;
-            }
-        }
 
         if (u == stopping_node) {
             found_path = 1;
@@ -683,7 +769,8 @@ struct move_data_t pathFindDijkstraTrackTask(
     }
 
     // second, construct the mode up to the reverse
-    int j = 0, cur_node_num, next_node_num;
+    int cur_node_num, next_node_num;
+    j = 0;
     md.total_distance = 0 - src_node_offfset;
     // md.total_distance += TRAIN_LENGTH;
     md.type = SHORT_MOVE;
@@ -943,7 +1030,8 @@ int pathFindDijkstra(
     int dest_node,              // where it wants to go
     int stopping_dist,          // stoping distance
     int blocked_nodes[TRACK_MAX],         // the landmarks the train cannot use
-    int blocked_nodes_len
+    int blocked_nodes_len,
+    int train_id
 ) {
     int i = 0;
     // int sensor_path_len = 0;
@@ -964,6 +1052,7 @@ int pathFindDijkstra(
     pfr.stopping_dist = stopping_dist;
     pfr.src_node_offfset = src_node_offfset;
     pfr.blocked_nodes_len = blocked_nodes_len;
+    pfr.train_id = train_id;
     // apparently I can't assign an int array to an int array, so deep cpy it is
     for (i = 0; i < blocked_nodes_len; i++) {
         pfr.blocked_nodes[i] = blocked_nodes[i];
@@ -1054,48 +1143,82 @@ void initTrack(char track) {
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 }
 
-int reserveNodesRequest (char* nodes, int msglen) {
-    // msg shits
-    char reply[10] = {0};
-    int rpllen = 10;
+void reserveNodesRequest (char* nodes, int msglen, int train_id) {
     static int receiver_tid = -1;
     if (receiver_tid < 0) {
         receiver_tid = WhoIs(TRACK_TASK);
     }
 
+    // msg shits
+    char reply[10] = {0};
+    char msg[81] = {0};
+    memcpy(msg, nodes, msglen);
+    msg[msglen] = (char)train_id;
+
+    int rpllen = 10;
+
     message msg_struct, reply_struct;
-    msg_struct.value = nodes;
+    msg_struct.value = msg;
     msg_struct.iValue = msglen;
     msg_struct.type = RESERVE_NODES_REQUEST;
     reply_struct.value = reply;
 
-    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    Send (receiver_tid, (char *)&msg_struct, msglen+1, (char *)&reply_struct, rpllen);
 
-    if (reply_struct.type == RESERVATION_SUCCESSFUL) {
-        return true;
-    }
-
-    return false;
+    return;
 }
 
-void freeNodes (char* nodes, int msglen) {
-    // msg shits
-    char reply[10] = {0};
-    int rpllen = 10;
+void freeNodes (char* nodes, int msglen, int train_id) {
     static int receiver_tid = -1;
     if (receiver_tid < 0) {
         receiver_tid = WhoIs(TRACK_TASK);
     }
 
+    // msg shits
+    char reply[10] = {0};
+    char msg[81] = {0};
+    memcpy(msg, nodes, msglen);
+    msg[msglen] = (char)train_id;
+
+    int rpllen = 10;
+
     message msg_struct, reply_struct;
-    msg_struct.value = nodes;
+    msg_struct.value = msg;
     msg_struct.iValue = msglen;
     msg_struct.type = FREE_RESERVED_NODES;
     reply_struct.value = reply;
 
-    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    Send (receiver_tid, (char *)&msg_struct, msglen+1, (char *)&reply_struct, rpllen);
 
     return;
+}
+
+int checkNodesAvailable (char* nodes, int msglen, int train_id) {
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(TRACK_TASK);
+    }
+
+    // msg shits
+    char reply[10] = {0};
+    char msg[81] = {0};
+    memcpy(msg, nodes, msglen);
+    msg[msglen] = (char)train_id;
+
+    int rpllen = 10;
+
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.iValue = msglen;
+    msg_struct.type = CHECK_NODES_AVAILABLE;
+    reply_struct.value = reply;
+
+    Send (receiver_tid, (char *)&msg_struct, msglen+1, (char *)&reply_struct, rpllen);
+    if (reply_struct.type == NODES_AVAILABLE) {
+        return true;
+    }
+
+    return false;
 }
 
 // state how long ur array is or just get owned

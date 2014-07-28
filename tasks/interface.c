@@ -973,7 +973,8 @@ void handleCommandTask() {
                         atoi(argv[1]),          // where it wants to go
                         400,                   // stoping distance
                         blocked_nodes,          // the sensors the train's gonna pass
-                        blocked_nodes_len
+                        blocked_nodes_len,
+                        1
                     );
 
                     if (md.type == SAFE_REVERSE) {
@@ -1042,12 +1043,7 @@ void handleCommandTask() {
                         argv[0][i/2] = result;
                     }
 
-                    if (reserveNodesRequest(argv[0], argc / 2)) {
-                        DebugPutStr("s", "Reservation Successful");
-                    }
-                    else {
-                        DebugPutStr("s", "Reservation Failed");
-                    }
+                    reserveNodesRequest(argv[0], argc / 2, 1);
                     break;
                 case CMD_FREE_NODE:
                     DebugPutStr("s", "Freeing Nodes:");
@@ -1057,7 +1053,7 @@ void handleCommandTask() {
                         argv[0][i/2] = result;
                     }
 
-                    freeNodes(argv[0], argc / 2);
+                    freeNodes(argv[0], argc / 2, 1);
                     break;
                 case CMD_QUIT:
                     // train_buffer[train_rindex % BUFFER_SIZE] = 0x61;

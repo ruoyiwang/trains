@@ -5,11 +5,15 @@
 
 void init_tracka(track_node *track) {
   memset(track, 0, TRACK_MAX*sizeof(track_node));
-  int i = 0;
+  int i = 0, j = 0;
   for (i = 0; i < TRACK_MAX; i++) {
     track[i].parent = 0;
     track[i].index = i;
-    track[i].reserved = 0;
+    for (j = 0; j < 5; j++) {
+      track[i].reserved[j] = 0;
+    }
+    track[i].binded_nodes[0] = (track_node*)-1;
+    track[i].binded_nodes[1] = (track_node*)-1;
   }
   track[0].name = "A1";
   track[0].type = NODE_SENSOR;
@@ -1195,11 +1199,13 @@ void init_tracka(track_node *track) {
 
 void init_trackb(track_node *track) {
   memset(track, 0, TRACK_MAX*sizeof(track_node));
-  int i = 0;
+  int i = 0, j = 0;
   for (i = 0; i < TRACK_MAX; i++) {
     track[i].parent = 0;
     track[i].index = i;
-    track[i].reserved = 0;
+    for (j = 0; j < 5; j++) {
+      track[i].reserved[j] = 0;
+    }
     track[i].binded_nodes[0] = (track_node*)-1;
     track[i].binded_nodes[1] = (track_node*)-1;
   }

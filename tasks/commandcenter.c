@@ -496,7 +496,8 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
         stop_sensor,                 // where it wants to go
         train_info->stopping_dist,                    // stoping distance
         blocked_nodes,          // the nodes the trains can't use
-        0                       // the length of the blocked nodes array
+        0,                       // the length of the blocked nodes array
+        train_info->id
     );
     // need to addjust more if unsafe
     if ( md.type == UNSAFE_REVERSE && train_info->off_course){
@@ -507,7 +508,8 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
             stop_sensor,                 // where it wants to go
             train_info->stopping_dist,                    // stoping distance
             blocked_nodes,          // the nodes the trains can't use
-            0                       // the length of the blocked nodes array
+            0,                       // the length of the blocked nodes array
+            train_info->id
         );
 
         int i;
@@ -562,7 +564,8 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
             stop_sensor,                 // where it wants to go
             train_info->stopping_dist,                    // stoping distance
             blocked_nodes,          // the nodes the trains can't use
-            0                       // the length of the blocked nodes array
+            0,                       // the length of the blocked nodes array
+            train_info->id
         );
 
         int i;
@@ -593,7 +596,8 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
             next_sensor,                 // where it wants to go
             train_info->stopping_dist,                    // stoping distance
             blocked_nodes,          // the nodes the trains can't use
-            0                       // the length of the blocked nodes array
+            0,                       // the length of the blocked nodes array
+            train_info->id
         );
         DebugPutStr("sd", "DEBUG: edge length is: ", md.total_distance);
         train_info->offset = md.total_distance - train_info->offset;

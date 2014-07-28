@@ -13,6 +13,7 @@
 #define RESERVE_NODES_REQUEST   0x56
 #define FREE_RESERVED_NODES     0x57
 #define GET_RESERVED_NODES      0x58
+#define CHECK_NODES_AVAILABLE   0x59
 
 #define TRACK_TASK      "TT"
 
@@ -21,6 +22,8 @@
 
 #define RESERVATION_SUCCESSFUL  0x60
 #define RESERVATION_FAILED      0x61
+#define NODES_AVAILABLE         0x62
+#define NODES_UNAVAILABLE       0x63
 
 typedef enum {
     LONG_MOVE,
@@ -44,6 +47,7 @@ typedef struct path_find_requirements_t {
     int stopping_dist;
     int blocked_nodes[TRACK_MAX];
     int blocked_nodes_len;
+    int train_id;
 } path_find_requirements;
 
 typedef struct move_data_t {
@@ -117,7 +121,8 @@ int pathFindDijkstra(
     int dest_node,              // where it wants to go
     int stopping_dist,          // stoping distance
     int blocked_items[TRACK_MAX],         // the landmarks the train cannot use
-    int blocked_nodes_len
+    int blocked_nodes_len,
+    int train_id
 );
 
 struct move_data_t pathFindDijkstraTrackTask(
@@ -128,7 +133,8 @@ struct move_data_t pathFindDijkstraTrackTask(
     int stopping_node,
     int stopping_dist,
     int blocked_nodes[TRACK_MAX],         // the landmarks the train cannot use
-    int blocked_nodes_len
+    int blocked_nodes_len,
+    int train_id
 );
 
 void makePath(track_node* node, track_node* init_node, track_node** path);
@@ -137,9 +143,11 @@ void setSwitchTrackTask(int switch_num, char switch_dir, unsigned int* switch_st
 
 void initTrack(char track);
 
-int reserveNodesRequest (char* nodes, int msglen);
+void reserveNodesRequest (char* nodes, int msglen, int train_id);
 
-void freeNodes (char* nodes, int msglen);
+void freeNodes (char* nodes, int msglen, int train_id);
+
+int checkNodesAvailable (char* nodes, int msglen, int train_id);
 
 int getReservedNodes(char* nodes, int len);
 
