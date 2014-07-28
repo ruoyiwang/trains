@@ -1103,7 +1103,7 @@ int pathFindDijkstra(
     // }
     // end of debugline
     if (md->type == PATH_NOT_FOUND) {
-        return -1;
+        return 0;
     }
     return 1;
 

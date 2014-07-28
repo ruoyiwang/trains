@@ -92,6 +92,27 @@ void CommandCenterStoppingNotifier() {
     Exit();
 }
 
+void CommandCenterDelayNotifier() {
+    int server_tid;
+
+    char msg[11] = {0};
+    char reply[11] = {0};
+    int msglen = 10, rpllen = 10;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = reply;
+
+    Receive( &server_tid, (char*)&msg_struct, msglen );
+    Reply (server_tid, (char *)&reply_struct, rpllen);
+
+    DebugPutStr("sd", "DEBUG: delaying for : ", msg_struct.iValue);
+    int delay = (int) msg_struct.iValue;
+    Delay(delay);
+    reply_struct.type = COMMAND_CENTER_DELAY_EXPIRED;
+    Send (server_tid, (char *)&reply_struct, rpllen, (char *)&msg_struct, msglen);
+    Exit();
+}
+
 void CommandCenterAdjustTask() {
     int server_tid;
 
@@ -100,7 +121,6 @@ void CommandCenterAdjustTask() {
     int msglen = 10, rpllen = 10;
     message msg_struct, reply_struct;
     msg_struct.value = msg;
-    reply_struct.type = COMMAND_CENTER_STOPPING_NOTIFIER;
     reply_struct.value = reply;
 
     Receive( &server_tid, (char*)&msg_struct, msglen );
@@ -174,6 +194,8 @@ void CommandCenterServer() {
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     // find the right train
                     if (train_info[i].courier_tid == sender_tid) {
+                        sensors_ahead[0] = train_info[i].sensor;
+                        freeNodes(sensors_ahead[0], 1);
 
                         actual_time = Time();
                         train_info[i].arrival_tme = actual_time;
@@ -210,13 +232,6 @@ void CommandCenterServer() {
                         // set the sensor offset back to 0
                         train_info[i].offset = 0;
 
-                        // if the sensor triggered is the same as the stopping sensor then go into stopped state
-                        // if (train_info[i].stopping_sensor == train_info[i].sensor) {
-                        //     train_info[i].offset = train_info[i].stopping_offset;
-                        //     train_info[i].is_stopped = 1;
-                        //     train_info[i].stopping_sensor = -1;
-                        //     train_info[i].stopping_offset = 0;
-                        // }
 
                         // check if there were any request on the blocked sensor
                         for (j=0; j < 64; j++) {
@@ -229,6 +244,16 @@ void CommandCenterServer() {
                                 Reply (j, (char *)&reply_struct, 30);
                                 break;
                             }
+                        }
+
+                        if (train_info[i].signal != RESERVED_STOPPING && !reserveNodesRequest(sensors_ahead+1, 1)) {
+                            // somehting is blocking the way
+                            setTrainSpeed (train_info[i].id, 0);
+                            train_info[i].signal = RESERVED_STOPPING;
+                            notifier_tid = Create(1, (&CommandCenterDelayNotifier));
+                            train_info[i].stopping_notifier = notifier_tid;
+                            msg_struct.iValue = 500;
+                            Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
                         }
 
                         // predict the time of arrival for the next sensor
@@ -321,6 +346,25 @@ void CommandCenterServer() {
                             train_info[i].signal = -100;
                             sensors_ahead[0] = ANY_SENSOR_REQUEST;
                             changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead[0], 1);
+                            serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, train_info[i].dest_offset, requests);
+                        }
+                    }
+                }
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
+
+            case COMMAND_CENTER_DELAY_EXPIRED:
+                // handle stoping notifer, this means the train needs to stop now
+                for (i = 0; i < MAX_TRAIN_COUNT; i++) {
+                    if (train_info[i].stopping_notifier == sender_tid) {
+                        if (train_info[i].dest_sensor > 0) {
+                            DebugPutStr("sd", "DEBUG: Trying to reroute to ",train_info[i].dest_sensor);
+                            train_info[i].is_stopped = 1;
+                            train_info[i].offset = 0;
+                            train_info[i].stopping_sensor = -1;
+                            train_info[i].stopping_offset = 0;
+                            train_info[i].stopping_notifier = -1;
+                            train_info[i].signal = -100;
                             serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, train_info[i].dest_offset, requests);
                         }
                     }
@@ -480,16 +524,13 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
     reply_struct.value = reply;
     // location = train_info[i].offset / 10;
     // initialize the stoping notifier
-    int notifier_tid = Create(1, (&CommandCenterStoppingNotifier));
     int stopping_sensor_dist = 0, stopping_sensor = -1;
     int blocked_nodes[20];
     // update the train info
-    train_info->stopping_notifier = notifier_tid;
-    train_info->timeout = 300;
-
+    int notifier_tid;
     DebugPutStr("sdsdsd", "DEBUG: routing from ", train_info->sensor, ":", train_info->offset, " to ", stop_sensor);
     // find path which will also set the switches
-    pathFindDijkstra(
+    if (!pathFindDijkstra(
         &md,
         train_info->sensor,          // current node
         train_info->offset,                      // offset
@@ -498,7 +539,19 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
         blocked_nodes,          // the nodes the trains can't use
         0,                       // the length of the blocked nodes array
         train_info->id
-    );
+    )){
+        setTrainSpeed (train_info->id, 0);
+        // no route found, try again in 1 second;
+        notifier_tid = Create(1, (&CommandCenterDelayNotifier));
+        train_info->stopping_notifier = notifier_tid;
+        msg_struct.iValue = 100;
+        Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    }
+
+
+    notifier_tid = Create(1, (&CommandCenterStoppingNotifier));
+    train_info->stopping_notifier = notifier_tid;
+    train_info->timeout = 300;
     // need to addjust more if unsafe
     if ( md.type == UNSAFE_REVERSE && train_info->off_course){
         pathFindDijkstra(
@@ -544,7 +597,7 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
             setSwitch(md.node_list[i].branch_state, md.node_list[i].num);
         }
     }
-    DebugPutStr("s", "DEBUG: found route ");
+    DebugPutStr("sd ", "DEBUG: found route :", md.type);
     stopping_sensor = md.stopping_sensor;
     stopping_sensor_dist = md.stopping_dist;
 

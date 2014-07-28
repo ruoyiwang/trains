@@ -6,6 +6,7 @@
 #define UNSAFE_OFF_COURSE_SIGNAL -2
 #define REVERSE_SIGNAL -3
 #define UNSAFE_REVERSE_SIGNAL -4
+#define RESERVED_STOPPING -5
 
 typedef struct train_info_t {
 	int id;
@@ -42,6 +43,7 @@ typedef struct train_info_t {
 #define COMMAND_CENTER_TRAIN_STOPPED 7
 #define SET_TRAIN_STOPPING_DIST 8
 #define SET_TRAIN_SHORT_MULT 9
+#define COMMAND_CENTER_DELAY_EXPIRED 10
 
 #define TRAIN_REVERSE_OFFSET 120
 #define COMMAND_CENTER_SERVER_NAME "CCS"
