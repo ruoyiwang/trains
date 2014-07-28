@@ -186,6 +186,7 @@ void TracksTask () {
                         if (tracks[(int)msg[i]].reserved[j] == 0) {
                             tracks[(int)msg[i]].reserved[j] = (int)msg[msg_struct.iValue];
                             tracks[(int)msg[i]].reverse->reserved[j] = (int)msg[msg_struct.iValue];
+                            break;
                         }
                     }
                 }
@@ -194,6 +195,17 @@ void TracksTask () {
                 break;
             case FREE_RESERVED_NODES:
                 // free them    ETERNAL SUMMERRR?
+                if (msg_struct.iValue == 0) {
+                    for (i = 0; i < 80; i++) {
+                        // loop to find afree spot in the obj
+                        for (j = 0; j < 5; j++) {
+                            if (tracks[i].reserved[j] == (int)msg[msg_struct.iValue]) {
+                                tracks[i].reserved[j] = 0;
+                                tracks[i].reverse->reserved[j] = 0;
+                            }
+                        }
+                    }
+                }
                 for (i = 0; i < msg_struct.iValue; i++) {
                     // loop to find afree spot in the obj
                     for (j = 0; j < 5; j++) {

@@ -195,7 +195,7 @@ void CommandCenterServer() {
                     // find the right train
                     if (train_info[i].courier_tid == sender_tid) {
                         sensors_ahead[0] = train_info[i].sensor;
-                        freeNodes(sensors_ahead[0], 1);
+                        freeNodes(sensors_ahead[0], 0, train_info[i].id);
 
                         actual_time = Time();
                         train_info[i].arrival_tme = actual_time;
@@ -245,16 +245,20 @@ void CommandCenterServer() {
                                 break;
                             }
                         }
+                        sensors_ahead[2] = train_info[i].sensor;
+                        reserveNodesRequest(sensors_ahead[0], 3, train_info[i].id);
 
-                        if (train_info[i].signal != RESERVED_STOPPING && !reserveNodesRequest(sensors_ahead+1, 1)) {
-                            // somehting is blocking the way
-                            setTrainSpeed (train_info[i].id, 0);
-                            train_info[i].signal = RESERVED_STOPPING;
-                            notifier_tid = Create(1, (&CommandCenterDelayNotifier));
-                            train_info[i].stopping_notifier = notifier_tid;
-                            msg_struct.iValue = 500;
-                            Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
-                        }
+                        // if (train_info[i].signal != RESERVED_STOPPING
+                        //     && !checkNodesAvailable (sensors_ahead[0], 2, train_info[i].id)) {
+                        //     Assert();
+                        //     // somehting is blocking the way
+                        //     setTrainSpeed (train_info[i].id, 0);
+                        //     train_info[i].signal = RESERVED_STOPPING;
+                        //     notifier_tid = Create(1, (&CommandCenterDelayNotifier));
+                        //     train_info[i].stopping_notifier = notifier_tid;
+                        //     msg_struct.iValue = 500;
+                        //     Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+                        // }
 
                         // predict the time of arrival for the next sensor
                         expected_time = predictArrivalTime(train_info[i].sensor,
@@ -300,10 +304,10 @@ void CommandCenterServer() {
                                 train_info[i].offset = train_info[i].stopping_offset;
                             }
                             if (train_info[i].signal == SAFE_REVERSE ) {
-                                train_info[i].offset = 0;
+                                // train_info[i].offset = 0;
                             }
                             else if (train_info[i].signal == UNSAFE_REVERSE ) {
-                                train_info[i].offset = 30;
+                                // train_info[i].offset = 30;
                             }
 
 
@@ -540,6 +544,7 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
         0,                       // the length of the blocked nodes array
         train_info->id
     )){
+        DebugPutStr("s", "DEBUG: No nodes found, retrying in 1 second");
         setTrainSpeed (train_info->id, 0);
         // no route found, try again in 1 second;
         notifier_tid = Create(1, (&CommandCenterDelayNotifier));
@@ -597,7 +602,7 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
             setSwitch(md.node_list[i].branch_state, md.node_list[i].num);
         }
     }
-    DebugPutStr("sd ", "DEBUG: found route :", md.type);
+    DebugPutStr("sd", "DEBUG: found route :", md.type);
     stopping_sensor = md.stopping_sensor;
     stopping_sensor_dist = md.stopping_dist;
 
