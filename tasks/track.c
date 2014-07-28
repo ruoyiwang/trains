@@ -805,6 +805,12 @@ struct move_data_t pathFindDijkstraTrackTask(
     md.total_distance = 0 - src_node_offfset;
     // md.total_distance += TRAIN_LENGTH;
     md.type = SHORT_MOVE;
+    if (md.reverse_first && md.node_list[1].id == stopping_node) {
+        // this is the final reverse if the train is face wrong dir
+        md.total_distance = TRAIN_LENGTH;
+        return md;
+    }
+
     if (md.reverse_first) {
         i = 2;
     }
