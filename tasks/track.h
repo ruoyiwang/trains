@@ -58,6 +58,7 @@ typedef struct move_data_t {
     int stopping_dist;
     int total_distance;
     int unsafe_forward;
+    int reverse_first;
 } move_data;
 
 void TracksTask ();

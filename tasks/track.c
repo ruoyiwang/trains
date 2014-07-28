@@ -49,7 +49,7 @@ void TracksTask () {
     int cur_sensor, prediction_len = 8, landmark1, landmark2, lookup_limit;
     int stop_command_sensor, stop_command_sensor_dist;
 
-    int i = 0, j = 0;
+    int i = 0, j = 0, already_reserved = false;
 
     FOREVER {
         rpllen = 10;
@@ -181,12 +181,21 @@ void TracksTask () {
                 // reserve them
                 // loop through the nodes from input
                 for (i = 0; i < msg_struct.iValue; i++) {
+                    already_reserved = false;
                     // loop to find afree spot in the obj
                     for (j = 0; j < 5; j++) {
-                        if (tracks[(int)msg[i]].reserved[j] == 0) {
-                            tracks[(int)msg[i]].reserved[j] = (int)msg[msg_struct.iValue];
-                            tracks[(int)msg[i]].reverse->reserved[j] = (int)msg[msg_struct.iValue];
+                        if (tracks[(int)msg[i]].reserved[j] == (int)msg[msg_struct.iValue]) {
+                            already_reserved = true;
                             break;
+                        }
+                    }
+                    if (!already_reserved) {
+                        for (j = 0; j < 5; j++) {
+                            if (tracks[(int)msg[i]].reserved[j] == 0) {
+                                tracks[(int)msg[i]].reserved[j] = (int)msg[msg_struct.iValue];
+                                tracks[(int)msg[i]].reverse->reserved[j] = (int)msg[msg_struct.iValue];
+                                break;
+                            }
                         }
                     }
                 }
@@ -495,6 +504,7 @@ struct move_data_t pathFindDijkstraTrackTask(
     int blocked_nodes_len,
     int train_id
 ) {
+    int first_reverse_weight = 0, first_reverse = 1;
     int i = 0, unsafe_reverses_list_size = 10, j = 0;
     int unsafe_reverses[10];        // note tis is only for track b
     unsafe_reverses[i++] = 3;       // A4
@@ -521,55 +531,52 @@ struct move_data_t pathFindDijkstraTrackTask(
     unsafe_forwords[i++] = 69;      // E6
     unsafe_forwords[i++] = 75;      // E12
 
-    // // first things first, follow the source node+offset to the closest landmark
-    // while (src_node_offfset > 0) {
-    //     if(tracks[cur_sensor].type == NODE_BRANCH) {
-    //         if (getSwitchStatus(switch_status, tracks[cur_sensor].num) == SW_STRAIGHT) {
-    //             if (src_node_offfset - tracks[cur_sensor].edge[DIR_STRAIGHT].dist < 0) {
-    //                 if (tracks[cur_sensor].edge[DIR_STRAIGHT].dist - src_node_offfset < src_node_offfset) {
-    //                     src_node_offfset = tracks[cur_sensor].edge[DIR_STRAIGHT].dist - src_node_offfset;
-    //                     cur_sensor = tracks[cur_sensor].edge[DIR_STRAIGHT].dest->reverse->index;
-    //                 }
-    //                 break;
-    //             }
-    //             else {
-    //                 src_node_offfset -= tracks[cur_sensor].edge[DIR_STRAIGHT].dist;
-    //                 cur_sensor = tracks[cur_sensor].edge[DIR_STRAIGHT].dest->index;
-    //             }
-    //         }
-    //         else {
-    //             if (src_node_offfset - tracks[cur_sensor].edge[DIR_CURVED].dist < 0) {
-    //                 if (tracks[cur_sensor].edge[DIR_CURVED].dist - src_node_offfset < src_node_offfset) {
-    //                     src_node_offfset = tracks[cur_sensor].edge[DIR_CURVED].dist - src_node_offfset;
-    //                     cur_sensor = tracks[cur_sensor].edge[DIR_CURVED].dest->reverse->index;
-    //                 }
-    //                 break;
-    //             }
-    //             else {
-    //                 src_node_offfset -= tracks[cur_sensor].edge[DIR_CURVED].dist;
-    //                 cur_sensor = tracks[cur_sensor].edge[DIR_CURVED].dest->index;
-    //             }
-    //         }
-    //     }
-    //     else if (tracks[cur_sensor].type == NODE_EXIT) {
-    //         // seems like we hit the wall... hmmmm...
-    //         break;
-    //     }
-    //     else {  // sensor or merge
-    //         // we reached the cloest node
-    //         if (src_node_offfset - tracks[cur_sensor].edge[DIR_AHEAD].dist < 0) {
-    //             if (tracks[cur_sensor].edge[DIR_AHEAD].dist - src_node_offfset < src_node_offfset) {
-    //                 src_node_offfset = tracks[cur_sensor].edge[DIR_AHEAD].dist - src_node_offfset;
-    //                 cur_sensor = tracks[cur_sensor].edge[DIR_AHEAD].dest->reverse->index;
-    //             }
-    //             break;
-    //         }
-    //         else {
-    //             src_node_offfset -= tracks[cur_sensor].edge[DIR_AHEAD].dist;
-    //             cur_sensor = tracks[cur_sensor].edge[DIR_AHEAD].dest->index;
-    //         }
-    //     }
-    // }
+    // first things first, follow the source node+offset to the closest landmark
+    while (src_node_offfset > 0) {
+        if(tracks[cur_sensor].type == NODE_BRANCH) {
+            if (getSwitchStatus(switch_status, tracks[cur_sensor].num) == SW_STRAIGHT) {
+                if (src_node_offfset - tracks[cur_sensor].edge[DIR_STRAIGHT].dist < 0) {
+                    if (tracks[cur_sensor].edge[DIR_STRAIGHT].dist - src_node_offfset < src_node_offfset) {
+                        first_reverse_weight = src_node_offfset;
+                    }
+                    break;
+                }
+                else {
+                    src_node_offfset -= tracks[cur_sensor].edge[DIR_STRAIGHT].dist;
+                    cur_sensor = tracks[cur_sensor].edge[DIR_STRAIGHT].dest->index;
+                }
+            }
+            else {
+                if (src_node_offfset - tracks[cur_sensor].edge[DIR_CURVED].dist < 0) {
+                    if (tracks[cur_sensor].edge[DIR_CURVED].dist - src_node_offfset < src_node_offfset) {
+                        first_reverse_weight = src_node_offfset;
+                    }
+                    break;
+                }
+                else {
+                    src_node_offfset -= tracks[cur_sensor].edge[DIR_CURVED].dist;
+                    cur_sensor = tracks[cur_sensor].edge[DIR_CURVED].dest->index;
+                }
+            }
+        }
+        else if (tracks[cur_sensor].type == NODE_EXIT) {
+            // seems like we hit the wall... hmmmm...
+            break;
+        }
+        else {  // sensor or merge
+            // we reached the cloest node
+            if (src_node_offfset - tracks[cur_sensor].edge[DIR_AHEAD].dist < 0) {
+                if (tracks[cur_sensor].edge[DIR_AHEAD].dist - src_node_offfset < src_node_offfset) {
+                    first_reverse_weight = src_node_offfset;
+                }
+                break;
+            }
+            else {
+                src_node_offfset -= tracks[cur_sensor].edge[DIR_AHEAD].dist;
+                cur_sensor = tracks[cur_sensor].edge[DIR_AHEAD].dest->index;
+            }
+        }
+    }
 
 
 
@@ -686,7 +693,12 @@ struct move_data_t pathFindDijkstraTrackTask(
             }
             v = tracks[u].reverse->index;
             if (posintlistIsInList(v, Q, TRACK_MAX)) {
-                alt = distances[u] + REVERSING_WEIGHT;
+                if (first_reverse) {
+                    alt = distances[u] + first_reverse_weight;
+                }
+                else {
+                    alt = distances[u] + REVERSING_WEIGHT;
+                }
                 if (alt < distances[v]) {
                     distances[v] = alt;
                     previous[v] = u;
@@ -706,19 +718,26 @@ struct move_data_t pathFindDijkstraTrackTask(
             }
             v = tracks[u].reverse->index;
             if (posintlistIsInList(v, Q, TRACK_MAX)) {
-                alt = distances[u] + REVERSING_WEIGHT;
+                if (first_reverse) {
+                    alt = distances[u] + first_reverse_weight;
+                }
+                else {
+                    alt = distances[u] + REVERSING_WEIGHT;
+                }
                 if (alt < distances[v]) {
                     distances[v] = alt;
                     previous[v] = u;
                 }
             }
         }
+        first_reverse = false;
     }
 
     move_data md;
     md.total_distance = 0;
     md.stopping_sensor = -1;
     md.unsafe_forward = 0;
+    md.reverse_first = false;
 
     if (!found_path) {
         md.type = PATH_NOT_FOUND;
@@ -769,15 +788,15 @@ struct move_data_t pathFindDijkstraTrackTask(
         md.list_len = 2;
         md.total_distance = 0;
 
-        if (posintlistIsInList(first_node.index, unsafe_reverses, unsafe_reverses_list_size)) {
-            // if unsafe, command center needs to handle it by shifting it train's len
-            md.type = UNSAFE_REVERSE;
-        }
-        else {
-            // if safe, cmd center just send the reverse command
-            md.type = SAFE_REVERSE;
-        }
-        return md;
+        // if (posintlistIsInList(first_node.index, unsafe_reverses, unsafe_reverses_list_size)) {
+        //     // if unsafe, command center needs to handle it by shifting it train's len
+        //     md.type = UNSAFE_REVERSE;
+        // }
+        // else {
+        //     // if safe, cmd center just send the reverse command
+        //     md.type = SAFE_REVERSE;
+        // }
+        md.reverse_first = true;
     }
 
     // second, construct the mode up to the reverse
@@ -786,7 +805,13 @@ struct move_data_t pathFindDijkstraTrackTask(
     md.total_distance = 0 - src_node_offfset;
     // md.total_distance += TRAIN_LENGTH;
     md.type = SHORT_MOVE;
-    for (i = 0; i < path_length; i++, j++) {
+    if (md.reverse_first) {
+        i = 2;
+    }
+    else {
+        i = 0;
+    }
+    for ( ; i < path_length; i++, j++) {
         cur_node_num = route[i];
         next_node_num = route[i+1];
         md.node_list[j].type = tracks[cur_node_num].type;

@@ -977,17 +977,7 @@ void handleCommandTask() {
                         1
                     );
 
-                    if (md.type == SAFE_REVERSE) {
-                        col = 1;
-                        DebugPutStr("sdsd", "SAFE_REVERSE ", md.node_list[0].num, " | ", md.node_list[1].num);
-                        break;
-                    }
-                    else if (md.type == UNSAFE_REVERSE) {
-                        col = 1;
-                        DebugPutStr("sdsd", "UNSAFE_REVERSE ", md.node_list[0].num, " | ", md.node_list[1].num);
-                        break;
-                    }
-                    else if (md.type == SHORT_MOVE) {
+                    if (md.type == SHORT_MOVE) {
                         DebugPutStr("sd", "SHORT_MOVE ", md.total_distance);
                     }
                     else if (md.type == LONG_MOVE) {
@@ -999,6 +989,11 @@ void handleCommandTask() {
                     }
                     if (md.unsafe_forward) {
                         DebugPutStr("s", "unsafe forward");
+                    }
+
+                    if (md.reverse_first) {
+                        col = 1;
+                        DebugPutStr("s", "reverse first");
                     }
 
                     for (i = 0; i < md.list_len; i++) {
