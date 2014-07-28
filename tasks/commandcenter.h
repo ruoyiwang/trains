@@ -7,6 +7,7 @@
 #define REVERSE_SIGNAL -3
 #define UNSAFE_REVERSE_SIGNAL -4
 #define RESERVED_STOPPING -5
+#define UNSAFE_FORWORD -6
 
 typedef struct train_info_t {
 	int id;
