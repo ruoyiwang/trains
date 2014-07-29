@@ -102,6 +102,11 @@ void get_train_calibrations( int train_num, int* train_stopping_dist, double* sh
 		*short_move_multiplier = 100;
 		*speed_multiplier = 120;
 	}
+	if (train_num == 54){
+		*train_stopping_dist = 670;
+		*short_move_multiplier = 100;
+		*speed_multiplier = 120;
+	}
 	else {
 		*train_stopping_dist = 790;
 		*short_move_multiplier = 100;
