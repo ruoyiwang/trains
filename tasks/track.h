@@ -38,6 +38,7 @@ typedef struct move_node_t {
     int id;         // 0 to 144
     int num;        // the actual num after the sw/A/B/C/D/E prefix
     int branch_state;
+    int dist_to_next;
 } move_node;
 
 typedef struct path_find_requirements_t {

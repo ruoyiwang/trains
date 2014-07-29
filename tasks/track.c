@@ -813,7 +813,8 @@ struct move_data_t pathFindDijkstraTrackTask(
 
     if (md.reverse_first) {
         md.total_distance = src_node_offfset + TRAIN_LENGTH;
-        i = 2;
+        md.node_list[0].dist_to_next = 0;
+        i = 1;
     }
     else {
         i = 0;
@@ -844,6 +845,7 @@ struct move_data_t pathFindDijkstraTrackTask(
                 if (tracks[cur_node_num].type == NODE_MERGE) {
                     // the one to look at next
                     md.total_distance += tracks[cur_node_num].edge[DIR_AHEAD].dist;
+                    md.node_list[j].dist_to_next = tracks[cur_node_num].edge[DIR_AHEAD].dist;
                     cur_node_num = tracks[cur_node_num].edge[DIR_AHEAD].dest->index;
                 }
                 else if (tracks[cur_node_num].type == NODE_SENSOR) {
@@ -854,11 +856,13 @@ struct move_data_t pathFindDijkstraTrackTask(
                 else if (tracks[cur_node_num].type == NODE_BRANCH) {                    // if straight is a sensor, then go straight
                     if (tracks[cur_node_num].edge[DIR_STRAIGHT].dest->type == NODE_SENSOR) {
                         md.node_list[j].branch_state = SW_STRAIGHT;
+                        md.node_list[j].dist_to_next = tracks[cur_node_num].edge[DIR_STRAIGHT].dist;
                         md.total_distance += tracks[cur_node_num].edge[DIR_STRAIGHT].dist;
                         cur_node_num = tracks[cur_node_num].edge[DIR_STRAIGHT].dest->index;
                     }
                     else {
                         md.node_list[j].branch_state = SW_CURVE;
+                        md.node_list[j].dist_to_next = tracks[cur_node_num].edge[DIR_CURVED].dist;
                         md.total_distance += tracks[cur_node_num].edge[DIR_CURVED].dist;
                         cur_node_num = tracks[cur_node_num].edge[DIR_CURVED].dest->index;
                     }
@@ -881,14 +885,17 @@ struct move_data_t pathFindDijkstraTrackTask(
             if (tracks[cur_node_num].edge[DIR_STRAIGHT].dest->index == tracks[next_node_num].index) {
                 md.node_list[j].branch_state = SW_STRAIGHT;
                 md.total_distance += tracks[cur_node_num].edge[DIR_STRAIGHT].dist;
+                md.node_list[j].dist_to_next = tracks[cur_node_num].edge[DIR_STRAIGHT].dist;
             }
             else {
                 md.node_list[j].branch_state = SW_CURVE;
                 md.total_distance += tracks[cur_node_num].edge[DIR_CURVED].dist;
+                md.node_list[j].dist_to_next = tracks[cur_node_num].edge[DIR_CURVED].dist;
             }
         }
         else {
             md.total_distance += tracks[cur_node_num].edge[DIR_AHEAD].dist;
+            md.node_list[j].dist_to_next = tracks[cur_node_num].edge[DIR_AHEAD].dist;
         }
     }
 
