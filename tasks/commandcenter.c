@@ -12,6 +12,7 @@
 #include <commandcenter.h>
 #include "track_data.h"
 #include <trainspeed.h>
+#include <multidestination.h>
 
 void CommandCenterNotifier() {
     int courier_tid;
@@ -204,6 +205,7 @@ void CommandCenterServer() {
         train_info[i].off_course = 0;
         train_info[i].signal = -100;
         train_info[i].notifier_tid = -1;
+        intQueueInit(&(train_info[i].dest_queue));
     }
 
     RegisterAs(COMMAND_CENTER_SERVER_NAME);
@@ -331,7 +333,7 @@ void CommandCenterServer() {
                 // handle stoping notifer, this means the train needs to stop now
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i].stopping_notifier == sender_tid) {
-                        if (train_info[i].sensor == train_info[i].stopping_sensor){// || train_info[i].next_sensor == train_info[i].stopping_sensor
+                        if (train_info[i].sensor == train_info[i].stopping_sensor || train_info[i].sensor == train_info[i].dest_sensor){// || train_info[i].next_sensor == train_info[i].stopping_sensor
                             // || train_info[i].signal == UNSAFE_REVERSE || train_info[i].signal == SAFE_REVERSE) {
                             DebugPutStr("sd", "DEBUG: Train Stopped at sensor : ", train_info[i].sensor);
                             // if (train_info[i].signal != UNSAFE_REVERSE && train_info[i].signal != SAFE_REVERSE ) {
@@ -355,6 +357,14 @@ void CommandCenterServer() {
                                 train_info[i].dest_sensor = -1;
                                 train_info[i].dest_offset = 0;
                                 DebugPutStr("s", "DEBUG: Arrived at destination!");
+
+                                // check if the queue is empty if not, we set dest again
+                                if (intQueuePeek(&(train_info[i].dest_queue)) >= 0) {
+                                    train_info[i].dest_sensor = intQueuePop(&(train_info[i].dest_queue));
+                                    serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
+                                    DebugPutStr("sd", "DEBUG: Routing TO: ", train_info[i].dest_sensor);
+                                }
+
                                 break;
                             }
 
@@ -511,10 +521,17 @@ void CommandCenterServer() {
             case TRAIN_DESTINATION_REQUEST:
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (msg_struct.value[0] == train_info[i].id) {
-                        train_info[i].dest_sensor = msg_struct.iValue;
-                        train_info[i].dest_offset = (int) msg_struct.value[1]*10;
+                        // if the train is not currently enroute to anywhere
+                        if (train_info[i].dest_sensor == -1) {
+                            train_info[i].dest_sensor = msg_struct.iValue;
+                            train_info[i].dest_offset = (int) msg_struct.value[1]*10;
 
-                        serverSetStopping(&(train_info[i]), train_speed[i], msg_struct.iValue, (int) msg_struct.value[1]*10, requests);
+                            serverSetStopping(&(train_info[i]), train_speed[i], msg_struct.iValue, (int) msg_struct.value[1]*10, requests);
+                        }
+                        // else we queue the node
+                        else {
+                            intQueuePush(&(train_info[i].dest_queue), msg_struct.iValue);
+                        }
                     }
                 }
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
@@ -541,7 +558,6 @@ void CommandCenterServer() {
                 }
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
-
             default:
                 bwprintf(COM2, "fmlllll COMMAND CENTER SEVER %d\n", msg_struct.type);
                 reply_struct.type = FAIL_TYPE;

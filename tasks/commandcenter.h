@@ -1,6 +1,8 @@
 #ifndef __COMMANDCENTER__
 #define __COMMANDCENTER__
 
+#include <intqueue.h>
+
 #define INITIAL_SENSOR 44
 #define MAX_TRAIN_COUNT 3
 #define UNSAFE_OFF_COURSE_SIGNAL -2
@@ -30,6 +32,7 @@ typedef struct train_info_t {
 	int stopping_dist;
 	int off_course;
 	int signal;
+	int_queue dest_queue;
 	double short_move_mult;
 	double speed_mult;
 } Train_info;
