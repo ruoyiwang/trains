@@ -7,7 +7,7 @@
 #define CLOCK_POSITION_X 1
 #define CLOCK_POSITION_Y 1
 
-#define CMD_POSITION_X 40
+#define CMD_POSITION_X 50
 #define CMD_POSITION_Y 6
 
 #define SW_POSITION_X 3
