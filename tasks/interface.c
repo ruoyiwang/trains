@@ -104,7 +104,7 @@ void DebugPutStr ( char* fmt, ... ) {
     char* str;
     int i;
     saveCursorPosition(buffer, &index);
-    setCursor( 39, 1, buffer, &index );
+    setCursor( CMD_POSITION_X-1, 1, buffer, &index );
     cursorCommand ("D", buffer, &index);
     flushLine (buffer, &index);
     va_start(va,fmt);
@@ -427,7 +427,7 @@ void initInterface() {
     flushScreen(buffer, &index);
     int row = 24, col = 1;
     outputPutStr ( "OUTPUT: ", &row, &col , buffer, &index );
-    cursorCommand( "[25;39r" , buffer, &index );			//scroll section
+    cursorCommand( "[25;49r" , buffer, &index );			//scroll section
 
     row = SW_POSITION_X-1; col = 1;
     outputPutStr ( "SWITCHES: ", &row, &col , buffer, &index );
@@ -834,7 +834,7 @@ void handleCommandTask() {
             char argv[10][10];
             int argc;
             parseCommand( commandStr, &argc , argv, &command );
-            row = 39; col = 1;
+            row = CMD_POSITION_X-1; col = 1;
             index = 0;
 
             switch (command) {
@@ -885,7 +885,7 @@ void handleCommandTask() {
 
                     for (tempi = 0; tempi < prediction_len; tempi++) {
                         bwi2a(predict_result[tempi], tempstr);
-                        row = 39; col = 1;
+                        row = CMD_POSITION_X-1; col = 1;
                         outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     }
                     break;
@@ -942,10 +942,10 @@ void handleCommandTask() {
 
                     // if (result >= 0) {
                         bwi2a(stopping_sensor, tempstr);
-                        row = 39; col = 1;
+                        row = CMD_POSITION_X-1; col = 1;
                         outputPutStrLn (tempstr, &row, &col, buffer, &index );
                         bwi2a(stoppong_sensor_dist, tempstr);
-                        row = 39; col = 1;
+                        row = CMD_POSITION_X-1; col = 1;
                         outputPutStrLn (tempstr, &row, &col, buffer, &index );
                     // }
                     // else {

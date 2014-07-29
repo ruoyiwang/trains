@@ -106,6 +106,7 @@ void SensorServer() {
     // the array that takes in requests
     int requests[64][6];   // 64 of them
     // each tid can only call one delay at a time
+    int request_met = false;
     int i, j;
     for (i = 0; i < 64; i++) {
         requests[i][0] = -1;
@@ -131,6 +132,20 @@ void SensorServer() {
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 memcpy(current_sensor_state, msg_struct.value, 10);
                 for (i = 0; i < 64; i++) {
+                    if (requests[i][1] >= 0 && (msg_struct.value[requests[i][1]/8] & (1 << (7 - (requests[i][1] % 8))))) {
+                        msg_struct.value[requests[i][1]/8] = msg_struct.value[requests[i][1]/8] & ~(1 << (7 - (requests[i][1] % 8)));
+                        reply_struct.iValue = requests[i][1];
+                        requests[i][0] = -1;
+                        requests[i][1] = -1;
+                        requests[i][2] = -1;
+                        requests[i][3] = -1;
+                        requests[i][4] = -1;
+                        requests[i][5] = -1;
+                        Reply (i, (char *)&reply_struct, rpllen);
+                        break;
+                    }
+                }
+                for (i = 0; i < 64; i++) {
                     //if element exists
                     // if ( requests[i][0] != -1) {
                     //     cur_time = Time();
@@ -147,8 +162,8 @@ void SensorServer() {
                     //     }
                     // }
                     for (j=1 ; j< 6; j ++){
-                        if (requests[i][j] >= 0 && (current_sensor_state[requests[i][j]/8] & (1 << (7 - (requests[i][j] % 8))))) {
-                            msg_struct.value[requests[i][j]/8] = msg_struct.value[requests[i][j]/8] & ~(requests[i][j] % 8);
+                        if (requests[i][j] >= 0 && (msg_struct.value[requests[i][j]/8] & (1 << (7 - (requests[i][j] % 8))))) {
+                            msg_struct.value[requests[i][j]/8] = msg_struct.value[requests[i][j]/8] & ~(1 << (7 - (requests[i][1] % 8)));
                             reply_struct.iValue = requests[i][j];
                             requests[i][0] = -1;
                             requests[i][1] = -1;
@@ -169,9 +184,10 @@ void SensorServer() {
                     for (j = 0; j< 8 ; j++) {
                         if ( msg_struct.value[i] & ( 1 << j ) ){
                             if ( (i % 2) ) {
-                                sensorNum = (i / 2) + 15 - j;}
+                                sensorNum = (i / 2)*16 + 15 - j;
+                            }
                             else {
-                                sensorNum =(i / 2) + 7 - j;
+                                sensorNum =(i / 2)*16 + 7 - j;
                             }
                         }
                     }
