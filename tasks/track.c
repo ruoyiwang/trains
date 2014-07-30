@@ -671,7 +671,6 @@ struct move_data_t pathFindDijkstraTrackTask(
             continue;
         }
 
-
         if (u == stopping_node) {
             found_path = 1;
             break;
@@ -679,8 +678,20 @@ struct move_data_t pathFindDijkstraTrackTask(
 
         // for each neighbor v of u that's not in Q
         // find shortest path
-        if (tracks[u].type == NODE_ENTER || tracks[u].type == NODE_EXIT) {
-            continue;
+        if (tracks[u].type == NODE_EXIT) {
+            v = tracks[u].reverse->index;
+            if (posintlistIsInList(v, Q, TRACK_MAX)) {
+                if (first_reverse) {
+                    alt = distances[u] + first_reverse_weight;
+                }
+                else {
+                    alt = distances[u] + REVERSING_WEIGHT;
+                }
+                if (alt < distances[v]) {
+                    distances[v] = alt;
+                    previous[v] = u;
+                }
+            }
         }
         else if (tracks[u].type == NODE_BRANCH) {
             // here we can do straight, curve, reverse
@@ -715,7 +726,7 @@ struct move_data_t pathFindDijkstraTrackTask(
             }
         }
         else {
-            // this is either sensor or merge
+            // this is either sensor or merge or enter
             // here we can only do ahead or reverse
             v = tracks[u].edge[DIR_AHEAD].dest->index;
             if (posintlistIsInList(v, Q, TRACK_MAX)) {
