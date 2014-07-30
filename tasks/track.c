@@ -1348,7 +1348,7 @@ int nextPossibleSensorsDFS(
     int cur_depth,
     int train_id
 ) {
-    if (cur_depth > depths) {
+    if (cur_depth >= depths) {
         return true;
     }
 
@@ -1415,4 +1415,24 @@ int nextPossibleSensorsCheck(int sensors_list[], int len, int cur_node, int dept
         sensors_list[i] = (int) reply[i];
     }
     return reply_struct.iValue;
+}
+
+int isUnsafeForward (int sensor) {
+    if (sensor == 2 ||
+        sensor == 31 ||
+        sensor == 36 ||
+        sensor == 39 ||
+        sensor == 41 ||
+        sensor == 43 ||
+        sensor == 45 ||
+        sensor == 66 ||
+        sensor == 69 ||
+        sensor == 75 ) {
+        return true;
+    }
+    return false;
+}
+
+int isUnsafeReverse( int sensor ){
+    return isUnsafeForward( getSensorComplement(sensor));
 }

@@ -146,17 +146,16 @@ void CommandCenterAdjustTask() {
 
     Receive( &server_tid, (char*)&msg_struct, msglen );
     Reply (server_tid, (char *)&reply_struct, rpllen);
-
-    DebugPutStr("sd", "DEBUG: Off target Adjusting for ", msg_struct.value[1]);
-    setTrainSpeed((int)msg_struct.value[0], 3);
-
-    waitForSensors(msg_struct.value+1, 2, 1000000);
-    if (msg_struct.value[3] == false) {
-        Delay(70);
+    if (!isUnsafeForward((int)msg_struct.value[1])){
+        DebugPutStr("sd", "DEBUG: Off target Adjusting for ", msg_struct.value[1]);
+        setTrainSpeed((int)msg_struct.value[0], 3);
+        waitForSensors(msg_struct.value+1, 2, 1000000);
+        if (msg_struct.value[3] == false) {
+            Delay(70);
+        }
+        setTrainSpeed((int)msg_struct.value[0], 0);
+        Delay(100);
     }
-    setTrainSpeed((int)msg_struct.value[0], 0);
-    Delay(100);
-
     reply_struct.type = COMMAND_CENTER_TRAIN_STOPPED;
     Send (server_tid, (char *)&reply_struct, rpllen, (char *)&msg_struct, msglen);
     Exit();
@@ -214,6 +213,7 @@ void CommandCenterServer() {
     int courier_tid, notifier_tid, train_count = 0, length_to_switch = 0, merge_ahead = false;
     int is_deadlock = false, look_ahead_count = 0;
 
+    int sensors_list[80] = {0};
     int blocked_nodes[20];
     move_data md;
     // int train_info[MAX_TRAIN_COUNT][TRAIN_INFO_SIZE];
@@ -361,9 +361,8 @@ void CommandCenterServer() {
                         if (look_ahead_count > 3) {
                             look_ahead_count = 3;
                         }
-                        predictSensor(train_info[i].sensor, look_ahead_count, sensors_ahead);
                         if (train_info[i].signal != RESERVED_STOPPING && !train_info[i].is_stopped
-                            && !checkNodesAvailable (sensors_ahead, look_ahead_count, train_info[i].id)) {
+                            && !nextPossibleSensorsCheck (sensors_list, 80, train_info[i].next_sensor, look_ahead_count, train_info[i].id)) {
                             // Assert();
                             // somehting is blocking the way
                             setTrainSpeed (train_info[i].id, 0);
@@ -433,7 +432,8 @@ void CommandCenterServer() {
                 // handle stoping notifer, this means the train needs to stop now
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i].stopping_notifier == sender_tid) {
-                        if (train_info[i].sensor == train_info[i].stopping_sensor || train_info[i].sensor == train_info[i].dest_sensor ){// || train_info[i].next_sensor == train_info[i].stopping_sensor
+                        if (train_info[i].sensor == train_info[i].stopping_sensor || train_info[i].sensor == train_info[i].dest_sensor
+                            || (isUnsafeForward(train_info[i].stopping_sensor) && train_info[i].next_sensor == train_info[i].stopping_sensor)){// || train_info[i].next_sensor == train_info[i].stopping_sensor
                             // || train_info[i].signal == UNSAFE_REVERSE || train_info[i].signal == SAFE_REVERSE) {
                             DebugPutStr("sd", "DEBUG: Train Stopped at sensor : ", train_info[i].sensor);
                             if (train_info[i].sensor == train_info[i].stopping_sensor) {
@@ -945,6 +945,9 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
         }
         if (stopping_sensor_dist < 0){
             stopping_sensor_dist = 0;
+        }
+        if (isUnsafeReverse(train_info->stopping_sensor)) {
+            stopping_sensor_dist += TRAIN_LENGTH;
         }
         msg_struct.value[0] = -1;
         msg_struct.iValue = shortMoveDistanceToDelay(stopping_sensor_dist, train_info->id, train_info->short_move_mult);
