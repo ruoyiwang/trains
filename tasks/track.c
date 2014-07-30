@@ -41,7 +41,7 @@ void TracksTask () {
     // think we only 22-1?
     // 0: curve
     // 1: stright
-    unsigned int switch_status = 0xFFFF;
+    unsigned int switch_status = 0;
 
     // init the tracks
     track_node tracks[TRACK_MAX];
@@ -62,7 +62,7 @@ void TracksTask () {
         switch (msg_struct.type) {
             case SET_SWITCH:
                 if (msg_struct.value[0] == 's') {
-                    if (getSwitchStatus(&switch_status, msg_struct.iValue) == SW_STRAIGHT) {
+                    if (getSwitchStatus(&switch_status, msg_struct.iValue) == SW_STRAIGHT && !msg_struct.value[1]) {
                         Reply (sender_tid, (char *)&reply_struct, rpllen);
                         break;
                     }
@@ -70,7 +70,7 @@ void TracksTask () {
                     setSwitchStatus(&switch_status, msg_struct.iValue, SW_STRAIGHT);
                 }
                 else if (msg_struct.value[0] == 'c'){
-                    if (getSwitchStatus(&switch_status, msg_struct.iValue) == SW_CURVE) {
+                    if (getSwitchStatus(&switch_status, msg_struct.iValue) == SW_CURVE && !msg_struct.value[1]) {
                         Reply (sender_tid, (char *)&reply_struct, rpllen);
                         break;
                     }

@@ -71,6 +71,7 @@ void outputPutStr ( char* str, int *row, int *col, char* buffer, int* index );
 void outputPutStrLn ( char* str, int *row, int *col, char* buffer, int* index );
 int getSwCursor ( int sw, int *row, int *col );
 void setSwitch ( int state, int address );
+void setSwitchForce ( int state, int address, int force );
 void SensorsTask();
 void handleCommandTask();
 void parseCommand ( char* str, int *argc, char argv[10][10], int* command);

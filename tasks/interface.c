@@ -170,6 +170,10 @@ void setAllTrainSpeedToOne() {
 }
 
 void setSwitch ( int state, int address ) {
+    setSwitchForce(state, address, false);
+}
+
+void setSwitchForce ( int state, int address, int force ) {
     char msg[10];
     char reply[10];
 
@@ -187,6 +191,7 @@ void setSwitch ( int state, int address ) {
     if ( getSwCursor ( address, &r, &c ) ) {
         if (state == SW_STRAIGHT) {
             msg_struct.value[0] = 's';
+            msg_struct.value[1] = force;
             Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
             outputPutStr ( "S", &r, &c, buffer, &index );
@@ -204,6 +209,7 @@ void setSwitch ( int state, int address ) {
         }
         else if (state == SW_CURVE) {
             msg_struct.value[0] = 'c';
+            msg_struct.value[1] = force;
             Send (track_task_id, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
             outputPutStr ( "C", &r, &c, buffer, &index );
@@ -818,19 +824,19 @@ void handleCommandTask() {
 
     for ( i=1; i <=18 ; i++) {
         // Delay(5);
-        setSwitch ( SW_STRAIGHT, i);
+        setSwitchForce ( SW_STRAIGHT, i, true);
     }
     // setSwitch ( SW_CURVE, 3);
     // setSwitch ( SW_CURVE, 7);
     // setSwitch ( SW_CURVE, 14);
     // setSwitch ( SW_CURVE, 18);
 
-    setSwitch ( SW_STRAIGHT, 0x99);
-    setSwitch ( SW_CURVE, 0x99);
-    setSwitch ( SW_STRAIGHT, 0x9A);
-    setSwitch ( SW_STRAIGHT, 0x9B);
-    setSwitch ( SW_CURVE, 0x9B);
-    setSwitch ( SW_STRAIGHT, 0x9C);
+    setSwitchForce ( SW_STRAIGHT, 0x99, true);
+    setSwitchForce ( SW_CURVE, 0x99, true);
+    setSwitchForce ( SW_STRAIGHT, 0x9A, true);
+    setSwitchForce ( SW_STRAIGHT, 0x9B, true);
+    setSwitchForce ( SW_CURVE, 0x9B, true);
+    setSwitchForce ( SW_STRAIGHT, 0x9C, true);
 
     // Delay(600);
     Create(3, (&SensorServer));
