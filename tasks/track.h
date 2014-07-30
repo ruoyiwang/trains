@@ -168,4 +168,8 @@ int nextPossibleSensorsDFS(
 
 int nextPossibleSensorsCheck(int sensors_list[], int len, int cur_node, int depths, int train_id);
 
+int isUnsafeForward (int sensor);
+
+int isUnsafeReverse( int sensor);
+
 #endif
