@@ -40,7 +40,7 @@ void TracksTask () {
     // think we only 22-1?
     // 0: curve
     // 1: stright
-    unsigned int switch_status = 0;
+    unsigned int switch_status = 0xFFFF;
 
     // init the tracks
     track_node tracks[TRACK_MAX];

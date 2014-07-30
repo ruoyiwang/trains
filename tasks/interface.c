@@ -825,8 +825,10 @@ void handleCommandTask() {
     // setSwitch ( SW_CURVE, 14);
     // setSwitch ( SW_CURVE, 18);
 
+    setSwitch ( SW_STRAIGHT, 0x99);
     setSwitch ( SW_CURVE, 0x99);
     setSwitch ( SW_STRAIGHT, 0x9A);
+    setSwitch ( SW_STRAIGHT, 0x9B);
     setSwitch ( SW_CURVE, 0x9B);
     setSwitch ( SW_STRAIGHT, 0x9C);
 
