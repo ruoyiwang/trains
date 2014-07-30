@@ -12,7 +12,6 @@
 #include <commandcenter.h>
 #include "track_data.h"
 #include <trainspeed.h>
-#include <multidestination.h>
 
 void CommandCenterNotifier() {
     int courier_tid;
@@ -180,6 +179,23 @@ void CommandCenterTrainCheckNotifier() {
     }
 }
 
+void CommandCenterTrainDeadlockNotifier() {
+    int server_tid = WhoIs(COMMAND_CENTER_SERVER_NAME);
+
+    char msg[11] = {0};
+    char reply[11] = {0};
+    int msglen = 10, rpllen = 10;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    msg_struct.type = COMMAND_CENTER_DEADLOCK_CHECK;
+    reply_struct.value = reply;
+
+    FOREVER{
+        Delay(200);
+        Send (server_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    }
+}
+
 void CommandCenterServer() {
     // Create Notifier and send any initialization data
     // msg shits
@@ -196,7 +212,10 @@ void CommandCenterServer() {
     char sensors_ahead[5] = {-1};
     char reserve_sensors[5] = {-1};
     int courier_tid, notifier_tid, train_count = 0, length_to_switch = 0, merge_ahead = false;
+    int is_deadlock = false;
 
+    int blocked_nodes[20];
+    move_data md;
     // int train_info[MAX_TRAIN_COUNT][TRAIN_INFO_SIZE];
     Train_info train_info[MAX_TRAIN_COUNT];
     int train_speed[MAX_TRAIN_COUNT][80];
@@ -228,7 +247,11 @@ void CommandCenterServer() {
         intQueueInit(&(train_info[i].dest_queue));
     }
 
+    char deadlock_locations[5] = {74, 68, 3, 65, 51};
+
     RegisterAs(COMMAND_CENTER_SERVER_NAME);
+    Create(1, (&CommandCenterTrainDeadlockNotifier));
+
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch(msg_struct.type) {
@@ -409,7 +432,7 @@ void CommandCenterServer() {
 
 
                             train_info[i].is_stopped = 1;
-                            // changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 0 );
+                            changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 0 );
 
                             train_info[i].stopping_sensor = -1;
                             train_info[i].stopping_offset = 0;
@@ -587,6 +610,70 @@ void CommandCenterServer() {
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
 
+            case COMMAND_CENTER_DEADLOCK_CHECK:
+                is_deadlock = true;
+                for (i = 0; i < MAX_TRAIN_COUNT; i++) {
+                    if (train_info[i].id != -1) {
+                        if (!train_info[i].is_stopped){
+                            is_deadlock = false;
+                            break;
+                        }
+                        if (pathFindDijkstra(
+                            &md,
+                            train_info[i].sensor,          // current node
+                            train_info[i].offset,                      // offset
+                            train_info[i].dest_sensor,                 // where it wants to go
+                            train_info[i].stopping_dist,                    // stoping distance
+                            blocked_nodes,          // the nodes the trains can't use
+                            0,                       // the length of the blocked nodes array
+                            train_info[i].id
+                        )){
+                            is_deadlock = false;
+                            break;
+                        }
+                        if (!pathFindDijkstra(
+                            &md,
+                            getSensorComplement(train_info->sensor),          // current node
+                            train_info[i].offset,                      // offset
+                            train_info[i].dest_sensor,                 // where it wants to go
+                            train_info[i].stopping_dist,                    // stoping distance
+                            blocked_nodes,          // the nodes the trains can't use
+                            0,                       // the length of the blocked nodes array
+                            train_info[i].id
+                        )) {
+                            is_deadlock = false;
+                            break;
+                        }
+                    }
+                }
+                if (is_deadlock) {
+                    for (i = 0; i < MAX_TRAIN_COUNT; i++) {
+                        if (train_info[i].id != -1) {
+                            for (j = 0; j < 5; j++){
+                                if (pathFindDijkstra(
+                                    &md,
+                                    train_info[i].sensor,          // current node
+                                    train_info[i].offset,                      // offset
+                                    deadlock_locations[j],                 // where it wants to go
+                                    train_info[i].stopping_dist,                    // stoping distance
+                                    blocked_nodes,          // the nodes the trains can't use
+                                    0,                       // the length of the blocked nodes array
+                                    train_info[i].id
+                                )){
+                                    is_deadlock = false;
+                                    break;
+                                }
+                            }
+                            if (!is_deadlock) {
+                                DebugPutStr("sdsd", "DEBUG: DEADLOCK detected train ", train_info[i].id, " going to:", deadlock_locations[j]);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                break;
+
             case TRAIN_DESTINATION_REQUEST:
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (msg_struct.value[0] == train_info[i].id) {
@@ -678,7 +765,7 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
             0,                       // the length of the blocked nodes array
             train_info->id
         )) {
-            DebugPutStr("s", "DEBUG: No route found, retrying in 1 second");
+            DebugPutStr("sds", "DEBUG: train ", train_info->id,": No route found, retrying in 1 second");
             setTrainSpeed (train_info->id, 0);
             // no route found, try again in 1 second;
             notifier_tid = Create(1, (&CommandCenterDelayNotifier));
@@ -835,9 +922,9 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
     }
     else if (md.type == LONG_MOVE) {
 
-        // predictSensor(train_info->sensor, 2, sensors_ahead);
-        // train_info->next_sensor = sensors_ahead[0];
-        // changeWaitForSensors(train_info->notifier_tid, sensors_ahead, 2 );
+        predictSensor(train_info->sensor, 2, sensors_ahead);
+        train_info->next_sensor = sensors_ahead[0];
+        changeWaitForSensors(train_info->notifier_tid, sensors_ahead, 2 );
 
         if (stopping_sensor == train_info->dest_sensor ){
             stopping_sensor_dist += stop_offset;

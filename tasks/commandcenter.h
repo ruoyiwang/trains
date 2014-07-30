@@ -37,7 +37,7 @@ typedef struct train_info_t {
 	double short_move_mult;
 	double speed_mult;
 	int node_list_len;
-    move_node node_list[TRACK_MAX];
+	move_node node_list[TRACK_MAX];
 } Train_info;
 
 #define COMMAND_CENTER_NOTIFIER 0
@@ -52,6 +52,7 @@ typedef struct train_info_t {
 #define SET_TRAIN_SHORT_MULT 9
 #define COMMAND_CENTER_DELAY_EXPIRED 10
 #define COMMAND_CENTER_TRAIN_CHECK 11
+#define COMMAND_CENTER_DEADLOCK_CHECK 12
 
 #define TRAIN_REVERSE_OFFSET 120
 #define COMMAND_CENTER_SERVER_NAME "CCS"

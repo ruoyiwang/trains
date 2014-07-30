@@ -160,8 +160,8 @@ display.o: display.s
 	$(AS) $(ASFLAGS) -o display.o display.s
 
 
-kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o posintlist.o debug.o intqueue.o track_data.o trainspeed.o display.o multidestination.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o debug.o intqueue.o posintlist.o track_data.o trainspeed.o display.o multidestination.o -lgcc
+kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o posintlist.o debug.o intqueue.o track_data.o trainspeed.o display.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o debug.o intqueue.o posintlist.o track_data.o trainspeed.o display.o -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map
