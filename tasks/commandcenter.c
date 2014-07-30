@@ -212,7 +212,7 @@ void CommandCenterServer() {
     char sensors_ahead[5] = {-1};
     char reserve_sensors[5] = {-1};
     int courier_tid, notifier_tid, train_count = 0, length_to_switch = 0, merge_ahead = false;
-    int is_deadlock = false;
+    int is_deadlock = false, look_ahead_count = 0;
 
     int blocked_nodes[20];
     move_data md;
@@ -285,7 +285,8 @@ void CommandCenterServer() {
                                 requests[j] = -1;
                                 reply_struct.value[0] = train_info[i].sensor;
                                 reply_struct.value[1] = train_info[i].next_sensor;
-                                bwi2a(train_info[i].time_prediction, reply + 2);
+                                reply_struct.value[2] = train_info[i].dest_sensor;
+                                bwi2a(train_info[i].time_prediction, reply + 3);
                                 reply_struct.iValue = train_info[i].arrival_tme;
                                 Reply (j, (char *)&reply_struct, 30);
                                 break;
@@ -345,10 +346,21 @@ void CommandCenterServer() {
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i].check_notifier == sender_tid) {
                         // stop train
-
-                        predictSensor(train_info[i].sensor, 3, sensors_ahead);
+                        look_ahead_count = 0;
+                        for ( j = train_info[i].node_list_len-1 ; j>=0; j-- ){
+                            if (train_info[i].node_list[j].num == train_info[i].sensor) {
+                                break;
+                            }
+                            if (train_info[i].node_list[j].type == NODE_SENSOR) {
+                                look_ahead_count++;
+                            }
+                        }
+                        if (look_ahead_count > 3) {
+                            look_ahead_count = 3;
+                        }
+                        predictSensor(train_info[i].sensor, look_ahead_count, sensors_ahead);
                         if (train_info[i].signal != RESERVED_STOPPING && !train_info[i].is_stopped
-                            && !checkNodesAvailable (sensors_ahead, 3, train_info[i].id)) {
+                            && !checkNodesAvailable (sensors_ahead, look_ahead_count, train_info[i].id)) {
                             // Assert();
                             // somehting is blocking the way
                             setTrainSpeed (train_info[i].id, 0);
@@ -474,6 +486,7 @@ void CommandCenterServer() {
                         else {
                             DebugPutStr("sd", "DEBUG: Train is Off course! heading to ",train_info[i].dest_sensor);
                             train_info[i].is_stopped = 1;
+                            changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 0 );
                             train_info[i].offset = 0;
                             train_info[i].stopping_sensor = -1;
                             train_info[i].stopping_offset = 0;
@@ -495,6 +508,8 @@ void CommandCenterServer() {
                         if (train_info[i].dest_sensor > 0) {
                             DebugPutStr("sd", "DEBUG: Trying to reroute to ",train_info[i].dest_sensor);
                             train_info[i].is_stopped = 1;
+                            changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 0 );
+
                             train_info[i].offset = 0;
                             train_info[i].stopping_sensor = -1;
                             train_info[i].stopping_offset = 0;
@@ -575,9 +590,10 @@ void CommandCenterServer() {
                 predictSensor(train_info[j].sensor, 2, sensors_ahead);
                 train_info[j].next_sensor = sensors_ahead[0];
 
-                reserve_sensors[0] = train_info[j].sensor;
-                reserve_sensors[1] = train_info[j].next_sensor;
-                reserveNodesRequest(reserve_sensors, 2, train_info[j].id);
+                reserve_sensors[0] = train_info[i].sensor;
+                reserve_sensors[1] = getSensorComplement(train_info[j].next_sensor);
+                reserve_sensors[2] = getSensorComplement(train_info[j].sensor);
+                reserveNodesRequest(reserve_sensors, 3, train_info[j].id);
 
                 train_info[j].check_notifier = Create(1, (&CommandCenterTrainCheckNotifier));
 
@@ -600,7 +616,8 @@ void CommandCenterServer() {
                         // return the sensors and the expected and predicted time
                         reply_struct.value[0] = train_info[j].sensor;
                         reply_struct.value[1] = train_info[j].next_sensor;
-                        bwi2a(train_info[j].time_prediction, reply + 2);
+                        reply_struct.value[2] = train_info[j].dest_sensor;
+                        bwi2a(train_info[j].time_prediction, reply + 3);
                         reply_struct.iValue = train_info[j].arrival_tme;
                         Reply (i, (char *)&reply_struct, 30);
                         break;
@@ -864,8 +881,10 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
         // msg_struct.iValue = 1;
         int next_sensor, prev_sensor;
         prev_sensor = getSensorComplement(train_info->next_sensor);
-        predictSensor(prev_sensor, 2, sensors_ahead);
-        next_sensor = sensors_ahead[0];
+        next_sensor = getSensorComplement(train_info->sensor);
+        predictSensor(next_sensor, 1, sensors_ahead);
+        sensors_ahead[1] = sensors_ahead[0];
+        sensors_ahead[0] = next_sensor;
         changeWaitForSensors(train_info->notifier_tid, sensors_ahead, 2 );
 
         DebugPutStr("sdsd", "DEBUG: reversing: prev:", prev_sensor, " next:", next_sensor);
@@ -893,13 +912,14 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
                 setSwitch(md.node_list[i].branch_state, md.node_list[i].num);
             }
             else if (md.node_list[i].type == NODE_SENSOR) {
-                reserve_sensors[sensors_count++] = md.node_list[i].num;
+                reserve_sensors[sensors_count++] = getSensorComplement(md.node_list[i].num);
             }
         }
 
-        reserveNodesRequest(reserve_sensors, sensors_count, train_info->id);
-        predictSensor(train_info->sensor, 2, sensors_ahead);
-        train_info->next_sensor = sensors_ahead[0];
+        // reserveNodesRequest(reserve_sensors, sensors_count, train_info->id);
+        predictSensor(train_info->next_sensor, 1, sensors_ahead);
+        sensors_ahead[1] = sensors_ahead[0];
+        sensors_ahead[0] = train_info->next_sensor;
         changeWaitForSensors(train_info->notifier_tid, sensors_ahead, 2 );
 
         stopping_sensor_dist = md.total_distance;// - train_info->offset;
@@ -922,8 +942,9 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
     }
     else if (md.type == LONG_MOVE) {
 
-        predictSensor(train_info->sensor, 2, sensors_ahead);
-        train_info->next_sensor = sensors_ahead[0];
+        predictSensor(train_info->next_sensor, 1, sensors_ahead);
+        sensors_ahead[1] = sensors_ahead[0];
+        sensors_ahead[0] = train_info->next_sensor;
         changeWaitForSensors(train_info->notifier_tid, sensors_ahead, 2 );
 
         if (stopping_sensor == train_info->dest_sensor ){
@@ -954,7 +975,8 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
             // return the sensors and the expected and predicted time
             reply_struct.value[0] = train_info->sensor;
             reply_struct.value[1] = train_info->next_sensor;
-            bwi2a(train_info->time_prediction, reply + 2);
+            reply_struct.value[2] = train_info->dest_sensor;
+            bwi2a(train_info->time_prediction, reply + 3);
             reply_struct.iValue = train_info->arrival_tme;
             Reply (i, (char *)&reply_struct, 30);
             break;
@@ -1106,11 +1128,21 @@ int waitTrainInfo ( int train_id, int *train_info) {
 
     if (strcmp(reply_struct.value, "FAIL") != 0) {
         // if succeded
-        train_info[0] = reply_struct.value[0];
-        train_info[1] = reply_struct.value[1];
-        train_info[2] = (int) atoi(reply_struct.value + 2);
+        train_info[0] = -1;
+        train_info[1] = -1;
+        train_info[4] = -1;
+        if (reply_struct.value[0] < 80) {
+            train_info[0] = reply_struct.value[0];
+        }
+        if (reply_struct.value[1] < 80) {
+            train_info[1] = reply_struct.value[1];
+        }
+        train_info[2] = (int) atoi(reply_struct.value + 3);
         // Assert();
         train_info[3] = reply_struct.iValue;
+        if (reply_struct.value[2] < 80) {
+            train_info[4] = reply_struct.value[2];
+        }
         return 0;
     }
     return -1;

@@ -444,7 +444,7 @@ void initInterface() {
     outputPutStr ( "cmd>", &row, &col , buffer, &index );
     row = TRAIN_TABLE_X; col = 1;
     cursorCommand ( "[33m" , buffer, &index ); // set color to yellow
-    outputPutStr ( "ID | NEXT | PREV | LOCATION | EXPECTED ARRIVAL | ACTUAL ARRIVAL ", &row, &col , buffer, &index );
+    outputPutStr ( "ID | NEXT | PREV | LOCATION | EXPECTED ARRIVAL | ACTUAL ARRIVAL | DEST ", &row, &col , buffer, &index );
     cursorCommand ( "[37m" , buffer, &index ); // set color to yellow
 
     // outputPutStr ( "NEXT SENSOR:", &row, &col , buffer, &index );
@@ -724,6 +724,14 @@ void LocationDisplayTask() {
         cursorCommand ( "[32;1m" , buffer, &index ); // set color to white
         outputPutStr ( "O", &row, &col, buffer, &index );
         cursorCommand ( "[0m" , buffer, &index ); // set color to white
+
+
+        sensor_str[0] = 'A' + (train_info[4] / 16);
+        bwi2a( (train_info[4] % 16) + 1, sensor_str + 1);
+        row = TRAIN_TABLE_X + row_offset; col = DEST_POSITION_Y;
+        outputPutStr ( "      ", &row, &col , buffer, &index );
+        row = TRAIN_TABLE_X + row_offset; col = DEST_POSITION_Y;
+        outputPutStr ( sensor_str, &row, &col , buffer, &index );
 
         row = TRAIN_TABLE_X + row_offset; col = EXPECTED_POSITION_Y;
         outputPutStr ( "           ", &row, &col , buffer, &index );

@@ -132,7 +132,7 @@ void SensorServer() {
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 memcpy(current_sensor_state, msg_struct.value, 10);
                 for (i = 0; i < 64; i++) {
-                    if (requests[i][1] >= 0 && (current_sensor_state[requests[i][1]/8] & (1 << (7 - (requests[i][1] % 8))))) {
+                    if (requests[i][1] >= 0 && requests[i][1] < 80 && (current_sensor_state[requests[i][1]/8] & (1 << (7 - (requests[i][1] % 8))))) {
                         // msg_struct.value[requests[i][1]/8] = msg_struct.value[requests[i][1]/8] & ~(1 << (7 - (requests[i][1] % 8)));
                         DebugPutStr("sdsd", "DEBUG: unblocked sensor: ",requests[i][1], " for task: ", i);
                         reply_struct.iValue = requests[i][1];
@@ -147,7 +147,7 @@ void SensorServer() {
                     }
                 }
                 for (i = 0; i < 64; i++) {
-                    if (requests[i][1] >= 0 && (msg_struct.value[requests[i][1]/8] & (1 << (7 - (requests[i][1] % 8))))) {
+                    if (requests[i][1] >= 0 && requests[i][1] < 80 && (msg_struct.value[requests[i][1]/8] & (1 << (7 - (requests[i][1] % 8))))) {
                         msg_struct.value[requests[i][1]/8] = msg_struct.value[requests[i][1]/8] & ~(1 << (7 - (requests[i][1] % 8)));
                         // break;
                     }
@@ -169,7 +169,7 @@ void SensorServer() {
                     //     }
                     // }
                     for (j=1 ; j< 6; j ++){
-                        if (requests[i][j] >= 0 && (msg_struct.value[requests[i][j]/8] & (1 << (7 - (requests[i][j] % 8))))) {
+                        if (requests[i][j] >= 0 && requests[i][1] < 80 && (msg_struct.value[requests[i][j]/8] & (1 << (7 - (requests[i][j] % 8))))) {
                             msg_struct.value[requests[i][j]/8] = msg_struct.value[requests[i][j]/8] & ~(1 << (7 - (requests[i][1] % 8)));
                             reply_struct.iValue = requests[i][j];
                             requests[i][0] = -1;
@@ -238,6 +238,9 @@ void SensorServer() {
                 break;
             case CHANGE_WAIT_REQUEST:
                 // add request to list of suspended tasks
+                for (i= 0; i < 6; i ++) {
+                    requests[msg_struct.iValue][i] = -1;
+                }
                 requests[msg_struct.iValue][0] = 1000000;
                 for (i= 0; i < (int)msg_struct.value[0]; i ++) {
                     requests[msg_struct.iValue][1+i] = msg_struct.value[i+1];

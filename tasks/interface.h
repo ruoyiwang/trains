@@ -14,7 +14,7 @@
 #define SW_POSITION_Y 1
 
 #define TRACK_POSITION_X 5
-#define TRACK_POSITION_Y 70
+#define TRACK_POSITION_Y 75
 
 #define SW_STRAIGHT 33
 #define SW_CURVE 34
@@ -32,6 +32,7 @@
 
 #define EXPECTED_POSITION_Y 31
 #define ACTUAL_POSITION_Y 50
+#define DEST_POSITION_Y 67
 
 #define CMD_TRAIN           1
 #define CMD_REVERSE         2
