@@ -322,6 +322,7 @@ void predictSensorTrackTask(
                 }
             }
             else if (cur_node->type == NODE_ENTER || cur_node->type == NODE_EXIT) {
+                path[i++] = cur_node->index;
                 while ( i++ < prediction_len) {
                     paths[i] = -1;
                 }

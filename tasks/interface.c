@@ -991,7 +991,7 @@ void handleCommandTask() {
                         400,                   // stoping distance
                         blocked_nodes,          // the sensors the train's gonna pass
                         blocked_nodes_len,
-                        1
+                        2
                     );
 
                     if (md.type == SHORT_MOVE) {
