@@ -12,6 +12,7 @@
 #include <debug.h>
 #include <ts7200.h>
 #include <display.h>
+#include <multidestination.h>
 
 void cursorCommand( char * cmd, char* buffer, int* index ) {
     *(buffer+((*index)++)) = 0x1B;
@@ -346,6 +347,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
     }
     else if ( strcmp (cmdstr, "dt") == 0 && *argc == 4 ){
         *command = CMD_TRAIN_DEST;
+        return;
+    }
+    else if ( strcmp (cmdstr, "dtm") == 0 && *argc >= 3 ){
+        *command = CMD_TRAIN_DEST_MULT;
         return;
     }
     else if ( strcmp (cmdstr, "sm") == 0 && *argc == 2 ){
@@ -926,6 +931,18 @@ void handleCommandTask() {
                         outputPutStr ( argv[1], &row, &col, buffer, &index );
                         outputPutStr ( argv[2], &row, &col, buffer, &index );
                         setTrainDestination(atoi(argv[0]), result, atoi(argv[3]) );
+                    }
+                    break;
+                case CMD_TRAIN_DEST_MULT:
+                    for (i = 1; i < argc-1; i+=2) {
+                        result = sensorToInt(argv[i][0], atoi(argv[i+1]));
+                        if (result < 0 || result > 79) {
+                            DebugPutStr("scd", "Invalid Sensor ", argv[i][0], atoi(argv[i+1]));
+                        }
+                        else {
+                            DebugPutStr("sdscd", "Queueing Train ", atoi(argv[0]), " to dest ", argv[i][0], atoi(argv[i+1]));
+                            setTrainDestination(atoi(argv[0]), result, 0 );
+                        }
                     }
                     break;
                 case CMD_PATH_FIND:

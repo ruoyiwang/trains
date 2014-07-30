@@ -53,6 +53,7 @@
 #define CMD_RESERVE_NODE	18
 #define CMD_FREE_NODE		19
 #define CMD_LIST_RESERVED_NODE		20
+#define CMD_TRAIN_DEST_MULT	21
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);

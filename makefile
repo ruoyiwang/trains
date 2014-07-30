@@ -83,6 +83,13 @@ track.o: track.s
 	$(AS) $(ASFLAGS) -o track.o track.s
 
 
+multidestination.s: tasks/multidestination.c tasks/multidestination.h
+	$(XCC) -S $(CFLAGS) tasks/multidestination.c
+
+multidestination.o: multidestination.s
+	$(AS) $(ASFLAGS) -o multidestination.o multidestination.s
+
+
 queue.s: kernel/queue.c kernel/queue.h
 	$(XCC) -S $(CFLAGS) kernel/queue.c
 
@@ -118,6 +125,13 @@ posintlist.o: posintlist.s
 	$(AS) $(ASFLAGS) -o $@ posintlist.s
 
 
+intqueue.s: lib/intqueue.c lib/intqueue.h
+	$(XCC) -S $(CFLAGS) -O2 lib/intqueue.c
+
+intqueue.o: intqueue.s
+	$(AS) $(ASFLAGS) -o $@ intqueue.s
+
+
 debug.s: kernel/debug.c kernel/debug.h
 	$(XCC) -S $(CFLAGS) kernel/debug.c
 
@@ -146,8 +160,8 @@ display.o: display.s
 	$(AS) $(ASFLAGS) -o display.o display.s
 
 
-kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o posintlist.o debug.o track_data.o trainspeed.o display.o
-	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o debug.o posintlist.o track_data.o trainspeed.o display.o -lgcc
+kernel.elf: kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o posintlist.o debug.o intqueue.o track_data.o trainspeed.o display.o multidestination.o
+	$(LD) $(LDFLAGS) -o $@ kernel.o nameserver.o clockserver.o sensors.o commandcenter.o comservers.o interface.o queue.o Tasks.o train.o track.o bwio.o util.o debug.o intqueue.o posintlist.o track_data.o trainspeed.o display.o multidestination.o -lgcc
 
 clean:
 	-rm -f *.s *.a *.o kernel.map
