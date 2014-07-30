@@ -8,6 +8,7 @@
 #include <ts7200.h>
 #include <track.h>
 #include <posintlist.h>
+#include <sensors.h>
 
 #include <track_data.h>
 #include <track_node.h>
