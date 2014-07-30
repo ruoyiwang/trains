@@ -132,8 +132,9 @@ void SensorServer() {
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 memcpy(current_sensor_state, msg_struct.value, 10);
                 for (i = 0; i < 64; i++) {
-                    if (requests[i][1] >= 0 && (msg_struct.value[requests[i][1]/8] & (1 << (7 - (requests[i][1] % 8))))) {
-                        msg_struct.value[requests[i][1]/8] = msg_struct.value[requests[i][1]/8] & ~(1 << (7 - (requests[i][1] % 8)));
+                    if (requests[i][1] >= 0 && (current_sensor_state[requests[i][1]/8] & (1 << (7 - (requests[i][1] % 8))))) {
+                        // msg_struct.value[requests[i][1]/8] = msg_struct.value[requests[i][1]/8] & ~(1 << (7 - (requests[i][1] % 8)));
+                        DebugPutStr("sdsd", "DEBUG: unblocked sensor: ",requests[i][1], " for task: ", i);
                         reply_struct.iValue = requests[i][1];
                         requests[i][0] = -1;
                         requests[i][1] = -1;
@@ -142,7 +143,13 @@ void SensorServer() {
                         requests[i][4] = -1;
                         requests[i][5] = -1;
                         Reply (i, (char *)&reply_struct, rpllen);
-                        break;
+                        // break;
+                    }
+                }
+                for (i = 0; i < 64; i++) {
+                    if (requests[i][1] >= 0 && (msg_struct.value[requests[i][1]/8] & (1 << (7 - (requests[i][1] % 8))))) {
+                        msg_struct.value[requests[i][1]/8] = msg_struct.value[requests[i][1]/8] & ~(1 << (7 - (requests[i][1] % 8)));
+                        // break;
                     }
                 }
                 for (i = 0; i < 64; i++) {

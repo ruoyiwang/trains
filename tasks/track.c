@@ -60,10 +60,18 @@ void TracksTask () {
         switch (msg_struct.type) {
             case SET_SWITCH:
                 if (msg_struct.value[0] == 's') {
+                    if (getSwitchStatus(&switch_status, msg_struct.iValue) == SW_STRAIGHT) {
+                        Reply (sender_tid, (char *)&reply_struct, rpllen);
+                        break;
+                    }
                     commandstr[0] = SW_STRAIGHT;
                     setSwitchStatus(&switch_status, msg_struct.iValue, SW_STRAIGHT);
                 }
                 else if (msg_struct.value[0] == 'c'){
+                    if (getSwitchStatus(&switch_status, msg_struct.iValue) == SW_CURVE) {
+                        Reply (sender_tid, (char *)&reply_struct, rpllen);
+                        break;
+                    }
                     commandstr[0] = SW_CURVE;
                     setSwitchStatus(&switch_status, msg_struct.iValue, SW_CURVE);
                 }
@@ -193,7 +201,7 @@ void TracksTask () {
                         for (j = 0; j < 5; j++) {
                             if (tracks[(int)msg[i]].reserved[j] == 0) {
                                 tracks[(int)msg[i]].reserved[j] = (int)msg[msg_struct.iValue];
-                                tracks[(int)msg[i]].reverse->reserved[j] = (int)msg[msg_struct.iValue];
+                                // tracks[(int)msg[i]].reverse->reserved[j] = (int)msg[msg_struct.iValue];
                                 break;
                             }
                         }
@@ -210,7 +218,7 @@ void TracksTask () {
                         for (j = 0; j < 5; j++) {
                             if (tracks[i].reserved[j] == (int)msg[msg_struct.iValue]) {
                                 tracks[i].reserved[j] = 0;
-                                tracks[i].reverse->reserved[j] = 0;
+                                // tracks[i].reverse->reserved[j] = 0;
                             }
                         }
                     }
@@ -220,7 +228,7 @@ void TracksTask () {
                     for (j = 0; j < 5; j++) {
                         if (tracks[(int)msg[i]].reserved[j] == (int)msg[msg_struct.iValue]) {
                             tracks[(int)msg[i]].reserved[j] = 0;
-                            tracks[(int)msg[i]].reverse->reserved[j] = 0;
+                            // tracks[(int)msg[i]].reverse->reserved[j] = 0;
                         }
                     }
                 }

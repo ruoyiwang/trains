@@ -194,7 +194,7 @@ void CommandCenterServer() {
     int requests[64] = {-1};
     char sensors_ahead[5] = {-1};
     char reserve_sensors[5] = {-1};
-    int courier_tid, notifier_tid, train_count = 0, length_to_switch = 0;
+    int courier_tid, notifier_tid, train_count = 0, length_to_switch = 0, merge_ahead = false;
 
     // int train_info[MAX_TRAIN_COUNT][TRAIN_INFO_SIZE];
     Train_info train_info[MAX_TRAIN_COUNT];
@@ -267,9 +267,32 @@ void CommandCenterServer() {
                             }
                         }
                         reserve_sensors[0] = train_info[i].sensor;
-                        reserve_sensors[1] = train_info[i].next_sensor;
-                        reserve_sensors[2] = sensors_ahead[1];
+                        reserve_sensors[1] = getSensorComplement(train_info[i].next_sensor);
+                        reserve_sensors[2] = getSensorComplement(train_info[i].sensor);
                         reserveNodesRequest(reserve_sensors, 3, train_info[i].id);
+
+                        merge_ahead = false;
+                        for (j = 0; j < train_info[i].node_list_len; j++ ){
+                            // DebugPutStr("sd", "DEBUG: node: ", train_info[i].node_list[j].num);
+                            if (train_info[i].node_list[j].num == train_info[i].sensor) {
+                                // DebugPutStr("sdsd", "DEBUG: current index: ", j, " of ", train_info[i].node_list_len);
+                                break;
+                            }
+                        }
+                        for ( ;j < train_info[i].node_list_len; j++ ){
+                            if (train_info[i].node_list[j].type == NODE_MERGE) {
+                                merge_ahead = true;
+                                break;
+                            }
+                            if (train_info[i].node_list[j].type == NODE_SENSOR) {
+                                break;
+                            }
+                        }
+                        if (merge_ahead){
+                            reserve_sensors[0] = train_info[i].next_sensor;
+                            reserveNodesRequest(reserve_sensors, 1, train_info[i].id);
+                        }
+
 
                         // predict the time of arrival for the next sensor
                         expected_time = predictArrivalTime(train_info[i].sensor,
@@ -300,7 +323,7 @@ void CommandCenterServer() {
 
                         predictSensor(train_info[i].sensor, 3, sensors_ahead);
                         if (train_info[i].signal != RESERVED_STOPPING && !train_info[i].is_stopped
-                            && !checkNodesAvailable (sensors_ahead+1, 2, train_info[i].id)) {
+                            && !checkNodesAvailable (sensors_ahead, 3, train_info[i].id)) {
                             // Assert();
                             // somehting is blocking the way
                             setTrainSpeed (train_info[i].id, 0);
@@ -384,6 +407,8 @@ void CommandCenterServer() {
 
 
                             train_info[i].is_stopped = 1;
+                            // changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 0 );
+
                             train_info[i].stopping_sensor = -1;
                             train_info[i].stopping_offset = 0;
                             train_info[i].stopping_notifier = -1;
@@ -608,7 +633,7 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
     reply_struct.value = reply;
     // location = train_info[i].offset / 10;
     // initialize the stoping notifier
-    int stopping_sensor_dist = 0, stopping_sensor = -1;
+    int stopping_sensor_dist = 0, stopping_sensor = -1, need_reverse = false;
     int blocked_nodes[20];
     // update the train info
     int notifier_tid;
@@ -627,14 +652,28 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
         0,                       // the length of the blocked nodes array
         train_info->id
     )){
-        DebugPutStr("s", "DEBUG: No route found, retrying in 1 second");
-        setTrainSpeed (train_info->id, 0);
-        // no route found, try again in 1 second;
-        notifier_tid = Create(1, (&CommandCenterDelayNotifier));
-        train_info->stopping_notifier = notifier_tid;
-        msg_struct.iValue = 100;
-        Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
-        return;
+        if (!pathFindDijkstra(
+            &md,
+            getSensorComplement(train_info->sensor),          // current node
+            train_info->offset,                      // offset
+            stop_sensor,                 // where it wants to go
+            train_info->stopping_dist,                    // stoping distance
+            blocked_nodes,          // the nodes the trains can't use
+            0,                       // the length of the blocked nodes array
+            train_info->id
+        )) {
+            DebugPutStr("s", "DEBUG: No route found, retrying in 1 second");
+            setTrainSpeed (train_info->id, 0);
+            // no route found, try again in 1 second;
+            notifier_tid = Create(1, (&CommandCenterDelayNotifier));
+            train_info->stopping_notifier = notifier_tid;
+            msg_struct.iValue = 100;
+            Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+            return;
+        }
+        else {
+            need_reverse = true;
+        }
     }
 
 
@@ -697,7 +736,7 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
     if (md.unsafe_forward){
         train_info->signal = UNSAFE_FORWORD;
     }
-    if (md.reverse_first){
+    if (md.reverse_first || need_reverse){
         // set first 2 switches if reverse
         for (i = 0; i < md.list_len; i++) {
             if (md.node_list[i].type == NODE_BRANCH) {
@@ -779,6 +818,10 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
 
     }
     else if (md.type == LONG_MOVE) {
+
+        // predictSensor(train_info->sensor, 2, sensors_ahead);
+        // train_info->next_sensor = sensors_ahead[0];
+        // changeWaitForSensors(train_info->notifier_tid, sensors_ahead, 2 );
 
         if (stopping_sensor == train_info->dest_sensor ){
             stopping_sensor_dist += stop_offset;
