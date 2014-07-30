@@ -14,16 +14,17 @@
 #define FREE_RESERVED_NODES     0x57
 #define GET_RESERVED_NODES      0x58
 #define CHECK_NODES_AVAILABLE   0x59
+#define CHECK_NEXT_NODES        0x60
 
 #define TRACK_TASK      "TT"
 
 #define REVERSING_WEIGHT    400
 #define TRAIN_LENGTH        220
 
-#define RESERVATION_SUCCESSFUL  0x60
-#define RESERVATION_FAILED      0x61
-#define NODES_AVAILABLE         0x62
-#define NODES_UNAVAILABLE       0x63
+#define RESERVATION_SUCCESSFUL  0x70
+#define RESERVATION_FAILED      0x71
+#define NODES_AVAILABLE         0x72
+#define NODES_UNAVAILABLE       0x73
 
 typedef enum {
     LONG_MOVE,
@@ -152,5 +153,19 @@ void freeNodes (char* nodes, int msglen, int train_id);
 int checkNodesAvailable (char* nodes, int msglen, int train_id);
 
 int getReservedNodes(char* nodes, int len);
+
+int nextPossibleSensorsCheckTrackTask(track_node *tracks, int sensors_list[], int len, int cur_node, int depths, int train_id);
+
+int nextPossibleSensorsDFS(
+    track_node * tracks,
+    int sensors_list[],
+    int len,
+    int cur_node,
+    int depths,
+    int cur_depth,
+    int train_id
+);
+
+int nextPossibleSensorsCheck(int sensors_list[], int len, int cur_node, int depths, int train_id);
 
 #endif

@@ -27,6 +27,7 @@ void TracksTask () {
     char predict_result[10] = {0};
     char reply[182] = {0};
     char path[80] = {0};
+    int nodes[80] = {-1};
     int sender_tid, rpllen = 10, path_len = 0;
     int msglen = sizeof(path_find_requirements);
 
@@ -262,6 +263,14 @@ void TracksTask () {
                     }
                 }
                 rpllen = reply_struct.iValue;
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
+            case CHECK_NEXT_NODES:
+                rpllen = msg_struct.iValue;
+                reply_struct.iValue = nextPossibleSensorsCheckTrackTask(tracks, nodes, rpllen, msg_struct.value[0], msg_struct.value[1], msg_struct.value[2]);
+                for (i = 0; i < rpllen; i++) {
+                    reply[i] = (char) nodes[i];
+                }
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
             default:
@@ -514,7 +523,7 @@ struct move_data_t pathFindDijkstraTrackTask(
     int train_id
 ) {
     int first_reverse_weight = 0, first_reverse = 1;
-    int i = 0, unsafe_reverses_list_size = 10, j = 0;
+    int i = 0, j = 0;
     int unsafe_reverses[10];        // note tis is only for track b
     unsafe_reverses[i++] = 3;       // A4
     unsafe_reverses[i++] = 30;      // B15
@@ -1321,5 +1330,89 @@ int getReservedNodes(char* nodes, int len) {
         memcpy(nodes, reply, reply_struct.iValue);
     }
 
+    return reply_struct.iValue;
+}
+
+int nextPossibleSensorsCheckTrackTask(track_node *tracks, int sensors_list[], int len, int cur_node, int depths, int train_id) {
+    posintlistInit(sensors_list, len);
+    int cur_depth = 0;      // used by DFS
+    return nextPossibleSensorsDFS(tracks, sensors_list, len, cur_node, depths, cur_depth, train_id);
+}
+
+int nextPossibleSensorsDFS(
+    track_node * tracks,
+    int sensors_list[],
+    int len,
+    int cur_node,
+    int depths,
+    int cur_depth,
+    int train_id
+) {
+    if (cur_depth > depths) {
+        return true;
+    }
+
+    int j = 0;
+    // DebugPutStr("sdsdsdsd", "curnode: ", cur_node, " type:", tracks[cur_node].type, " curdepth:", cur_depth, " depth:", depths);
+
+    if (tracks[cur_node].type == NODE_SENSOR) {
+        cur_depth += 1;
+        posintlistInsert(tracks[cur_node].num, sensors_list, len);
+        // DebugPutStr("scd", "Processing Sensor: ", tracks[cur_node].num/16+'A', tracks[cur_node].num%16+1);
+        for (j = 0; j < 5; j++) {
+            if (tracks[cur_node].reserved[j] != train_id &&
+                tracks[cur_node].reserved[j] != 0) {
+                return false;
+            }
+        }
+        cur_node = tracks[cur_node].edge[DIR_AHEAD].dest->index;
+        return nextPossibleSensorsDFS(tracks, sensors_list, len, cur_node, depths, cur_depth, train_id);
+    }
+    else if (tracks[cur_node].type == NODE_MERGE) {
+        cur_node = tracks[cur_node].edge[DIR_AHEAD].dest->index;
+        return nextPossibleSensorsDFS(tracks, sensors_list, len, cur_node, depths, cur_depth, train_id);
+    }
+    else if (tracks[cur_node].type == NODE_BRANCH) {
+        int straight = tracks[cur_node].edge[DIR_STRAIGHT].dest->index;
+        straight = nextPossibleSensorsDFS(tracks, sensors_list, len, straight, depths, cur_depth, train_id);
+        int curve = tracks[cur_node].edge[DIR_CURVED].dest->index;
+        curve = nextPossibleSensorsDFS(tracks, sensors_list, len, curve, depths, cur_depth, train_id);
+        if (straight == false || curve == false) {
+            return false;
+        }
+    }
+
+    // just return on exits and whatnot
+    return true;
+}
+
+
+int nextPossibleSensorsCheck(int sensors_list[], int len, int cur_node, int depths, int train_id) {
+    // msg shits
+    char msg[10] = {0};
+    char reply[80] = {0};
+    int rpllen = len, msglen = 10;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(TRACK_TASK);
+    }
+
+    message msg_struct, reply_struct;
+
+    msg_struct.value = msg;
+    msg_struct.type = CHECK_NEXT_NODES;
+
+    reply_struct.value = reply;
+    msg_struct.value[0] = (char) cur_node;
+    msg_struct.value[1] = (char) depths;
+    msg_struct.value[2] = (char) train_id;
+    msg_struct.iValue = len;
+
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+
+    int i = 0;
+    for (i = 0; i < len; i++) {
+        sensors_list[i] = (int) reply[i];
+    }
     return reply_struct.iValue;
 }

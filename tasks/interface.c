@@ -385,6 +385,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_LIST_RESERVED_NODE;
         return;
     }
+    else if ( strcmp (cmdstr, "npnc") == 0 && *argc == 3 ){
+        *command = CMD_NEXT_SENSORS_CHECK;
+        return;
+    }
     else if ( cmdstr[0] == 'A' ){
         *command = CMD_ASSERT;
         return;
@@ -802,6 +806,7 @@ void handleCommandTask() {
     int stoppong_sensor_dist;       // returning distance
     char sensor_route[180] = {0};    // the sensors the train's gonna
     int blocked_nodes[TRACK_MAX] = {0};
+    int nodes[TRACK_MAX] = {0};
 
     int train_display_offset = 1;
     setAllTrainSpeedToOne();
@@ -1092,6 +1097,18 @@ void handleCommandTask() {
                     for (i = 0; i < result; i++) {
                         DebugPutStr("cd", reserved_nodes[i]/16+'A', reserved_nodes[i]%16+1);
                     }
+                    break;
+                case CMD_NEXT_SENSORS_CHECK:
+                    result = nextPossibleSensorsCheck(nodes, 20, atoi(argv[0]), atoi(argv[1]), atoi(argv[2]));
+                    if (result == true) {
+                        DebugPutStr("s", "Can Move");
+                    }
+                    else {
+                        DebugPutStr("s", "Don't Move");
+                    }
+                    // for (i = 0; i < 10; i++) {
+                    //     DebugPutStr("d", nodes[i]);
+                    // }
                     break;
                 default:
                     outputPutStrLn ( "Invalid input", &row, &col, buffer, &index );

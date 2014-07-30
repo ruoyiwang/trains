@@ -252,6 +252,9 @@ void CommandCenterServer() {
     RegisterAs(COMMAND_CENTER_SERVER_NAME);
     Create(1, (&CommandCenterTrainDeadlockNotifier));
 
+    volatile unsigned int * timer_4_low;
+    timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
+
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
         switch(msg_struct.type) {
@@ -460,6 +463,17 @@ void CommandCenterServer() {
                                     train_info[i].dest_sensor = intQueuePop(&(train_info[i].dest_queue));
                                     serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
                                     DebugPutStr("sd", "DEBUG: Routing TO: ", train_info[i].dest_sensor);
+                                }
+                                else {
+                                    while ( true ) {
+                                        train_info[i].dest_sensor = rand(*timer_4_low) % 80;
+                                        if (train_info[i].dest_sensor < 16 ||
+                                            train_info[i].dest_sensor > 27) {
+                                            break;
+                                        }
+                                    }
+                                    serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
+                                    DebugPutStr("sd", "DEBUG: Going to Random Location: ", train_info[i].dest_sensor);
                                 }
 
                                 break;
