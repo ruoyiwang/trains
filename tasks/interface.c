@@ -399,6 +399,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_GET_FIVE_MAIL;
         return;
     }
+    else if ( strcmp (cmdstr, "anm") == 0 && *argc == 2 ){
+        *command = CMD_ADD_NEW_MAIL;
+        return;
+    }
     else if ( cmdstr[0] == 'A' ){
         *command = CMD_ASSERT;
         return;
@@ -1141,6 +1145,11 @@ void handleCommandTask() {
                     for (i = 0; i < 5; i++) {
                         DebugPutStr("sdsdsd", "Mail: from: ", mail_list[i].from, " to: ", mail_list[i].to, " status: ", mail_list[i].status);
                     }
+                    break;
+                case CMD_ADD_NEW_MAIL:
+                    queueNewMail(atoi(argv[0]), atoi(argv[1]));
+                    DebugPutStr("s", "queued new mail");
+
                     break;
                 default:
                     outputPutStrLn ( "Invalid input", &row, &col, buffer, &index );

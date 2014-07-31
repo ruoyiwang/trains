@@ -538,8 +538,7 @@ void CommandCenterServer() {
                                             if (train_info[i].id == 56) {
                                                 train_info[i].dest_sensor = 0;
                                                 serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
-                                                DebugPutStr("sd", "MAIL: Returning tO: ", train_info[i].dest_sensor);
-
+                                                DebugPutStr("sd", "MAIL: Returning to ", train_info[i].dest_sensor);
                                             }
                                             else if (train_info[i].id == 54) {
                                                 train_info[i].dest_sensor = 22;
@@ -876,6 +875,21 @@ void CommandCenterServer() {
                 getFiveMailCommandCenter(mail_list, temp_mail_list);
                 reply_struct.value = (char*)temp_mail_list;
                 Reply (sender_tid, (char *)&reply_struct, sizeof(mail) * 5);
+                break;
+            case ADD_NEW_MAIL:
+                queueNewMailCommandCenter(mail_list, (int) msg_struct.value[0], (int) msg_struct.value[1]);
+                Reply (sender_tid, (char *)&reply_struct, 1);
+
+                if (train_info[i].dest_sensor == -1) {
+                    if (getNextNewMail(mail_list, &i)) {
+                        // send train to from
+                        train_info[i].cur_mail_index = i;
+                        train_info[i].dest_sensor = mail_list[i].from;
+                        serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
+                        // queue the dest
+                        intQueuePush(&(train_info[i].dest_queue), mail_list[i].to);
+                    }
+                }
                 break;
             default:
                 bwprintf(COM2, "fmlllll COMMAND CENTER SEVER %d\n", msg_struct.type);
@@ -1375,9 +1389,42 @@ void queueNewMailCommandCenter (mail mail_list[MAIL_LIST_SIZE], int from, int to
             mail_list[i].from = from;
             mail_list[i].to = to;
             mail_list[i].status = MAIL_STATUS_NEW;
+            mail_list[i].mail_type = MAIL_TYPE_REAL;
+            break;
+        }
+        else if (mail_list[i].status == MAIL_STATUS_NEW &&
+            mail_list[i].mail_type != MAIL_TYPE_REAL) {
+
+            mail_list[i].from = from;
+            mail_list[i].to = to;
+            mail_list[i].status = MAIL_STATUS_NEW;
+            mail_list[i].mail_type = MAIL_TYPE_REAL;
             break;
         }
     }
+}
+
+void queueNewMail (int from, int to) {
+    char msg[2] = {0};
+    char reply[2] = {0};
+    int msglen = 2;
+    int rpllen = 10;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(COMMAND_CENTER_SERVER_NAME);
+    }
+    message msg_struct, reply_struct;
+
+    msg_struct.value = msg;
+
+    msg_struct.type = ADD_NEW_MAIL;
+
+    reply_struct.value = reply;
+
+    msg[0] = (char) from;
+    msg[1] = (char) to;
+
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 }
 
 int getNextNewMail (mail mail_list[MAIL_LIST_SIZE], int* mail_index) {
@@ -1389,6 +1436,7 @@ int getNextNewMail (mail mail_list[MAIL_LIST_SIZE], int* mail_index) {
             return true;
         }
     }
+    initMailList(mail_list);
     return false;
 }
 
@@ -1438,6 +1486,7 @@ void initMailList(mail mail_list[MAIL_LIST_SIZE]) {
     int i = 0;
     for (i = 0; i < MAIL_LIST_SIZE; i++) {
         mail_list[i].status = MAIL_STATUS_EMPTY;
+        mail_list[i].mail_type = MAIL_TYPE_RANDOM;
     }
     for (i = 0; i < 5; i++) {
         // gen random from
