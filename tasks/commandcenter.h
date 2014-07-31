@@ -45,13 +45,17 @@ typedef struct mail_t {
 	int from;
 	int to;
 	int status;
+	int mail_type;
 } mail;
 
 #define MAIL_LIST_SIZE			20
 #define MAIL_STATUS_EMPTY		0
 #define MAIL_STATUS_NEW			1
-#define MAIL_STATUS_IN_FLIGHT	2
-#define MAIL_STATUS_DELIVERED	3
+#define MAIL_STATUS_PICKUP		2
+#define MAIL_STATUS_IN_FLIGHT	3
+#define MAIL_STATUS_DELIVERED	4
+#define MAIL_TYPE_RANDOM		0
+#define MAIL_TYPE_REAL			1
 
 #define COMMAND_CENTER_NOTIFIER 0
 #define INIT_TRAIN_REQUEST 1
@@ -67,6 +71,7 @@ typedef struct mail_t {
 #define COMMAND_CENTER_TRAIN_CHECK 11
 #define COMMAND_CENTER_DEADLOCK_CHECK 12
 #define GET_FIVE_MAIL 13
+#define ADD_NEW_MAIL 14
 
 #define TRAIN_REVERSE_OFFSET 120
 #define COMMAND_CENTER_SERVER_NAME "CCS"
@@ -96,4 +101,5 @@ int deliverMail( mail mail_list[MAIL_LIST_SIZE], int mail_index );
 void getFiveMailCommandCenter (mail mail_list[MAIL_LIST_SIZE], mail ret_list[5]);
 void getFiveMail(mail mail_list[5]);
 void initMailList(mail mail_list[MAIL_LIST_SIZE]);
+void queueNewMail (int from, int to);
 #endif
