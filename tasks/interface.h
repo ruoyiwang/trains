@@ -61,6 +61,7 @@
 #define CMD_NEXT_SENSORS_CHECK		22
 #define CMD_GET_FIVE_MAIL	23
 #define CMD_ADD_NEW_MAIL	24
+#define CMD_MAIL_SYSTEM_ENABLE		25
 
 void restoreCursorPosition (char* buffer, int* index);
 void saveCursorPosition (char* buffer, int* index);

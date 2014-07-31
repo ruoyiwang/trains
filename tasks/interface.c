@@ -403,6 +403,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_ADD_NEW_MAIL;
         return;
     }
+    else if ( strcmp (cmdstr, "mse") == 0 && *argc == 1 ){
+        *command = CMD_MAIL_SYSTEM_ENABLE;
+        return;
+    }
     else if ( cmdstr[0] == 'A' ){
         *command = CMD_ASSERT;
         return;
@@ -1150,6 +1154,15 @@ void handleCommandTask() {
                     queueNewMail(atoi(argv[0]), atoi(argv[1]));
                     DebugPutStr("s", "queued new mail");
 
+                    break;
+                case CMD_MAIL_SYSTEM_ENABLE:
+                    mailSystemSwitch(atoi(argv[0]));
+                    if (atoi(argv[0])) {
+                        DebugPutStr("s", "Enabling mail system");
+                    }
+                    else {
+                        DebugPutStr("s", "Disabling mail system");
+                    }
                     break;
                 default:
                     outputPutStrLn ( "Invalid input", &row, &col, buffer, &index );

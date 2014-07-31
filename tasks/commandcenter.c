@@ -891,6 +891,9 @@ void CommandCenterServer() {
                     }
                 }
                 break;
+            case MAIL_SYSTEM_SWITCH:
+                enable_mail_system = msg_struct.iValue;
+                Reply (sender_tid, (char *)&reply_struct, 1);
             default:
                 bwprintf(COM2, "fmlllll COMMAND CENTER SEVER %d\n", msg_struct.type);
                 reply_struct.type = FAIL_TYPE;
@@ -1406,7 +1409,7 @@ void queueNewMailCommandCenter (mail mail_list[MAIL_LIST_SIZE], int from, int to
 
 void queueNewMail (int from, int to) {
     char msg[2] = {0};
-    char reply[2] = {0};
+    char reply[10] = {0};
     int msglen = 2;
     int rpllen = 10;
     static int receiver_tid = -1;
@@ -1507,4 +1510,26 @@ void initMailList(mail mail_list[MAIL_LIST_SIZE]) {
         }
         mail_list[i].status = MAIL_STATUS_NEW;
     }
+}
+
+void mailSystemSwitch(int system_status) {
+    char msg[10] = {0};
+    char reply[10] = {0};
+    int msglen = 10;
+    int rpllen = 10;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(COMMAND_CENTER_SERVER_NAME);
+    }
+    message msg_struct, reply_struct;
+
+    msg_struct.value = msg;
+    msg_struct.iValue = system_status;
+
+    msg_struct.type = MAIL_SYSTEM_SWITCH;
+
+    // the five mail is directly assigned to the value lol
+    reply_struct.value = reply;
+
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 }

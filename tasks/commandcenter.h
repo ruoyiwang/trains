@@ -72,6 +72,7 @@ typedef struct mail_t {
 #define COMMAND_CENTER_DEADLOCK_CHECK 12
 #define GET_FIVE_MAIL 13
 #define ADD_NEW_MAIL 14
+#define MAIL_SYSTEM_SWITCH 15
 
 #define TRAIN_REVERSE_OFFSET 120
 #define COMMAND_CENTER_SERVER_NAME "CCS"
@@ -102,4 +103,5 @@ void getFiveMailCommandCenter (mail mail_list[MAIL_LIST_SIZE], mail ret_list[5])
 void getFiveMail(mail mail_list[5]);
 void initMailList(mail mail_list[MAIL_LIST_SIZE]);
 void queueNewMail (int from, int to);
+void mailSystemSwitch(int system_status);
 #endif
