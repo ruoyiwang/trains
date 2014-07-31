@@ -188,11 +188,11 @@ void get_cordinates(int landmark, int* row, int* col){
 			*col = 32;
 			break;
 		case 46 :
-			*row = 5;
+			*row = 3;
 			*col = 29;
 			break;
 		case 47 :
-			*row = 5;
+			*row = 3;
 			*col = 29;
 			break;
 		case 48 :
@@ -317,11 +317,11 @@ void get_cordinates(int landmark, int* row, int* col){
 			break;
 		case 78 :
 			*row = 14;
-			*col = 20;
+			*col = 30;
 			break;
 		case 79 :
 			*row = 14;
-			*col = 20;
+			*col = 30;
 			break;
 		case 80 :
 			*row = 5;
@@ -411,7 +411,10 @@ void get_cordinates(int landmark, int* row, int* col){
 			*row = 11;
 			*col = 26;
 			break;
-
+		default:
+			*row = 0;
+			*col = 0;
+			break;
 	}
 	return;
 }

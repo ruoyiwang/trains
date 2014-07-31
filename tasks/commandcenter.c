@@ -696,10 +696,13 @@ void CommandCenterServer() {
                     for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                         if (train_info[i].id != -1 && train_info[i].id != msg_struct.iValue) {
                             DebugPutStr("sds", "DEADLOCK: second train ", train_info[i].id, " looking for sensor");
+                            sensors_ahead[0] = ANY_SENSOR_REQUEST;
+                            changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 1);
                             notifier_tid = Create(1, (&CommandCenterDeadlockBuster));
                             msg_struct.iValue = train_info[i].id;
                             msg_struct.value[0] = false;
                             Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+                            break;
                         }
                     }
                     deadlock_mode = false;
@@ -763,8 +766,12 @@ void CommandCenterServer() {
                             train_info[i].stopping_offset = 0;
                             train_info[i].stopping_notifier = -1;
                             train_info[i].signal = -100;
-                            sensors_ahead[0] = ANY_SENSOR_REQUEST;
                             setTrainSpeed(train_info[i].id, 0);
+                        }
+                    }
+                    for (i = 0; i < MAX_TRAIN_COUNT; i++) {
+                        if (train_info[i].id == train_id) {
+                            sensors_ahead[0] = ANY_SENSOR_REQUEST;
                             changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 1);
                         }
                     }

@@ -524,7 +524,7 @@ struct move_data_t pathFindDijkstraTrackTask(
     int train_id
 ) {
     int sensors_list[TRACK_MAX];
-    int can_move = nextPossibleSensorsCheckTrackTask(tracks, sensors_list, 80, cur_sensor, 3, train_id);
+    int can_move = nextPossibleSensorsCheckTrackTask(tracks, sensors_list, 80, cur_sensor, 4, train_id);
     if (!can_move) {
         move_data md;
         md.type = PATH_NOT_FOUND;
