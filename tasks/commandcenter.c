@@ -743,6 +743,12 @@ void CommandCenterServer() {
                             break;
                         }
                     }
+                    for (i = 0; i < MAX_TRAIN_COUNT; i++){
+                        if (train_info[i].id != -1){
+                            serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
+                        }
+                    }
+
                     deadlock_mode = false;
                     Reply (sender_tid, (char *)&reply_struct, rpllen);
                     break;
@@ -811,6 +817,9 @@ void CommandCenterServer() {
                         if (train_info[i].id == train_id) {
                             sensors_ahead[0] = ANY_SENSOR_REQUEST;
                             changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 1);
+                        }
+                        else if (train_info[i].id != -1){
+                            changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 0);
                         }
                     }
                     DebugPutStr("sds", "DEADLOCK: train ", train_id, " looking for sensor");
