@@ -476,6 +476,7 @@ void CommandCenterServer() {
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i].stopping_notifier == sender_tid) {
                         if (train_info[i].sensor == train_info[i].stopping_sensor || train_info[i].sensor == train_info[i].dest_sensor
+                            || getSensorComplement(train_info[i].sensor) == train_info[i].stopping_sensor || getSensorComplement(train_info[i].sensor) == train_info[i].dest_sensor
                             || (isUnsafeForward(train_info[i].stopping_sensor) && train_info[i].next_sensor == train_info[i].stopping_sensor)){// || train_info[i].next_sensor == train_info[i].stopping_sensor
                             // || train_info[i].signal == UNSAFE_REVERSE || train_info[i].signal == SAFE_REVERSE) {
                             DebugPutStr("sd", "DEBUG: Train Stopped at sensor : ", train_info[i].sensor);
@@ -496,7 +497,9 @@ void CommandCenterServer() {
                             train_info[i].stopping_offset = 0;
                             train_info[i].stopping_notifier = -1;
                             if (train_info[i].dest_sensor == train_info[i].sensor ||
-                                train_info[i].dest_sensor == train_info[i].next_sensor) {
+                                train_info[i].dest_sensor == train_info[i].next_sensor ||
+                                getSensorComplement(train_info[i].dest_sensor) == train_info[i].sensor ||
+                                getSensorComplement(train_info[i].dest_sensor) == train_info[i].next_sensor) {
                                 train_info[i].dest_sensor = -1;
                                 train_info[i].dest_offset = 0;
                                 DebugPutStr("s", "DEBUG: Arrived at destination!");

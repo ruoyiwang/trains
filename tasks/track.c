@@ -523,6 +523,14 @@ struct move_data_t pathFindDijkstraTrackTask(
     int blocked_nodes_len,
     int train_id
 ) {
+    int sensors_list[TRACK_MAX];
+    int can_move = nextPossibleSensorsCheckTrackTask(tracks, sensors_list, 80, cur_sensor, 3, train_id);
+    if (!can_move) {
+        move_data md;
+        md.type = PATH_NOT_FOUND;
+        return md;
+    }
+
     int first_reverse_weight = 0, first_reverse = 1;
     int i = 0, j = 0;
     int unsafe_reverses[10];        // note tis is only for track b
