@@ -361,8 +361,9 @@ void CommandCenterServer() {
                         if (look_ahead_count > 3) {
                             look_ahead_count = 3;
                         }
+                        int sensors_list_return_len;
                         if (train_info[i].signal != RESERVED_STOPPING && !train_info[i].is_stopped
-                            && !nextPossibleSensorsCheck (sensors_list, 80, train_info[i].next_sensor, look_ahead_count, train_info[i].id)) {
+                            && !nextPossibleSensorsCheck (sensors_list, 80, train_info[i].next_sensor, look_ahead_count, train_info[i].id, &sensors_list_return_len)) {
                             // Assert();
                             // somehting is blocking the way
                             setTrainSpeed (train_info[i].id, 0);

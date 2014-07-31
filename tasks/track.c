@@ -1388,7 +1388,7 @@ int nextPossibleSensorsDFS(
 }
 
 
-int nextPossibleSensorsCheck(int sensors_list[], int len, int cur_node, int depths, int train_id) {
+int nextPossibleSensorsCheck(int sensors_list[], int len, int cur_node, int depths, int train_id, int *return_len) {
     // msg shits
     char msg[10] = {0};
     char reply[80] = {0};
@@ -1412,8 +1412,15 @@ int nextPossibleSensorsCheck(int sensors_list[], int len, int cur_node, int dept
     Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
 
     int i = 0;
+    *return_len = 0;
     for (i = 0; i < len; i++) {
         sensors_list[i] = (int) reply[i];
+        if (sensors_list[i] <= TRACK_MAX) {
+            (*return_len)++;
+        }
+        else {
+            break;
+        }
     }
     return reply_struct.iValue;
 }

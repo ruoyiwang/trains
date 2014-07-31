@@ -166,7 +166,7 @@ int nextPossibleSensorsDFS(
     int train_id
 );
 
-int nextPossibleSensorsCheck(int sensors_list[], int len, int cur_node, int depths, int train_id, int *return_len);
+int nextPossibleSensorsCheck(int sensors_list[], int len, int cur_node, int depths, int train_id);
 
 int isUnsafeForward (int sensor);
 

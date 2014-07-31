@@ -1107,16 +1107,16 @@ void handleCommandTask() {
                     }
                     break;
                 case CMD_NEXT_SENSORS_CHECK:
-                    result = nextPossibleSensorsCheck(nodes, 20, atoi(argv[0]), atoi(argv[1]), atoi(argv[2]));
+                    result = nextPossibleSensorsCheck(nodes, 20, atoi(argv[0]), atoi(argv[1]), atoi(argv[2]), &tempi);
                     if (result == true) {
                         DebugPutStr("s", "Can Move");
                     }
                     else {
                         DebugPutStr("s", "Don't Move");
                     }
-                    // for (i = 0; i < 10; i++) {
-                    //     DebugPutStr("d", nodes[i]);
-                    // }
+                    for (i = 0; i < tempi; i++) {
+                        DebugPutStr("cd", nodes[i]/16+'A', nodes[i]%16+1);
+                    }
                     break;
                 default:
                     outputPutStrLn ( "Invalid input", &row, &col, buffer, &index );
