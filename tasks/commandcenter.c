@@ -278,6 +278,7 @@ void CommandCenterServer() {
         train_info[i].signal = -100;
         train_info[i].notifier_tid = -1;
         intQueueInit(&(train_info[i].dest_queue));
+        train_info[i].cur_mail_index = -1;
     }
 
     char deadlock_locations[5] = {74, 68, 3, 65, 51};
@@ -287,6 +288,12 @@ void CommandCenterServer() {
 
     volatile unsigned int * timer_4_low;
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
+
+    // mail stuff
+    mail mail_list[MAIL_LIST_SIZE];
+    initMailList(mail_list);
+    int enable_mail_system = true;
+    mail temp_mail_list[MAIL_LIST_SIZE];
 
     FOREVER {
         Receive( &sender_tid, (char*)&msg_struct, msglen );
@@ -511,15 +518,46 @@ void CommandCenterServer() {
                                     DebugPutStr("sd", "DEBUG: Routing TO: ", train_info[i].dest_sensor);
                                 }
                                 else {
-                                    while ( true ) {
-                                        train_info[i].dest_sensor = rand(*timer_4_low) % 80;
-                                        if (train_info[i].dest_sensor < 16 ||
-                                            train_info[i].dest_sensor > 27) {
-                                            break;
+                                    // if mail system is enabled, we queue two dest from mail sys
+                                    if (enable_mail_system) {
+                                        if (train_info[i].cur_mail_index > -1) {
+                                            deliverMail(mail_list, train_info[i].cur_mail_index);
+                                        }
+                                        int cur_mail_index;
+                                        if (getNextNewMail(mail_list, &cur_mail_index)) {
+                                            // send train to from
+                                            train_info[i].cur_mail_index = cur_mail_index;
+                                            train_info[i].dest_sensor = mail_list[cur_mail_index].from;
+                                            serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
+                                            // queue the dest
+                                            intQueuePush(&(train_info[i].dest_queue), mail_list[cur_mail_index].to);
+                                        }
+                                        else {
+                                            // send it to post office
+                                            train_info[i].cur_mail_index = -1;
+                                            if (train_info[i].id == 56) {
+                                                train_info[i].dest_sensor = 0;
+                                                serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
+                                                DebugPutStr("sd", "MAIL: Returning tO: ", train_info[i].dest_sensor);
+
+                                            }
+                                            else if (train_info[i].id == 54) {
+                                                train_info[i].dest_sensor = 22;
+                                                serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
+                                            }
                                         }
                                     }
-                                    serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
-                                    DebugPutStr("sd", "DEBUG: Going to Random Location: ", train_info[i].dest_sensor);
+                                    else {
+                                        while ( true ) {
+                                            train_info[i].dest_sensor = rand(*timer_4_low) % 80;
+                                            if (train_info[i].dest_sensor < 16 ||
+                                                train_info[i].dest_sensor > 27) {
+                                                break;
+                                            }
+                                        }
+                                        serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
+                                        DebugPutStr("sd", "DEBUG: Going to Random Location: ", train_info[i].dest_sensor);
+                                    }
                                 }
 
                                 break;
@@ -824,6 +862,11 @@ void CommandCenterServer() {
                     }
                 }
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
+                break;
+            case GET_FIVE_MAIL:
+                getFiveMailCommandCenter(mail_list, temp_mail_list);
+                reply_struct.value = (char*)temp_mail_list;
+                Reply (sender_tid, (char *)&reply_struct, sizeof(mail) * 5);
                 break;
             default:
                 bwprintf(COM2, "fmlllll COMMAND CENTER SEVER %d\n", msg_struct.type);
@@ -1314,4 +1357,96 @@ int setTrainStopDist ( int train_id, int stop_dist) {
         return 0;
     }
     return -1;
+}
+
+void queueNewMailCommandCenter (mail mail_list[MAIL_LIST_SIZE], int from, int to) {
+    int i = 0;
+    for (i = 0; i < MAIL_LIST_SIZE; i++) {
+        if (mail_list[i].status == MAIL_STATUS_EMPTY) {
+            mail_list[i].from = from;
+            mail_list[i].to = to;
+            mail_list[i].status = MAIL_STATUS_NEW;
+            break;
+        }
+    }
+}
+
+int getNextNewMail (mail mail_list[MAIL_LIST_SIZE], int* mail_index) {
+    int i = 0;
+    for (i = 0; i < MAIL_LIST_SIZE; i++) {
+        if (mail_list[i].status == MAIL_STATUS_NEW) {
+            *mail_index = i;
+            mail_list[i].status = MAIL_STATUS_IN_FLIGHT;
+            return true;
+        }
+    }
+    return false;
+}
+
+int deliverMail( mail mail_list[MAIL_LIST_SIZE], int mail_index ) {
+    if (mail_list[mail_index].status == MAIL_STATUS_IN_FLIGHT) {
+        mail_list[mail_index].status = MAIL_STATUS_DELIVERED;
+        return true;
+    }
+    return false;
+}
+
+void getFiveMailCommandCenter (mail mail_list[MAIL_LIST_SIZE], mail ret_list[5]) {
+    // TODO: better-fy this
+    int i = 0;
+    for (i = 0; i < 5; i++) {
+        ret_list[i].from = mail_list[i].from;
+        ret_list[i].to = mail_list[i].to;
+        ret_list[i].status = mail_list[i].status;
+    }
+}
+
+void getFiveMail(mail mail_list[5]) {
+    char msg[10] = {0};
+    int msglen = 10;
+    int rpllen = sizeof(mail)*5;
+    static int receiver_tid = -1;
+    if (receiver_tid < 0) {
+        receiver_tid = WhoIs(COMMAND_CENTER_SERVER_NAME);
+    }
+    message msg_struct, reply_struct;
+
+    msg_struct.value = msg;
+
+    msg_struct.type = GET_FIVE_MAIL;
+
+    // the five mail is directly assigned to the value lol
+    reply_struct.value = (char *) mail_list;
+
+    Send (receiver_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+}
+
+void initMailList(mail mail_list[MAIL_LIST_SIZE]) {
+
+    volatile unsigned int * timer_4_low;
+    timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
+
+    int i = 0;
+    for (i = 0; i < MAIL_LIST_SIZE; i++) {
+        mail_list[i].status = MAIL_STATUS_EMPTY;
+    }
+    for (i = 0; i < 5; i++) {
+        // gen random from
+        while ( true ) {
+            mail_list[i].from = rand(*timer_4_low) % 80;
+            if (mail_list[i].from < 16 ||
+                mail_list[i].from > 27) {
+                break;
+            }
+        }
+        // gen random to
+        while ( true ) {
+            mail_list[i].to = rand(*timer_4_low) % 80;
+            if (mail_list[i].to < 16 ||
+                mail_list[i].to > 27) {
+                break;
+            }
+        }
+        mail_list[i].status = MAIL_STATUS_NEW;
+    }
 }

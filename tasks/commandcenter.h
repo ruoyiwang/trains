@@ -38,6 +38,7 @@ typedef struct train_info_t {
 	double speed_mult;
 	int node_list_len;
 	move_node node_list[TRACK_MAX];
+	int cur_mail_index;
 } Train_info;
 
 typedef struct mail_t {
@@ -65,6 +66,7 @@ typedef struct mail_t {
 #define COMMAND_CENTER_DELAY_EXPIRED 10
 #define COMMAND_CENTER_TRAIN_CHECK 11
 #define COMMAND_CENTER_DEADLOCK_CHECK 12
+#define GET_FIVE_MAIL 13
 
 #define TRAIN_REVERSE_OFFSET 120
 #define COMMAND_CENTER_SERVER_NAME "CCS"
@@ -86,4 +88,12 @@ int getTrainLocation ( int train_id, int* sensor, int* offset);
 int setTrainShortMult ( int train_id, int short_mult);
 int setTrainStopDist ( int train_id, int stop_dist);
 
+
+// mailing
+void queueNewMailCommandCenter (mail mail_list[MAIL_LIST_SIZE], int from, int to);
+int getNextNewMail (mail mail_list[MAIL_LIST_SIZE], int* mail_index);
+int deliverMail( mail mail_list[MAIL_LIST_SIZE], int mail_index );
+void getFiveMailCommandCenter (mail mail_list[MAIL_LIST_SIZE], mail ret_list[5]);
+void getFiveMail(mail mail_list[5]);
+void initMailList(mail mail_list[MAIL_LIST_SIZE]);
 #endif

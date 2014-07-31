@@ -395,6 +395,10 @@ void parseCommand (char* str, int *argc, char argv[10][10], int* command) {
         *command = CMD_NEXT_SENSORS_CHECK;
         return;
     }
+    else if ( strcmp (cmdstr, "gfm") == 0 ){
+        *command = CMD_GET_FIVE_MAIL;
+        return;
+    }
     else if ( cmdstr[0] == 'A' ){
         *command = CMD_ASSERT;
         return;
@@ -850,6 +854,8 @@ void handleCommandTask() {
 
     move_data md;
 
+    mail mail_list[5];
+
     FOREVER {
         c = getc(COM2);
         if (c == '\r') {
@@ -1116,6 +1122,12 @@ void handleCommandTask() {
                     }
                     for (i = 0; i < tempi; i++) {
                         DebugPutStr("cd", nodes[i]/16+'A', nodes[i]%16+1);
+                    }
+                    break;
+                case CMD_GET_FIVE_MAIL:
+                    getFiveMail(mail_list);
+                    for (i = 0; i < 5; i++) {
+                        DebugPutStr("sdsdsd", "Mail: from: ", mail_list[i].from, " to: ", mail_list[i].to, " status: ", mail_list[i].status);
                     }
                     break;
                 default:
