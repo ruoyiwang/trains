@@ -53,7 +53,7 @@ void TrainTask () {
                 break;
             case TRAIN_SET_SPEED:
                 speed = msg_struct.iValue;
-                commandstr[0] = speed;
+                commandstr[0] = speed + 16;
                 commandstr[1] = train_id;
                 commandstr[2] = 0;
                 putstr_len(COM1, commandstr, 2);

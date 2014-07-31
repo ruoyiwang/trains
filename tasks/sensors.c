@@ -204,6 +204,7 @@ void SensorServer() {
                     for (i = 0; i < 64; i++) {
                         for (j=1 ; j< 6; j ++){
                             if (requests[i][j] == ANY_SENSOR_REQUEST) {
+                                DebugPutStr("sdsd", "DEBUG: unblocked sensor: ",sensorNum , " for task: ", i);
                                 reply_struct.iValue = sensorNum;
                                 requests[i][0] = -1;
                                 requests[i][1] = -1;

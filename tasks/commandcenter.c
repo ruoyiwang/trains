@@ -153,6 +153,9 @@ void CommandCenterAdjustTask() {
         if (msg_struct.value[3] == false) {
             Delay(70);
         }
+        if (isUnsafeReverse ((int)msg_struct.value[1])){
+            Delay(70);
+        }
         setTrainSpeed((int)msg_struct.value[0], 0);
         Delay(100);
     }
@@ -173,7 +176,7 @@ void CommandCenterTrainCheckNotifier() {
     reply_struct.value = reply;
 
     FOREVER{
-        Delay(20);
+        Delay(10);
         Send (server_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     }
 }
@@ -195,6 +198,33 @@ void CommandCenterTrainDeadlockNotifier() {
     }
 }
 
+void CommandCenterDeadlockBuster() {
+    int server_tid = WhoIs(COMMAND_CENTER_SERVER_NAME);
+
+    char msg[11] = {0};
+    char reply[11] = {0};
+    int msglen = 10, rpllen = 10;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = reply;
+
+    Receive( &server_tid, (char*)&msg_struct, msglen );
+    Reply (server_tid, (char *)&reply_struct, rpllen);
+
+    msg_struct.type = COMMAND_CENTER_DEADLOCK_CHECK;
+    if (msg_struct.value[0]){
+        reverseTrain(msg_struct.iValue);
+    }
+    setTrainSpeed(msg_struct.iValue, 3);
+    Delay(1000);
+    setTrainSpeed(msg_struct.iValue, 0);
+    Delay(100);
+    if (msg_struct.value[0]){
+        Send (server_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+    }
+    Exit();
+}
+
 void CommandCenterServer() {
     // Create Notifier and send any initialization data
     // msg shits
@@ -209,7 +239,7 @@ void CommandCenterServer() {
 
     int requests[64] = {-1};
     char sensors_ahead[5] = {-1};
-    char reserve_sensors[5] = {-1};
+    char reserve_sensors[80] = {-1};
     int courier_tid, notifier_tid, train_count = 0, length_to_switch = 0, merge_ahead = false;
     int is_deadlock = false, look_ahead_count = 0;
 
@@ -219,6 +249,9 @@ void CommandCenterServer() {
     // int train_info[MAX_TRAIN_COUNT][TRAIN_INFO_SIZE];
     Train_info train_info[MAX_TRAIN_COUNT];
     int train_speed[MAX_TRAIN_COUNT][80];
+
+    int deadlock_mode = false;
+
     // each tid can only call one delay at a time
     int i, j = -1;
     for (i = 0; i < MAX_TRAIN_COUNT; i++) {
@@ -250,7 +283,7 @@ void CommandCenterServer() {
     char deadlock_locations[5] = {74, 68, 3, 65, 51};
 
     RegisterAs(COMMAND_CENTER_SERVER_NAME);
-    Create(1, (&CommandCenterTrainDeadlockNotifier));
+    int deadlock_check_tid = Create(1, (&CommandCenterTrainDeadlockNotifier));
 
     volatile unsigned int * timer_4_low;
     timer_4_low = (unsigned int *) ( TIMER4_VALUE_LO );
@@ -296,9 +329,14 @@ void CommandCenterServer() {
                             }
                         }
                         reserve_sensors[0] = train_info[i].sensor;
-                        reserve_sensors[1] = getSensorComplement(train_info[i].next_sensor);
-                        reserve_sensors[2] = getSensorComplement(train_info[i].sensor);
-                        reserveNodesRequest(reserve_sensors, 3, train_info[i].id);
+                        reserve_sensors[1] = getSensorComplement(train_info[i].sensor);
+                        reserveNodesRequest(reserve_sensors, 2, train_info[i].id);
+                        int sensors_list_return_len;
+                        nextPossibleSensorsCheck (sensors_list, 80, train_info[i].sensor, 2, train_info[i].id, &sensors_list_return_len);
+                        for (j = 0; j < sensors_list_return_len; j++ ){
+                            reserve_sensors[j] = getSensorComplement(sensors_list[j]);
+                        }
+                        reserveNodesRequest(reserve_sensors, sensors_list_return_len, train_info[i].id);
 
                         merge_ahead = false;
                         for (j = 0; j < train_info[i].node_list_len; j++ ){
@@ -344,12 +382,16 @@ void CommandCenterServer() {
                 break;
 
             case COMMAND_CENTER_TRAIN_CHECK:
-                // handle stoping notifer, this means the train needs to stop now
+                if (deadlock_mode) {
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
+                    break;
+                }
+
                 reply_struct.iValue = false;
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i].check_notifier == sender_tid) {
-                        // stop train
-                        look_ahead_count = 0;
+
+                        look_ahead_count = 1;
                         for ( j = train_info[i].node_list_len-1 ; j>=0; j-- ){
                             if (train_info[i].node_list[j].num == train_info[i].sensor) {
                                 break;
@@ -358,12 +400,12 @@ void CommandCenterServer() {
                                 look_ahead_count++;
                             }
                         }
-                        if (look_ahead_count > 3) {
-                            look_ahead_count = 3;
+                        if (look_ahead_count > 4) {
+                            look_ahead_count = 4;
                         }
                         int sensors_list_return_len;
                         if (train_info[i].signal != RESERVED_STOPPING && !train_info[i].is_stopped
-                            && !nextPossibleSensorsCheck (sensors_list, 80, train_info[i].next_sensor, look_ahead_count, train_info[i].id, &sensors_list_return_len)) {
+                            && !nextPossibleSensorsCheck (sensors_list, 80, train_info[i].sensor, look_ahead_count, train_info[i].id, &sensors_list_return_len)) {
                             // Assert();
                             // somehting is blocking the way
                             setTrainSpeed (train_info[i].id, 0);
@@ -643,10 +685,32 @@ void CommandCenterServer() {
                 break;
 
             case COMMAND_CENTER_DEADLOCK_CHECK:
-                is_deadlock = true;
+                if (deadlock_mode && sender_tid == deadlock_check_tid){
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
+                    break;
+                }
+                if (deadlock_mode) {
+                    for (i = 0; i < MAX_TRAIN_COUNT; i++) {
+                        if (train_info[i].id != -1 && train_info[i].id != msg_struct.iValue) {
+                            DebugPutStr("sds", "DEADLOCK: second train ", train_info[i].id, " looking for sensor");
+                            notifier_tid = Create(1, (&CommandCenterDeadlockBuster));
+                            msg_struct.iValue = train_info[i].id;
+                            msg_struct.value[0] = false;
+                            Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
+                        }
+                    }
+                    deadlock_mode = false;
+                    Reply (sender_tid, (char *)&reply_struct, rpllen);
+                    break;
+                }
+
+                is_deadlock = false;
+                // DebugPutStr("s", "DEBUG: CHECKING FOR DEADLOCKS");
                 for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                     if (train_info[i].id != -1) {
-                        if (!train_info[i].is_stopped){
+                        is_deadlock = true;
+
+                        if (!train_info[i].is_stopped || train_info[i].dest_sensor == -1){
                             is_deadlock = false;
                             break;
                         }
@@ -663,7 +727,7 @@ void CommandCenterServer() {
                             is_deadlock = false;
                             break;
                         }
-                        if (!pathFindDijkstra(
+                        if (pathFindDijkstra(
                             &md,
                             getSensorComplement(train_info->sensor),          // current node
                             train_info[i].offset,                      // offset
@@ -676,34 +740,39 @@ void CommandCenterServer() {
                             is_deadlock = false;
                             break;
                         }
+
                     }
                 }
                 if (is_deadlock) {
+                    DebugPutStr("s", "DEBUG: ENTERING DEADLOCK MODE!");
+
+                    // enter deadlock mode
+                    deadlock_mode = true;
+                    int last_arrival = -1, train_id;
                     for (i = 0; i < MAX_TRAIN_COUNT; i++) {
                         if (train_info[i].id != -1) {
-                            for (j = 0; j < 5; j++){
-                                if (pathFindDijkstra(
-                                    &md,
-                                    train_info[i].sensor,          // current node
-                                    train_info[i].offset,                      // offset
-                                    deadlock_locations[j],                 // where it wants to go
-                                    train_info[i].stopping_dist,                    // stoping distance
-                                    blocked_nodes,          // the nodes the trains can't use
-                                    0,                       // the length of the blocked nodes array
-                                    train_info[i].id
-                                )){
-                                    is_deadlock = false;
-                                    break;
-                                }
+                            if (train_info[i].arrival_tme > last_arrival) {
+                                last_arrival = train_info[i].arrival_tme;
+                                train_id = train_info[i].id;
                             }
-                            if (!is_deadlock) {
-                                DebugPutStr("sdsd", "DEBUG: DEADLOCK detected train ", train_info[i].id, " going to:", deadlock_locations[j]);
-                                break;
-                            }
+                            train_info[i].offset = 0;
+                            train_info[i].stopping_sensor = -1;
+                            train_info[i].stopping_offset = 0;
+                            train_info[i].stopping_notifier = -1;
+                            train_info[i].signal = -100;
+                            sensors_ahead[0] = ANY_SENSOR_REQUEST;
+                            setTrainSpeed(train_info[i].id, 0);
+                            changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, 1);
                         }
                     }
+                    DebugPutStr("sds", "DEADLOCK: train ", train_id, " looking for sensor");
+                    notifier_tid = Create(1, (&CommandCenterDeadlockBuster));
+                    msg_struct.iValue = train_id;
+                    msg_struct.value[0] = true;
+                    Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
                 }
 
+                Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
 
             case TRAIN_DESTINATION_REQUEST:
@@ -947,9 +1016,9 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
         if (stopping_sensor_dist < 0){
             stopping_sensor_dist = 0;
         }
-        if (isUnsafeReverse(train_info->stopping_sensor)) {
-            stopping_sensor_dist += TRAIN_LENGTH;
-        }
+        // if (isUnsafeReverse(train_info->stopping_sensor)) {
+        //     stopping_sensor_dist += TRAIN_LENGTH;
+        // }
         msg_struct.value[0] = -1;
         msg_struct.iValue = shortMoveDistanceToDelay(stopping_sensor_dist, train_info->id, train_info->short_move_mult);
         DebugPutStr("sd", "DEBUG: Short Move for: ", msg_struct.iValue);
@@ -1033,14 +1102,14 @@ int shortMoveDistanceToDelay( double distance, int train_num, double short_move_
     else if (train_num == 56) {
         cubic = 1.7E-7 * distance * distance * distance;
         square = 5.6E-4 * distance * distance;
-        linear = 0.68 * distance;
+        linear = (0.68 + 0.02) * distance;
         constant = 61;
         result = (cubic - square + linear + constant);
     }
     else if (train_num == 54) {
         cubic = 2.4E-7 * distance * distance * distance;
         square = 7.2E-4 * distance * distance;
-        linear = 0.78 * distance;
+        linear = (0.78 + 0.02) * distance;
         constant = 52;
         result = (cubic - square + linear + constant);
     }
