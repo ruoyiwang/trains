@@ -7,7 +7,7 @@
 #define CLOCK_POSITION_X 1
 #define CLOCK_POSITION_Y 1
 
-#define CMD_POSITION_X 50
+#define CMD_POSITION_X 40
 #define CMD_POSITION_Y 6
 
 #define SW_POSITION_X 3
@@ -33,6 +33,9 @@
 #define EXPECTED_POSITION_Y 31
 #define ACTUAL_POSITION_Y 50
 #define DEST_POSITION_Y 67
+
+#define MAIL_POSITION_X 42
+#define MAIL_OFFSET_Y 12
 
 #define CMD_TRAIN           1
 #define CMD_REVERSE         2
@@ -77,5 +80,6 @@ void SensorsTask();
 void handleCommandTask();
 void parseCommand ( char* str, int *argc, char argv[10][10], int* command);
 void IdleDisplayTask();
+void MailDisplayTask();
 unsigned int atoi ( char *str );
 #endif

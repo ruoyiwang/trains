@@ -446,7 +446,7 @@ void initInterface() {
     flushScreen(buffer, &index);
     int row = 24, col = 1;
     outputPutStr ( "OUTPUT: ", &row, &col , buffer, &index );
-    cursorCommand( "[25;49r" , buffer, &index );			//scroll section
+    cursorCommand( "[25;39r" , buffer, &index );			//scroll section
 
     row = SW_POSITION_X-1; col = 1;
     outputPutStr ( "SWITCHES: ", &row, &col , buffer, &index );
@@ -459,6 +459,17 @@ void initInterface() {
     row = TRAIN_TABLE_X; col = 1;
     cursorCommand ( "[33m" , buffer, &index ); // set color to yellow
     outputPutStr ( "ID | NEXT | PREV | LOCATION | EXPECTED ARRIVAL | ACTUAL ARRIVAL | DEST ", &row, &col , buffer, &index );
+    cursorCommand ( "[37m" , buffer, &index ); // set color to yellow
+
+    row = MAIL_POSITION_X; col = 1;
+    cursorCommand ( "[33m" , buffer, &index ); // set color to yellow
+    outputPutStr ( "MAILS:           |           |           |           |           | ", &row, &col , buffer, &index );
+    row = MAIL_POSITION_X+1; col = 1;
+    outputPutStr ( "From: ", &row, &col , buffer, &index );
+    row = MAIL_POSITION_X+2; col = 1;
+    outputPutStr ( "To: ", &row, &col , buffer, &index );
+    row = MAIL_POSITION_X+3; col = 1;
+    outputPutStr ( "Status: ", &row, &col , buffer, &index );
     cursorCommand ( "[37m" , buffer, &index ); // set color to yellow
 
     // outputPutStr ( "NEXT SENSOR:", &row, &col , buffer, &index );
@@ -848,6 +859,7 @@ void handleCommandTask() {
     Create(7, (&IdleDisplayTask));
 
     Create(3, (&CommandCenterServer));
+    Create(6, (&MailDisplayTask));
     // Create(5, (&LocationDisplayTask));
     // Create(5, (&LocationOffsetDisplayTask));
     // initTrainLocation(49, 0 );
@@ -1155,5 +1167,69 @@ void handleCommandTask() {
     		putc(COM2, c);
     		commandStr[command_str_index++] = c;
     	}
+    }
+}
+
+
+// mail display track
+void MailDisplayTask() {
+    char buffer[600] = {0};
+    int index = 0;
+
+    int row, col;
+    int train_info[10] = {-1};
+    char sensor_str[20] = {0};
+    int sender_tid, offset_tid;
+
+    char msg[10] = {0}, rpl[10] = {0};
+    int msglen = 10, rpllen = 10;
+    message msg_struct, reply_struct;
+    msg_struct.value = msg;
+    reply_struct.value = rpl;
+
+    int last_prev=0, last_next=0;
+    mail mails[5];
+
+    int i;
+    FOREVER {
+        Delay(100);
+        getFiveMail (mails);
+        for( i=0; i<5; i++ ){
+            int index = 0;
+            sensor_str[0] = 'A' + (mails[i].from / 16);
+            bwi2a( (mails[i].from % 16) + 1, sensor_str + 1);
+            row = MAIL_POSITION_X + 1; col = MAIL_OFFSET_Y * (i+1);
+            outputPutStr ( "          ", &row, &col , buffer, &index );
+            row = MAIL_POSITION_X + 1; col = MAIL_OFFSET_Y * (i+1);
+            outputPutStr ( sensor_str, &row, &col , buffer, &index );
+
+            sensor_str[0] = 'A' + (mails[i].to / 16);
+            bwi2a( (mails[i].to % 16) + 1, sensor_str + 1);
+            row = MAIL_POSITION_X + 2; col = MAIL_OFFSET_Y * (i+1);
+            outputPutStr ( "          ", &row, &col , buffer, &index );
+            row = MAIL_POSITION_X + 2; col = MAIL_OFFSET_Y * (i+1);
+            outputPutStr ( sensor_str, &row, &col , buffer, &index );
+
+
+            row = MAIL_POSITION_X + 3; col = MAIL_OFFSET_Y * (i+1);
+            outputPutStr ( "           ", &row, &col , buffer, &index );
+            switch(mails[i].status) {
+                case MAIL_STATUS_NEW:
+                    row = MAIL_POSITION_X + 3; col = MAIL_OFFSET_Y * (i+1);
+                    outputPutStr ( "New", &row, &col , buffer, &index );
+                    break;
+                case MAIL_STATUS_IN_FLIGHT:
+                    row = MAIL_POSITION_X + 3; col = MAIL_OFFSET_Y * (i+1);
+                    outputPutStr ( "in progress", &row, &col , buffer, &index );
+                    break;
+                case MAIL_STATUS_DELIVERED:
+                    row = MAIL_POSITION_X + 3; col = MAIL_OFFSET_Y * (i+1);
+                    outputPutStr ( "Delivared", &row, &col , buffer, &index );
+                    break;
+            }
+
+            buffer[(index)++] = 0;
+            putstr(COM2, buffer);
+        }
     }
 }
