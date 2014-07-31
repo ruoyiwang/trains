@@ -1357,17 +1357,22 @@ int nextPossibleSensorsDFS(
     // DebugPutStr("sdsdsdsd", "curnode: ", cur_node, " type:", tracks[cur_node].type, " curdepth:", cur_depth, " depth:", depths);
 
     if (tracks[cur_node].type == NODE_SENSOR) {
+        int ret_val = true;
         cur_depth += 1;
         posintlistInsert(tracks[cur_node].num, sensors_list, len);
         // DebugPutStr("scd", "Processing Sensor: ", tracks[cur_node].num/16+'A', tracks[cur_node].num%16+1);
         for (j = 0; j < 5; j++) {
             if (tracks[cur_node].reserved[j] != train_id &&
                 tracks[cur_node].reserved[j] != 0) {
-                return false;
+                ret_val = false;
             }
         }
         cur_node = tracks[cur_node].edge[DIR_AHEAD].dest->index;
-        return nextPossibleSensorsDFS(tracks, sensors_list, len, cur_node, depths, cur_depth, train_id);
+        if ( nextPossibleSensorsDFS(tracks, sensors_list, len, cur_node, depths, cur_depth, train_id) == false ||
+            ret_val == false) {
+            return false;
+        }
+        return true;
     }
     else if (tracks[cur_node].type == NODE_MERGE) {
         cur_node = tracks[cur_node].edge[DIR_AHEAD].dest->index;
