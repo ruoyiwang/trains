@@ -40,6 +40,18 @@ typedef struct train_info_t {
 	move_node node_list[TRACK_MAX];
 } Train_info;
 
+typedef struct mail_t {
+	int from;
+	int to;
+	int status;
+} mail;
+
+#define MAIL_LIST_SIZE			20
+#define MAIL_STATUS_EMPTY		0
+#define MAIL_STATUS_NEW			1
+#define MAIL_STATUS_IN_FLIGHT	2
+#define MAIL_STATUS_DELIVERED	3
+
 #define COMMAND_CENTER_NOTIFIER 0
 #define INIT_TRAIN_REQUEST 1
 #define TRAIN_DESTINATION_REQUEST 2
