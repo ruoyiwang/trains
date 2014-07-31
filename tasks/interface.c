@@ -463,13 +463,13 @@ void initInterface() {
 
     row = MAIL_POSITION_X; col = 1;
     cursorCommand ( "[33m" , buffer, &index ); // set color to yellow
-    outputPutStr ( "MAILS:           |           |           |           |           | ", &row, &col , buffer, &index );
+    outputPutStr ( "MAILS:  ", &row, &col , buffer, &index );
     row = MAIL_POSITION_X+1; col = 1;
     outputPutStr ( "From: ", &row, &col , buffer, &index );
     row = MAIL_POSITION_X+2; col = 1;
     outputPutStr ( "To: ", &row, &col , buffer, &index );
-    row = MAIL_POSITION_X+3; col = 1;
-    outputPutStr ( "Status: ", &row, &col , buffer, &index );
+    // row = MAIL_POSITION_X+3; col = 1;
+    // outputPutStr ( "Status: ", &row, &col , buffer, &index );
     cursorCommand ( "[37m" , buffer, &index ); // set color to yellow
 
     // outputPutStr ( "NEXT SENSOR:", &row, &col , buffer, &index );
@@ -1211,19 +1211,19 @@ void MailDisplayTask() {
             outputPutStr ( sensor_str, &row, &col , buffer, &index );
 
 
-            row = MAIL_POSITION_X + 3; col = MAIL_OFFSET_Y * (i+1);
+            row = MAIL_POSITION_X; col = MAIL_OFFSET_Y * (i+1);
             outputPutStr ( "           ", &row, &col , buffer, &index );
             switch(mails[i].status) {
                 case MAIL_STATUS_NEW:
-                    row = MAIL_POSITION_X + 3; col = MAIL_OFFSET_Y * (i+1);
+                    row = MAIL_POSITION_X; col = MAIL_OFFSET_Y * (i+1);
                     outputPutStr ( "New", &row, &col , buffer, &index );
                     break;
                 case MAIL_STATUS_IN_FLIGHT:
-                    row = MAIL_POSITION_X + 3; col = MAIL_OFFSET_Y * (i+1);
+                    row = MAIL_POSITION_X; col = MAIL_OFFSET_Y * (i+1);
                     outputPutStr ( "in progress", &row, &col , buffer, &index );
                     break;
                 case MAIL_STATUS_DELIVERED:
-                    row = MAIL_POSITION_X + 3; col = MAIL_OFFSET_Y * (i+1);
+                    row = MAIL_POSITION_X; col = MAIL_OFFSET_Y * (i+1);
                     outputPutStr ( "Delivared", &row, &col , buffer, &index );
                     break;
             }
