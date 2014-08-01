@@ -380,11 +380,17 @@ void CommandCenterServer() {
                 }
                 // give the sensor to wait on as well as the time out to the notifier
                 reply_struct.iValue = train_info[i].arrival_tme + train_info[i].timeout;
-                reply_struct.value[0] = train_info[i].next_sensor;
-                reply_struct.value[1] = sensors_ahead[1];
-                reply_struct.value[2] = getSensorComplement(train_info[i].sensor);
-                predictSensor(reply_struct.value[2], 2, sensors_ahead);
-                reply_struct.value[3] = sensors_ahead[0];
+                // reply_struct.value[0] = train_info[i].next_sensor;
+                // reply_struct.value[1] = sensors_ahead[1];
+
+                // reply_struct.value[2] = getSensorComplement(train_info[i].sensor);
+                // predictSensor(reply_struct.value[2], 2, sensors_ahead);
+                // reply_struct.value[3] = sensors_ahead[0];
+                int sensors_list_return_len;
+                nextPossibleSensorsCheck (sensors_list, 6, train_info[i].sensor, 3, train_info[i].id, &sensors_list_return_len);
+                for (i = 0; i < sensors_list_return_len-1; i++ ){
+                    reply_struct.value[i] = sensors_list[i+1];
+                }
                 Reply (sender_tid, (char *)&reply_struct, rpllen);
                 break;
 
@@ -744,6 +750,25 @@ void CommandCenterServer() {
                     }
                     for (i = 0; i < MAX_TRAIN_COUNT; i++){
                         if (train_info[i].id != -1){
+                            reserve_sensors[0] = train_info[i].sensor;
+                            reserve_sensors[1] = getSensorComplement(train_info[i].sensor);
+                            reserveNodesRequest(reserve_sensors, 2, train_info[i].id);
+                            int sensors_list_return_len;
+                            nextPossibleSensorsCheck (sensors_list, 80, train_info[i].sensor, 2, train_info[i].id, &sensors_list_return_len);
+                            for (j = 0; j < sensors_list_return_len; j++ ){
+                                reserve_sensors[j] = getSensorComplement(sensors_list[j]);
+                            }
+                            reserveNodesRequest(reserve_sensors, sensors_list_return_len, train_info[i].id);
+
+                            nextPossibleSensorsCheck (sensors_list, 6, train_info[i].sensor, 3, train_info[i].id, &sensors_list_return_len);
+                            for (i = 0; i < sensors_list_return_len-1; i++ ){
+                                sensors_ahead[i] = sensors_list[i+1];
+                            }
+                            changeWaitForSensors(train_info[i].notifier_tid, sensors_ahead, sensors_list_return_len-1);
+                        }
+                    }
+                    for (i = 0; i < MAX_TRAIN_COUNT; i++){
+                        if (train_info[i].id != -1){
                             serverSetStopping(&(train_info[i]), train_speed[i], train_info[i].dest_sensor, 0, requests);
                         }
                     }
@@ -1068,6 +1093,14 @@ void serverSetStopping (Train_info* train_info, int* train_speed, int stop_senso
         reverseTrain(train_info->id);
         // Send (notifier_tid, (char *)&msg_struct, msglen, (char *)&reply_struct, rpllen);
     }
+    int sensors_list[5] = {-1};
+    int sensors_list_return_len;
+    nextPossibleSensorsCheck (sensors_list, 5, train_info->sensor, 2, train_info->id, &sensors_list_return_len);
+    for (i = 0; i < sensors_list_return_len; i++ ){
+        sensors_ahead[i] = sensors_list[i];
+    }
+    changeWaitForSensors(train_info->notifier_tid, sensors_ahead, sensors_list_return_len );
+
     if (md.type == SHORT_MOVE) {
         int sensors_count = 0;
         for (i = 0; i < md.list_len; i++) {

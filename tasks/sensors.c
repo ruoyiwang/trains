@@ -134,7 +134,7 @@ void SensorServer() {
                 for (i = 0; i < 64; i++) {
                     if (requests[i][1] >= 0 && requests[i][1] < 80 && (current_sensor_state[requests[i][1]/8] & (1 << (7 - (requests[i][1] % 8))))) {
                         // msg_struct.value[requests[i][1]/8] = msg_struct.value[requests[i][1]/8] & ~(1 << (7 - (requests[i][1] % 8)));
-                        DebugPutStr("sdsd", "DEBUG: unblocked sensor: ",requests[i][1], " for task: ", i);
+                        // DebugPutStr("sdsd", "DEBUG: unblocked sensor: ",requests[i][1], " for task: ", i);
                         reply_struct.iValue = requests[i][1];
                         requests[i][0] = -1;
                         requests[i][1] = -1;
